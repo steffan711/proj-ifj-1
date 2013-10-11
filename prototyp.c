@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 	//vratit
 	
 	
-	/** **/
+	/** END OF MAGIC **/
 	
     free(source_file);
     return ret_val;
