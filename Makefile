@@ -1,7 +1,7 @@
 CFLAGS = -pedantic -Wall -Wextra -std=c99
 
 .PHONY = clean run all cleanall
-EXE = prototyp
+EXE = main
 
 
 ###### HELP #####
@@ -10,15 +10,15 @@ EXE = prototyp
 # $^ - vsetky dependencies
 ###############
 
-all : prototyp file_io.o prototyp.o
+all : main file_io.o main.o
 
 file_io.o : file_io.c file_io.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 	
-prototyp.o : prototyp.c types.h file_io.h
+main.o : main.c types.h file_io.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 	
-prototyp : prototyp.o file_io.o
+main : main.o file_io.o
 	$(CC) $(CFLAGS) -o $@ $^
 	
 clean:
