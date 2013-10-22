@@ -9,6 +9,7 @@
 #include "file_io.h"
 #include <ctype.h>
 
+
 /**
  * Pomocna funkcia, zistuje validitu suboru podla vzoru
  *
@@ -30,4 +31,61 @@ E_ERROR_TYPE check_file_header( char *source_file )
         return E_OTHER;
     }
     return E_OK;
-} /** OTESTOVANE **/
+} 
+
+/**
+ * Funkcia mapuje(kopiruje) subor do pamate
+ *
+ * @param1 meno suboru so zdrojovym kodom
+ * @param2 (OUT) Ukazatel na prvy znak v subore, v pripade chyby NULL;
+ * @return Navratovy kod
+ */
+ 
+E_ERROR_TYPE mmap_file(const char *filename, char **file_pointer)
+{
+    FILE *f;
+    if ( ( f = fopen(filename, "r" ) ) == NULL )
+    {
+        fprintf( stderr, "Unable to open file: %s\n", filename );
+		*file_pointer = NULL;
+        return E_INTERPRET_ERROR;
+    }
+    
+    /* urcenie MAXIMA velkosti pamate, ktoru je potrebne alokovat na nacitanie suboru */
+    fseek( f, 0, SEEK_END );
+    size_t file_size = ftell( f );
+    rewind( f );
+   
+    char *source_file;
+   
+    if ( ( source_file = malloc( file_size + 1 ) ) == NULL ) //+1 kvoli znaku znaku konca retazca
+    {
+        fprintf( stderr, "Unable to allocate memory. Exitting ...\n" );
+        fclose( f );
+		source_file = NULL;
+        return E_INTERPRET_ERROR;
+    }
+    
+    size_t num_of_chars = fread( source_file, 1, file_size, f );
+    if ( ferror( f ) )
+    {
+        perror( "Error" ); // TODO
+        free( source_file );
+        fclose( f );
+		source_file = NULL;
+        return E_INTERPRET_ERROR;
+    }
+    fclose( f );
+    source_file[num_of_chars] = '\0';   //EOF 
+    
+    if ( check_file_header( source_file ) != E_OK ) // kontrola '<?php' na zaciatku suboru
+    {
+        fprintf( stderr, "Invalid source file. Exitting ...\n" );
+		source_file = NULL;
+        return E_OTHER;
+    }
+	
+	*file_pointer = source_file;
+	
+	return E_OK;
+}

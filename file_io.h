@@ -1,11 +1,13 @@
 /**
  * @file file_io.h
  *
- * @brief Hlavickovy subor pre vstup/vystup funckie s makrami, nahradzujucimi zakladne stdio funkcie
+ * @brief Hlavickovy subor pre vstup/vystup funkcie s makrami, nahradzujucimi zakladne stdio funkcie
  * @author Vsetci
  */
 
 #include "types.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 /* Abstrakcia suboru nacitaneho v pamati */
 #define _FILE_IN_MEMORY_
@@ -20,3 +22,4 @@
 
 
 E_ERROR_TYPE check_file_header( char *source_file );
+E_ERROR_TYPE mmap_file(const char* filename, char **file_pointer);
