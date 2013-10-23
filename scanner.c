@@ -28,14 +28,14 @@ typedef enum {
 	E_INT,			// integer
 	E_DOUBLE,		// double
 	E_STRING,		// literal
-	E_tripleeq;		// ==
+	E_tripleeq,		// ==
 	E_Lparentheses,	// (
 	E_Rparentheses,	// )
 	E_lBrack,		// [
 	E_rBrack,		// ]
 	E_laBrack,		// {
-	E_laBrack,		// }
-	E_INVALID,		// je to invalid
+	E_raBrack,		// }
+	E_invld,		// je to invalid
 	// ** TODO ** Klujcove slova co ? Nezasluzia si vlastnu tabulku ?
 	// E_ELSE,
 	// E_FUNC,
@@ -186,16 +186,17 @@ S_token scanner(char *data)
 														next_state = t_ass;
 													}
 										case '/':	{
-														next_state = t_comm;
+														next_state = t_fraction;
 													}
 										case 0:		{
 														next_state = FINISH;
 													}										
 													
 										default: 	{	
-														next_token.ttype = E_INVALID;
+														next_token.ttype = E_invld;
 														next_token.data = NULL;
 														next_state = t_inv;
+														next_state = FINISH;
 														break;
 													}
 									}
@@ -207,7 +208,7 @@ S_token scanner(char *data)
 								return next_token;
 							}			
 			case t_inv:		{
-								next_token.ttype = 
+								next_token.ttype = E_invld;
 								return next_token;
 							}
 			case t_id:		{
@@ -224,7 +225,7 @@ S_token scanner(char *data)
 								switch(getc(current_pos))
 								{
 									case '=' : 	{ 	znak = getc(current_pos);
-													if(znak == '=' && isspace(getc(current_pos))) // === 
+													if(znak == '=' && isspace(getc(current_pos))) // TODO: isspace nahradit za issepar
 														next_token.ttype = E_tripleeq;
 														next_token.line = line;
 														next_token.column = column;
@@ -234,7 +235,7 @@ S_token scanner(char *data)
 												}
 									default:	break;
 								}
-								
+								break;
 
 							}
 			case t_block_c:	{
