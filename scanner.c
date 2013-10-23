@@ -1,6 +1,6 @@
 /*
  * Projekt: IFJ13
- * Riesitelia: xcillo00, xmarti62, xnemce03, 	xilavs01
+ * Riesitelia: xcillo00, xmarti62, xnemce03, xilavs01
  *
  * Subor: scanner.c - modul lexikalniho analyzatoru
  * Autor: Vladimír Čillo, xcillo00
@@ -11,29 +11,30 @@
 #include <stdlib.h>
 
 typedef enum {
-	E_OPEQ,			// =
-	E_OPLESS,		// <
-	E_OPGREATER,	// >
-	E_OPLESSEQ,		// <=
-	E_OPGREATEREQ,	// >=
-	E_OPPLUS,		// +
-	E_OPMINUS,		// -
-	E_OPMUL,		// *
-	E_OPDIV,		// /
+	E_EQ = 15,		// aby nedoslo ku konfliktu s enumom navratovych kodov
+	E_LESS,			// <
+	E_GREATER,		// >
+	E_LESSEQ,		// <=
+	E_GREATEREQ,	// >=
+	E_PLUS,			// +
+	E_MINUS,		// -
+	E_MULT,			// *
+	E_DIV,			// /
 	E_SEMICL,		// ;
 	E_COMA,			// ,
-	E_OPCONCAT,		// .
+	E_CONCAT,		// .
 	E_IDENT,		// identifikator
 	E_VAR,			// premenna
 	E_INT,			// integer
 	E_DOUBLE,		// double
 	E_STRING,		// literal
+	E_tripleeq;		// ==
 	E_Lparentheses,	// (
 	E_Rparentheses,	// )
-	E_LRBRACK,		// [
-	E_RRBRACK,		// ]
-	E_LABRACK,		// {
-	E_RABRACK,		// }
+	E_lBrack,		// [
+	E_rBrack,		// ]
+	E_laBrack,		// {
+	E_laBrack,		// }
 	E_INVALID,		// je to invalid
 	// ** TODO ** Klujcove slova co ? Nezasluzia si vlastnu tabulku ?
 	// E_ELSE,
@@ -56,7 +57,7 @@ typedef struct token {
 
 typedef struct _tStringBuffer	// nekonecny retazec [ak nepretecie velkost ... ]
         {
-		  unsigned part_size;	// velkost
+		  unsigned part_size;	// velkost jedneho bloku
           unsigned allocated_size; 
           unsigned size; // aktualny pocet znakov v retaci
           char *ptr;	// ukazatel na retazec
@@ -81,7 +82,7 @@ tStringBuffer* gimme_string(int size) // vytvori abstrakciu nekonecneho retazca
 }
 
 /**
- * @function stringAppend
+ * @function append_string
  * 
  * @param1 ukazatel na nekonecny retazec
  * @param2 znak ktory treba doplnit
@@ -135,8 +136,13 @@ typedef enum {
 	t_id,		// identifikator
 	t_var,		// premenna
 	t_int,		// integer
-	t_ass,		// = (assignment)
+	t_ass,		// = 
+	t_comp,		// porovnanie ==
 	t_inv,		// nieco strasne
+	t_fraction,	// /
+	t_block_c, 	//blokovy komentar
+	t_line_c,  	//riadkovy komentar
+	
 } FSM_STATE; 
  
 S_token scanner(char *data)
@@ -145,6 +151,7 @@ S_token scanner(char *data)
 	current_pos = data;
 	FSM_STATE next_state = INIT;
 	int znak;
+	unsigned line,column = 0;
 	
 	S_token next_token;
 	next_token.ttype = t_inv;
@@ -175,9 +182,15 @@ S_token scanner(char *data)
 										case '$':	{	next_state = t_var;
 														break;
 													}			
+										case '=':	{
+														next_state = t_ass;
+													}
+										case '/':	{
+														next_state = t_comm;
+													}
 										case 0:		{
 														next_state = FINISH;
-													}
+													}										
 													
 										default: 	{	
 														next_token.ttype = E_INVALID;
@@ -194,6 +207,7 @@ S_token scanner(char *data)
 								return next_token;
 							}			
 			case t_inv:		{
+								next_token.ttype = 
 								return next_token;
 							}
 			case t_id:		{
@@ -206,10 +220,29 @@ S_token scanner(char *data)
 			case t_int:		{
 								break;
 							}
-			case t_ass:		{
-								break;
+			case t_ass:		{	// =
+								switch(getc(current_pos))
+								{
+									case '=' : 	{ 	znak = getc(current_pos);
+													if(znak == '=' && isspace(getc(current_pos))) // === 
+														next_token.ttype = E_tripleeq;
+														next_token.line = line;
+														next_token.column = column;
+														next_token.data= NULL;
+														return next_token;
+													break;
+												}
+									default:	break;
+								}
+								
+
 							}
-						
+			case t_block_c:	{
+								break;
+							}			
+			case t_line_c:	{
+								break;
+							}									
 			case FINISH:	break;
 		}
 	}
