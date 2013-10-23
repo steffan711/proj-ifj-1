@@ -30,25 +30,25 @@ int main( int argc, char *argv[] )
         fprintf( stderr, "Error: No input file specified !\n" );
         return E_OTHER;
     }
-	
+
     E_ERROR_TYPE ret_val;
 	char *subor;	/**< abstrakcia zdrojoveho suboru */
-	
-	ret_val = mmap_file( argv[1], &subor ); 
-	
+
+	ret_val = mmap_file( argv[1], &subor );
+
 	if ( ret_val != E_OK )
 	{
 		printf("Nastala chyba\n");
-		return ret_val;	
+		return ret_val;
 	}
-	
-	
+
+
 
     /** MAGIC WILL SOON BEGIN TO HAPPEN HERE **/
-	
-	
-    
-    
+
+
+
+
     /** END OF MAGIC **/
 
     free( subor );
