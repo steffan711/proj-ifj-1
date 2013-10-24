@@ -7,7 +7,10 @@
 
  
 typedef enum {
-	E_EQ,			// =
+	E_EQ = 1,			// =
+	E_COMP,			// ==
+	E_tripleeq,		// ===
+	E_not_eq,		// !==
 	E_LESS,			// <
 	E_GREATER,		// >
 	E_LESSEQ,		// <=
@@ -24,7 +27,6 @@ typedef enum {
 	E_INT,			// integer
 	E_DOUBLE,		// double
 	E_STRING,		// literal
-	E_tripleeq,		// ===
 	E_Lparentheses,	// (
 	E_Rparentheses,	// )
 	E_lBrack,		// [
@@ -45,7 +47,6 @@ typedef enum {
 	t_comp,		// porovnanie ==
 	t_fraction,	// /
 	t_block_c, 	// blokovy komentar
-	t_line_c,  	// riadkovy komentar
 	t_add,		// +
 	t_sub,		// -
 	t_star,		// *
@@ -65,9 +66,8 @@ typedef struct token {
 
 typedef enum 
 {
-	int_divider,
-	fract_divider,	
-	float_divider,
+	operator_divider,
+	number_divider,
 } divider; // oznacenie mnoziny znakov ktora moze nasledovat za nejakym znakom
 
 typedef struct _tStringBuffer	// nekonecny retazec [ak nepretecie velkost ... ]
