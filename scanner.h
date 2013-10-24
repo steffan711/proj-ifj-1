@@ -6,6 +6,7 @@
  */
 
  #define allocation_coeficient 2
+ #define pre_allocation 32
  
 /** Typy tokenov **/
 typedef enum {
@@ -36,6 +37,7 @@ typedef enum {
 	E_laBrack,		// {
 	E_raBrack,		// }
 	E_invld,		// je to invalid
+	E_liter,		// string 
 	E_EOF,			// padla
 } TOKEN_TYPE;
 
@@ -56,7 +58,8 @@ typedef enum {
 	t_concat,	// .
 	t_greater,	// >
 	t_less,		// <
-	t_exclam,	// !	
+	t_exclam,	// !
+	t_lit,		// literal
 } FSM_STATE;
 
 
@@ -90,7 +93,10 @@ typedef struct _tStringBuffer
  
 /** Funkcie **/
 int buffer_push(char znak);
+void buffer_init();
 int scanner_init(char *file_start);
 void scanner_shutdown();
 void scanner_get_token(T_token* token);
 void print_token(T_token* token);
+static inline bool is_divider(char znak, int switcher);
+static inline void set_token(T_token* ptr, TOKEN_TYPE type, void* data);

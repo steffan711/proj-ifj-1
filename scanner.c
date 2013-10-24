@@ -46,13 +46,28 @@ int buffer_push(char znak) // doplni znak na koniec retazca
 	return E_OK;
 }
 
+void printBuffer() // vypise aktualny obsah zasobnika
+{
+	if (Buffer->ptr != NULL)
+	{
+		printf("Buffer size : %d\n", Buffer->size );
+		for(unsigned i = 0; i<Buffer->size; i++)
+			printf("%c",Buffer->ptr[i]);
+			fflush(stdout);
+		printf("\n");
+	}
+	else
+		printf("No string data\n");
+	
+}
+
+
 
 /**
  * @function scanner_shutdown()
  * @
  * @ zrusi buffer, po zavolani tejto funkcie nevolat scanner_get_token
  */	
-
 void scanner_shutdown()
 {
 	if(Buffer == NULL)
@@ -60,6 +75,8 @@ void scanner_shutdown()
 	free(Buffer->ptr);
 	free(Buffer);
 }
+
+
 
 /**
  * @function set_token
@@ -69,7 +86,6 @@ void scanner_shutdown()
  * @param3 ukazatel (niekde)
  * @return void
  */
-
 static inline void set_token(T_token* ptr, TOKEN_TYPE type, void* data)
 {
 	ptr->ttype = type;
@@ -78,6 +94,14 @@ static inline void set_token(T_token* ptr, TOKEN_TYPE type, void* data)
 	ptr->data = data;
 }
  
+ 
+ 
+ /**
+ * @function is_divider
+ * @ param1 oddelovac
+ * @ param2 specifikacia mnoziny validnych oddelovacov
+ * @ rozhodne ci je token spravne ukonceny
+ */	
  static inline bool is_divider(char znak, int switcher) 
  {
 	switch (switcher)
@@ -90,15 +114,17 @@ static inline void set_token(T_token* ptr, TOKEN_TYPE type, void* data)
  }
  // test: /* /a /7 /$
  
+ 
+ 
  /**
  * @function scanner_init
  * @
  * @param ukazatel na subor
  * @return -
  */	
- 
 int scanner_init(char *file_start)
  {
+	Buffer = &stack;
 	current_pos = file_start;
 	scanner_line = 1;
 	scanner_column = 0;
@@ -108,18 +134,25 @@ int scanner_init(char *file_start)
 	{ // kriste pane ak sa nepodari ani scanner init tak to je v riti...
 		return  E_INTERPRET_ERROR;	
 	}
-	Buffer->allocated_size = 0;
-	Buffer->size = 0;
-	Buffer->ptr = NULL;
-	return E_OK;
+	Buffer->ptr = malloc(pre_allocation * sizeof(char));
+	if (Buffer->ptr == NULL)
+	{ // shit
+		return  E_INTERPRET_ERROR;	
+	}
 	
+	Buffer->allocated_size = pre_allocation;
+	Buffer->size = 0;
+
+	return E_OK;
  }
  
- 
+ // debug
  void print_token(T_token* token)
  {
+	printBuffer();
 	printf("\nToken -> column: %u",token->column);
 	printf("\nToken -> line: %u",token->line);
+	printf("\nToken -> data: %p",token->data);
 	switch(token->ttype)
 	{
 		case 1:		printf("\nToken -> ttype: E_EQ\n"); 		break;
@@ -149,24 +182,28 @@ int scanner_init(char *file_start)
 		case 25:	printf("\nToken -> ttype: E_laBrack\n");	break;
 		case 26:	printf("\nToken -> ttype: E_raBrack\n");	break;
 		case 27:	printf("\nToken -> ttype: E_invld\n");		break;
-		case 28:	printf("\nToken -> ttype: E_EOF\n");		break;
+		case 28:	printf("\nToken -> ttype: E_liter\n");		break;
+		case 29:	printf("\nToken -> ttype: E_EOF\n");		break;
 
 
 		default: break;
 	}
-	printf("Token -> data: %p\n",token->data);
 	
  }
  
- 
+ void buffer_init()
+ {
+	for(unsigned i = 0; i < Buffer->size; i++)
+		Buffer->ptr[i] = '\0';
+	Buffer->size = 0;
+ }
  
 
 void scanner_get_token(T_token* token)
 {
-
+	buffer_init();
 	FSM_STATE next_state = INIT;
 	int znak;
-	
 
 	set_token(token,E_invld,NULL); // inicializacia
 	
@@ -183,7 +220,7 @@ void scanner_get_token(T_token* token)
 			}
 			znak=getc(current_pos);			
 		}
-		printf("%c",znak); // debug
+		buffer_push(znak);
 		switch(next_state)
 		{	
 			// --------------------------------------------------------	
@@ -235,6 +272,7 @@ void scanner_get_token(T_token* token)
 										break;
 									}
 						case '"':	{
+										next_state = t_lit;
 										break;
 									}
 						case '.':	{	
@@ -249,15 +287,30 @@ void scanner_get_token(T_token* token)
 										set_token(token,E_Rparentheses,NULL);
 										break;
 									}
+						case '[':	{
+										set_token(token,E_lBrack,NULL);
+										break;
+									}									
+						case ']':	{
+										set_token(token,E_rBrack,NULL);
+										break;
+									}
+						case '{':	{
+										set_token(token,E_laBrack,NULL);
+										break;
+									}
+						case '}':	{
+										set_token(token,E_raBrack,NULL);
+										break;
+									}									
 						case '!':	{
 										next_state = t_exclam;
 										break;
-									}
-
+									}					
 						case 0:		{
 										set_token(token,E_EOF,NULL);
 										return;
-									}				
+									}											
 						default: 	{	
 										set_token(token,E_invld,NULL); // znaky s ASCII hodnotou mensiou ako 32 nie su  sucastou jazyka
 										return;
@@ -272,7 +325,6 @@ void scanner_get_token(T_token* token)
 			{
 				while(isalnum(znak) || znak == '_')
 				{	
-					printf("%c",znak);
 					scanner_column++;
 					znak = getc(current_pos);
 						// debug					
@@ -288,7 +340,6 @@ void scanner_get_token(T_token* token)
 				{
 					// TODO: ulozit niekde
 					znak = getc(current_pos);
-					printf("t_int %c",znak);
 				}
 				if(znak == '.')
 				{
@@ -482,9 +533,18 @@ void scanner_get_token(T_token* token)
 								break;
 							}
 							
-			case FINISH:	{	
+			// --------------------------------------------------------	
+			
+			case t_lit: 	{
+								set_token(token,E_liter,NULL);
+								return;
+							}	
+							
+			// --------------------------------------------------------	
+			
+			default:		{	
 								next_state = FINISH;
-								break;
+								return;
 							}
 		}
 	} // while 
