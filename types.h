@@ -25,7 +25,7 @@ typedef enum {
 
 /** Definicia datovych typov */
 typedef enum {
-    DATA_BOOL
+    DATA_BOOL,
     DATA_INT,
     DATA_DOUBLE,
     DATA_STRING
@@ -38,9 +38,9 @@ typedef enum {
 } BOOL;
 
 /** Struktura dat neznamenho typu */
-struct TERM {
+typedef struct {
     DATA_TYPE type;
     void *data;
-};
+} TERM;
 
 #endif //TYPES_H
