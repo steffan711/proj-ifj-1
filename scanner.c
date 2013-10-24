@@ -19,72 +19,46 @@
 		
 		
 
-/**
- * @function GimmeString
- * 
- * @param velkost v B, po kolkych sa bude retazec zvacsovat
- * @return stringBuffer / NULL pri neuspechu
- */		
-tStringBuffer* gimme_string(int size) // vytvori abstrakciu nekonecneho retazca
-{
-	tStringBuffer* tmp = malloc(sizeof(tStringBuffer));
-	if(tmp == NULL)
-		return NULL;
-	tmp->part_size = size;
-	tmp->allocated_size = 0;
-	tmp->size = 0;
-	tmp->ptr = NULL;
-	return tmp; 
-}
 
 /**
- * @function append_string
+ * @function buffer_push
  * 
- * @param1 ukazatel na nekonecny retazec
+ * @param1 ukazatel na zasobnik znakov
  * @param2 znak ktory treba doplnit
  * @return E_OK / E_OTHER
  */	
 
-int append_string(tStringBuffer* string, char znak) // doplni znak na koniec retazca
+int buffer_push(char znak) // doplni znak na koniec retazca
 {
 
-	if (string-> allocated_size > string-> size ) // este sa donho zmesti
+	if (Buffer->allocated_size > Buffer->size ) // este sa donho zmesti
 	{
-		string->ptr[string->size++] = znak;
+		Buffer->ptr[Buffer->size++] = znak;
 	}
 	else // uz sa nezmesti do koze
 	{
-		string->allocated_size += string->part_size; // zvacsime mu velkost o jednu cast
-		string->ptr = realloc(string->ptr,(string->allocated_size)*sizeof(char));
-		if(string->ptr == NULL)
-		{
-			// TODO : funkcia ktora osetri chybu
-			printf("\n Realloc fail !");
-			exit(1);
-			return E_OTHER;
-		}
-		string->ptr[string->size++] = znak;
+		Buffer->allocated_size *= allocation_coeficient;
+		Buffer->ptr = realloc(Buffer->ptr,(Buffer->allocated_size)*sizeof(char));
+		if(Buffer->ptr == NULL)
+			return E_INTERPRET_ERROR;
+		Buffer->ptr[Buffer->size++] = znak;
 	}
 	return E_OK;
 }
 
 
 /**
- * @function free_string
+ * @function scanner_shutdown()
  * @
- * @param1 ukazatel na nekonecny retazec
- * @return E_OK / E_OTHER
+ * @ zrusi buffer, po zavolani tejto funkcie nevolat scanner_get_token
  */	
 
-int free_string(tStringBuffer* string)
+void scanner_shutdown()
 {
-	if(string->ptr == NULL)
-	{
-		return E_OTHER;
-	}
-	free(string->ptr);
-	free(string);
-	return E_OK;
+	if(Buffer == NULL)
+		return;
+	free(Buffer->ptr);
+	free(Buffer);
 }
 
 /**
@@ -123,13 +97,24 @@ static inline void set_token(T_token* ptr, TOKEN_TYPE type, void* data)
  * @return -
  */	
  
- void scanner_init(char *file_start)
+int scanner_init(char *file_start)
  {
 	current_pos = file_start;
 	scanner_line = 1;
 	scanner_column = 0;
 	file_origin = file_start;
+	Buffer = malloc(sizeof(tStringBuffer));
+	if (Buffer == NULL)
+	{ // kriste pane ak sa nepodari ani scanner init tak to je v riti...
+		return  E_INTERPRET_ERROR;	
+	}
+	Buffer->allocated_size = 0;
+	Buffer->size = 0;
+	Buffer->ptr = NULL;
+	return E_OK;
+	
  }
+ 
  
  void print_token(T_token* token)
  {
@@ -169,23 +154,21 @@ static inline void set_token(T_token* ptr, TOKEN_TYPE type, void* data)
 
 		default: break;
 	}
-	printf("\nToken -> data: %p",token->data);
+	printf("Token -> data: %p\n",token->data);
 	
  }
  
  
  
 
-T_token scanner_get_token()
+void scanner_get_token(T_token* token)
 {
 
-	
 	FSM_STATE next_state = INIT;
 	int znak;
 	
-	T_token next_token;
-	T_token* next = &next_token;
-	set_token(next,E_invld,NULL); // inicializacia
+
+	set_token(token,E_invld,NULL); // inicializacia
 	
 	while ( next_state != FINISH )
 	{	
@@ -209,7 +192,7 @@ T_token scanner_get_token()
 				if(isalpha(znak) || znak == '_') // A-Za-z_
 				{
 					next_state = t_id;
-					set_token(next,E_IDENT,NULL);
+					set_token(token,E_IDENT,NULL);
 				}
 				else if(isdigit(znak))
 				{
@@ -224,7 +207,7 @@ T_token scanner_get_token()
 										break;
 									}
 						case '$':	{	next_state = t_id; //
-										next->ttype= E_VAR;
+										token->ttype= E_VAR;
 										break;
 									}			
 						case '=':	{
@@ -259,11 +242,11 @@ T_token scanner_get_token()
 										break;
 									}
 						case '(':	{
-										set_token(next,E_Lparentheses,NULL);
+										set_token(token,E_Lparentheses,NULL);
 										break;
 									}
 						case ')':	{
-										set_token(next,E_Rparentheses,NULL);
+										set_token(token,E_Rparentheses,NULL);
 										break;
 									}
 						case '!':	{
@@ -272,13 +255,12 @@ T_token scanner_get_token()
 									}
 
 						case 0:		{
-										set_token(next,E_EOF,NULL);
-										next_state = FINISH;
-										break;
+										set_token(token,E_EOF,NULL);
+										return;
 									}				
 						default: 	{	
-										set_token(next,E_invld,NULL); // znaky s ASCII hodnotou mensiou ako 32 nie su  sucastou jazyka
-										return *next;
+										set_token(token,E_invld,NULL); // znaky s ASCII hodnotou mensiou ako 32 nie su  sucastou jazyka
+										return;
 									}
 					}	// switch
 				}	// else
@@ -296,7 +278,7 @@ T_token scanner_get_token()
 						// debug					
 				}
 				ungetc(current_pos);
-				return *next;
+				return;
 			}
 			
 			// --------------------------------------------------------	
@@ -316,13 +298,13 @@ T_token scanner_get_token()
 				else if (isspace(znak) || znak == ';' || znak == ',' ) // vlaidny oddelovac integera
 				{
 					ungetc(current_pos);
-					set_token(next,E_INT,NULL);
-					return *next;
+					set_token(token,E_INT,NULL);
+					return;
 				}
 				else
 				{
-					set_token(next,E_invld,NULL);
-					return *next;
+					set_token(token,E_invld,NULL);
+					return;
 				}
 				break;
 			}
@@ -340,22 +322,22 @@ T_token scanner_get_token()
 						if(getc(current_pos) != '=')
 						{
 							ungetc(current_pos);
-							set_token(next,E_tripleeq,NULL);
+							set_token(token,E_tripleeq,NULL);
 						}
 						else
-							set_token(next,E_invld,NULL); // ====
+							set_token(token,E_invld,NULL); // ====
 					}
 					else if (is_divider(znak,operator_divider))
 					{
-						set_token(next,E_COMP,NULL);
+						set_token(token,E_COMP,NULL);
 					}
-					return *next;
+					return;
 				}
 				else if(is_divider(znak,operator_divider))
 				{
-					set_token(next,E_EQ,NULL);
+					set_token(token,E_EQ,NULL);
 				}
-				return *next;
+				return;
 
 			}
 			
@@ -368,8 +350,8 @@ T_token scanner_get_token()
 									if( znak == 0 )
 									{
 										next_state = FINISH;
-										set_token(next,E_EOF,NULL);
-										return *next;
+										set_token(token,E_EOF,NULL);
+										return;
 									}
 								}
 								next_state = INIT;
@@ -382,16 +364,16 @@ T_token scanner_get_token()
 								if(znak == '=')
 								{ // >=?
 									if ( is_divider(getc(current_pos),operator_divider ) )
-										set_token(next,E_GREATEREQ,NULL);
+										set_token(token,E_GREATEREQ,NULL);
 									else
-										set_token(next,E_invld,NULL);
+										set_token(token,E_invld,NULL);
 								}
 								else if ( is_divider(znak,operator_divider) )
-									set_token(next,E_GREATER,NULL);
+									set_token(token,E_GREATER,NULL);
 								else
-									set_token(next,E_invld,NULL);
+									set_token(token,E_invld,NULL);
 									
-								return *next;
+								return;
 							}	
 			// --------------------------------------------------------
 							
@@ -399,15 +381,15 @@ T_token scanner_get_token()
 								if(znak == '=')
 								{ // <=?
 									if ( is_divider(getc(current_pos),operator_divider ) )
-										set_token(next,E_LESSEQ,NULL);
+										set_token(token,E_LESSEQ,NULL);
 									else
-										set_token(next,E_invld,NULL);
+										set_token(token,E_invld,NULL);
 								}
 								else if ( is_divider(znak,operator_divider ) )// <?
-									set_token(next,E_LESS,NULL);
+									set_token(token,E_LESS,NULL);
 								else
-									set_token(next,E_invld,NULL);								
-								return *next;
+									set_token(token,E_invld,NULL);								
+								return;
 							}							
 			// --------------------------------------------------------
 							
@@ -425,23 +407,23 @@ T_token scanner_get_token()
 								}
 								else if (is_divider(znak,operator_divider))
 								{
-									set_token(next,E_DIV,NULL);
-									return *next;
+									set_token(token,E_DIV,NULL);
+									return;
 								}
 								else
 								{
-									set_token(next,E_invld,NULL);
-									return *next;									
+									set_token(token,E_invld,NULL);
+									return;									
 								}
 							}
 			// --------------------------------------------------------
 			
 			case t_concat:	{
 								if (is_divider(znak,operator_divider))
-									set_token(next,E_CONCAT,NULL);
+									set_token(token,E_CONCAT,NULL);
 								else
-									set_token(next,E_invld,NULL);
-								return *next;
+									set_token(token,E_invld,NULL);
+								return;
 							}
 			
 			// --------------------------------------------------------			
@@ -455,20 +437,20 @@ T_token scanner_get_token()
 			
 			case t_add:		{
 								if (is_divider(znak,operator_divider))
-									set_token(next,E_PLUS,NULL);
+									set_token(token,E_PLUS,NULL);
 								else
-									set_token(next,E_invld,NULL);
-								return *next;
+									set_token(token,E_invld,NULL);
+								return;
 							}
 
 			// --------------------------------------------------------
 							
 			case t_sub:		{
 								if (is_divider(znak,operator_divider))
-									set_token(next,E_MINUS,NULL);
+									set_token(token,E_MINUS,NULL);
 								else
-									set_token(next,E_invld,NULL);
-								return *next;
+									set_token(token,E_invld,NULL);
+								return;
 							}	
 			
 			// --------------------------------------------------------			
@@ -476,10 +458,10 @@ T_token scanner_get_token()
 			case t_star:	{
 								
 								if (is_divider(znak,operator_divider))
-									set_token(next,E_MULT,NULL);
+									set_token(token,E_MULT,NULL);
 								else
-									set_token(next,E_invld,NULL);
-								return *next;
+									set_token(token,E_invld,NULL);
+								return;
 							}
 							
 			// --------------------------------------------------------
@@ -487,10 +469,10 @@ T_token scanner_get_token()
 			case t_exclam:	{	// otestovat !!!
 
 								if (znak == '=' && getc(current_pos) == '=' && is_divider(getc(current_pos),operator_divider) )
-									set_token(next,E_not_eq,NULL);
+									set_token(token,E_not_eq,NULL);
 								else
-									set_token(next,E_invld,NULL);
-								return *next;
+									set_token(token,E_invld,NULL);
+								return;
 							}
 							
 			// --------------------------------------------------------	
@@ -505,8 +487,6 @@ T_token scanner_get_token()
 								break;
 							}
 		}
-	}
-	
-	return *next;
-}
+	} // while 
+} // function
 

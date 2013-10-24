@@ -1,13 +1,15 @@
-   /** Globalne premenne **/
- char* current_pos; // aktualna pozicia scannera v subore, prosim neprepisovat
- unsigned scanner_line, scanner_column;
- unsigned short skip_mode; // (0 = nespi, 1 = spi do konca riadku, 2 = spi do konca blokoveho komentara)
- const char* file_origin;
+/*
+ * Projekt: IFJ13
+ * Riesitelia: xcillo00, xmarti62, xnemce03, xilavs01
+ *
+ * Subor: scanner.h
+ */
 
-
+ #define allocation_coeficient 2
  
+/** Typy tokenov **/
 typedef enum {
-	E_EQ = 1,			// =
+	E_EQ = 1,		// =
 	E_COMP,			// ==
 	E_tripleeq,		// ===
 	E_not_eq,		// !==
@@ -37,7 +39,8 @@ typedef enum {
 	E_EOF,			// padla
 } TOKEN_TYPE;
 
-typedef enum {
+/** Stavy konecnej masinky **/
+typedef enum {	
 	INIT,	
 	FINISH,		// EOF
 	t_id,		// identifikator
@@ -70,18 +73,24 @@ typedef enum
 	number_divider,
 } divider; // oznacenie mnoziny znakov ktora moze nasledovat za nejakym znakom
 
-typedef struct _tStringBuffer	// nekonecny retazec [ak nepretecie velkost ... ]
+/** Bezodny IKEA buffer **/
+typedef struct _tStringBuffer	
 {
-	unsigned part_size;	// velkost jedneho bloku
     unsigned allocated_size; 
-    unsigned size; // aktualny pocet znakov v retaci
-    char *ptr;	// ukazatel na retazec
+    unsigned size; 	// aktualny pocet znakov v retaci, ptr[size] = '\0'
+    char *ptr;		// ukazatel na retazec
 } tStringBuffer;
-tStringBuffer* pointer;
 
-
+ /** Globalne premenne **/
+ char* 			current_pos; // aktualna pozicia scannera v subore, prosim neprepisovat
+ unsigned 		scanner_line, scanner_column;
+ const char* 	file_origin;
+ tStringBuffer 	stack; // nekonecny zasobnik znakov
+ tStringBuffer*	Buffer;
  
-
- void scanner_init(char *file_start);
- T_token scanner_get_token();
- void print_token(T_token* token);
+/** Funkcie **/
+int buffer_push(char znak);
+int scanner_init(char *file_start);
+void scanner_shutdown();
+void scanner_get_token(T_token* token);
+void print_token(T_token* token);
