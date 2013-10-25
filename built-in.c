@@ -15,8 +15,38 @@
  * @param bool *( return )
  * @return Uspesnost
  */
-E_ERROR_TYPE _boolval( TERM *input, BOOL *result )
+E_ERROR_TYPE _boolval( TERM *input, bool *result )
 {
+    switch( input->type )
+    {
+        case DATA_BOOL:
+            *result = input->data._bool;
+            break;
+        case DATA_INT:
+            if( input->data._int == 0 )
+                *result = false;
+            else
+                *result = true;
+            break;
+        case DATA_DOUBLE:
+            if( input->data._double == 0.0 )
+                *result = false;
+            else
+                *result = true;
+            break;
+        case DATA_STRING:
+            if( input->data._string[0] == '\0' )
+                *result = false;
+            else
+                *result = true;
+            break;
+        case DATA_NULL:
+            *result = false;
+            break;
+        default:
+            return E_INTERPRET_ERROR;        /**< error! todo */
+    }
+
     return E_OK;
 }
 
@@ -30,6 +60,27 @@ E_ERROR_TYPE _boolval( TERM *input, BOOL *result )
  */
 E_ERROR_TYPE _doubleval( TERM *input, double *result )
 {
+    switch( input->type )
+    {
+        case DATA_BOOL:
+            *result = (double) input->data._bool;
+            break;
+        case DATA_INT:
+            *result = (double) input->data._int;
+            break;
+        case DATA_DOUBLE:
+            *result = input->data._double;
+            break;
+        case DATA_STRING:
+                    /** TODO own function */
+            break;
+        case DATA_NULL:
+            *result = 0.0;
+            break;
+        default:
+            return E_INTERPRET_ERROR;        /**< error! todo */
+    }
+
     return E_OK;
 }
 
@@ -41,8 +92,32 @@ E_ERROR_TYPE _doubleval( TERM *input, double *result )
  * @param int *( return )
  * @return Uspesnost
  */
-E_ERROR_TYPE _intval( TERM *input, int *result )
+E_ERROR_TYPE _intval( TERM *input, unsigned *result )
 {
+    switch( input->type )
+    {
+        case DATA_BOOL:
+            *result = input->data._bool;
+            break;
+        case DATA_INT:
+            *result = input->data._int;
+            break;
+        case DATA_DOUBLE:
+            if( input->data._double < (double) UINT_MAX + 1 && input->data._double >= 0.0 )
+                *result = (unsigned) input->data._double;
+            else
+                return E_INTERPRET_ERROR;
+            break;
+        case DATA_STRING:
+            *result = atoi( input->data._string );
+            break;
+        case DATA_NULL:
+            *result = 0;
+            break;
+        default:
+            return E_INTERPRET_ERROR;        /**< error! todo */
+    }
+
     return E_OK;
 }
 

@@ -8,6 +8,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <stdbool.h>
+
 /** Definicia chybovych kodov */
 typedef enum {
     E_OK, 
@@ -28,19 +30,20 @@ typedef enum {
     DATA_BOOL,
     DATA_INT,
     DATA_DOUBLE,
-    DATA_STRING
+    DATA_STRING,
+    DATA_NULL,
+    DATA_UNDEF
 } DATA_TYPE;
-
-/** Boolean */
-typedef enum {
-    FALSE,
-	TRUE
-} BOOL;
 
 /** Struktura dat neznamenho typu */
 typedef struct {
     DATA_TYPE type;
-    void *data;
+    union {
+        int _int;
+        double _double;
+        bool _bool;
+        char *_string;
+    } data;
 } TERM;
 
 #endif //TYPES_H
