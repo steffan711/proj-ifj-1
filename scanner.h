@@ -5,8 +5,9 @@
  * Subor: scanner.h
  */
 
- #define allocation_coeficient 2
- #define pre_allocation 32
+#include <stdbool.h> 
+#define allocation_coeficient 2
+#define pre_allocation 32
  
 /** Typy tokenov **/
 typedef enum {
@@ -63,11 +64,18 @@ typedef enum {
 } FSM_STATE;
 
 
+union Data{
+        int i;
+        double d;
+        bool b;
+        char *s;
+    };
+	
 typedef struct token {
 	TOKEN_TYPE ttype;
 	unsigned line;
 	unsigned column;
-	void *data; 
+	union Data data ; 
 } T_token;
 
 typedef enum 
@@ -85,7 +93,7 @@ typedef struct _tStringBuffer
 } tStringBuffer;
 
  /** Globalne premenne **/
- char* 			current_pos; // aktualna pozicia scannera v subore, prosim neprepisovat
+ char* 			current_pos; // aktualna pozicia scannera v subore, prepisovat len ked je to nutne
  unsigned 		scanner_line, scanner_column;
  const char* 	file_origin;
  tStringBuffer 	stack; // nekonecny zasobnik znakov
@@ -93,10 +101,8 @@ typedef struct _tStringBuffer
  
 /** Funkcie **/
 int buffer_push(char znak);
-void buffer_init();
 int scanner_init(char *file_start);
+void buffer_init();
 void scanner_shutdown();
 void scanner_get_token(T_token* token);
 void print_token(T_token* token);
-static inline bool is_divider(char znak, int switcher);
-static inline void set_token(T_token* ptr, TOKEN_TYPE type, void* data);
