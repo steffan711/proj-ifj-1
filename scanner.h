@@ -61,6 +61,7 @@ typedef enum {
 	t_less,		// <
 	t_exclam,	// !
 	t_lit,		// literal
+	t_exp,		// exponent
 } FSM_STATE;
 
 
@@ -104,5 +105,10 @@ int buffer_push(char znak);
 int scanner_init(char *file_start);
 void buffer_init();
 void scanner_shutdown();
-void scanner_get_token(T_token* token);
 void print_token(T_token* token);
+
+void scanner_get_token(T_token* token);
+/** pozn. pre volajuceho 
+			if(token.data.s != NULL)
+			free(token.data.s)
+**/

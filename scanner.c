@@ -99,17 +99,22 @@ static inline void set_token(T_token* ptr, TOKEN_TYPE type, void* data_ptr)
 		{
 			case E_DOUBLE:
 				{
-					ptr->data.d = *(double*)data_ptr;
-					break;
+					if( sscanf((char*)data_ptr,"%lf",&ptr->data.d) == 1)
+						return;
+					else 
+						ptr->ttype = E_invld;
+						
 				}
 			case E_INT :
 				{
-					ptr->data.i = *(int*)data_ptr;
-					break;
+					if( sscanf((char*)data_ptr,"%d",&ptr->data.i) == 1)
+						return;
+					else
+						ptr->ttype = E_invld;
 				}
 			default:
 				{
-					ptr->data.s = malloc((Buffer->size)*sizeof(char));
+					ptr->data.s = malloc((Buffer->size)*sizeof(char)+1); //ukoncenie
 					if (ptr->data.s == NULL)
 					{
 						//perror("Fuck:");
@@ -137,8 +142,8 @@ static inline void set_token(T_token* ptr, TOKEN_TYPE type, void* data_ptr)
  {
 	switch (switcher)
 	{
-		case number_divider: 	return ( isspace(znak) || znak == '/' || znak == '+' || znak == '-' || znak == '*' || znak == ';' || znak == ',') ? true : false;
-		case operator_divider:	return ( isspace(znak) || znak == '$' || isdigit(znak) ) ? true : false;
+		case number_divider: 	return ( isspace(znak) || znak == '/' || znak == '+' || znak == '-' || znak == '*' || znak == ';' || znak == ',' || znak == 0) ? true : false;
+		case operator_divider:	return ( isspace(znak) || znak == '$' || isdigit(znak) || znak == 0 ) ? true : false;
 		default: return false;
 	}
 	return false;
@@ -147,8 +152,8 @@ static inline void set_token(T_token* ptr, TOKEN_TYPE type, void* data_ptr)
  
  
  
- /** 6 **
- * @function scanner_init
+
+ /** 6 ** @function scanner_init
  * @
  * @param ukazatel na subor
  * @return -
@@ -165,7 +170,7 @@ int scanner_init(char *file_start)
 	{ // kriste pane ak sa nepodari ani scanner init tak to je v riti...
 		return  E_INTERPRET_ERROR;	
 	}
-	Buffer->ptr = malloc(pre_allocation * sizeof(char));
+	Buffer->ptr = calloc(pre_allocation * sizeof(char),sizeof(char)); 
 	if (Buffer->ptr == NULL)
 	{ // shit
 		return  E_INTERPRET_ERROR;	
@@ -229,6 +234,7 @@ int scanner_init(char *file_start)
 	
  }
  
+ /** 8 **/
  void buffer_init()
  {
 	for(unsigned i = 0; i < Buffer->size; i++)
@@ -236,7 +242,7 @@ int scanner_init(char *file_start)
 	Buffer->size = 0;
  }
  
-  /**
+  /** 9 ** 
  * @function scanner_get_token
  * @
  * @param (OUT)	ukazatel na token
@@ -274,11 +280,12 @@ void scanner_get_token(T_token* token)
 				{
 					buffer_push(znak);
 					next_state = t_id;
-					set_token(token,E_IDENT,NULL);
+					token->ttype = E_IDENT;
 				}
 				else if(isdigit(znak))
 				{
 					buffer_push(znak);
+					token->ttype = E_INT;
 					next_state = t_int;
 				}
 				else
@@ -290,7 +297,7 @@ void scanner_get_token(T_token* token)
 										break;
 									}
 						case '$':	{	
-										next_state = t_id; //
+										next_state = t_id;
 										token->ttype= E_VAR;
 										break;
 									}			
@@ -327,7 +334,7 @@ void scanner_get_token(T_token* token)
 										break;
 									}
 						case '(':	{
-										buffer_push(znak);
+										buffer_push(znak); // debug
 										set_token(token,E_Lparentheses,NULL);
 										return;
 									}
@@ -342,6 +349,7 @@ void scanner_get_token(T_token* token)
 										return;
 									}									
 						case ']':	{
+										buffer_push(znak);
 										set_token(token,E_rBrack,NULL);
 										return;
 									}
@@ -381,13 +389,11 @@ void scanner_get_token(T_token* token)
 				{	
 					buffer_push(znak);
 					scanner_column++;
-					znak = getc(current_pos);
-					
-						// debug					
+					znak = getc(current_pos);								
 				}
 				ungetc(current_pos);
-				Buffer->ptr[--Buffer->size] = '\0';
-				set_token(token,E_IDENT,Buffer->ptr);
+				Buffer->ptr[Buffer->size] = '\0';
+				set_token(token,token->ttype,Buffer->ptr);
 				return;
 			}
 			
@@ -405,14 +411,21 @@ void scanner_get_token(T_token* token)
 					buffer_push(znak);
 					break;
 				}
-				else if (isspace(znak) || znak == ';' || znak == ',' ) // vlaidny oddelovac integera
+				else if (znak == 'e' || znak == 'E')
+				{
+					next_state = t_exp;
+					buffer_push(znak);
+					break;					
+				}
+				else if (is_divider(znak,number_divider) ) // vlaidny oddelovac integera
 				{
 					ungetc(current_pos);
-					set_token(token,E_INT,NULL);
+					set_token(token,E_INT,Buffer->ptr);
 					return;
 				}
 				else
 				{
+					ungetc(current_pos);
 					set_token(token,E_invld,NULL);
 					return;
 				}
@@ -484,7 +497,6 @@ void scanner_get_token(T_token* token)
 			// --------------------------------------------------------				
 							
 			case t_greater:	{ // >
-								printf("Som tu\n");
 								if(znak == '=')
 								{ // >=?
 									if ( is_divider(getc(current_pos),operator_divider ) )
@@ -584,7 +596,10 @@ void scanner_get_token(T_token* token)
 							
 			case t_sub:		{
 								if (is_divider(znak,operator_divider))
+								{	
+									ungetc(current_pos);
 									set_token(token,E_MINUS,NULL);
+								}
 								else
 									set_token(token,E_invld,NULL);
 								return;
@@ -617,11 +632,77 @@ void scanner_get_token(T_token* token)
 							
 			// --------------------------------------------------------	
 
-			case t_float:	{
-								next_state = FINISH;
-								break;
+			case t_float:	{	//123.znak
+								//123e
+								//123E
+								printf("Sme vo floate\n");
+								// koniec mantisy :
+								if(znak == 'e' || znak == 'E')
+								{
+									buffer_push(znak);
+									next_state = t_exp;
+									break;		
+								}
+								
+								while(isdigit(znak))
+								{
+									buffer_push(znak);
+									znak = getc(current_pos);	
+								} 
+								
+								// 123.45+
+								if(is_divider(znak,number_divider))
+								{
+									set_token(token,E_DOUBLE,Buffer->ptr);
+									ungetc(current_pos);
+									return;
+								}
+								else if (znak == 'e' || znak == 'E')
+								{
+									buffer_push(znak);
+									next_state = t_exp;
+									break;	
+								}
+								else
+								{
+									set_token(token,E_invld,NULL);	
+									return;
+								}							
 							}
-							
+			// --------------------------------------------------------
+			case t_exp:		{								
+								// optional +/-
+								printf("Exponent: %c\n",znak);
+								if(znak == '+' || znak == '-') 
+								{
+									buffer_push(znak);
+									znak = getc(current_pos);
+								}
+								
+								do
+								{ 
+									if(isdigit(znak))
+									{
+										buffer_push(znak);
+										znak = getc(current_pos);	
+									}
+									else 
+										break;	
+								} while(1);
+								
+								// koniec exponentu:
+								
+								if(is_divider(znak,number_divider))
+								{
+									// 123.45E-23 123.45E23
+									ungetc(current_pos);
+									set_token(token,E_DOUBLE,Buffer->ptr);	
+								}
+								else // 123.5E-3ň
+									set_token(token,E_invld,NULL);				
+								return;				
+
+							}
 			// --------------------------------------------------------	
 			
 			case t_lit: 	{
