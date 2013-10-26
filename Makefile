@@ -10,7 +10,10 @@ EXE = main
 # $^ - vsetky dependencies
 ###############
 
-all : main file_io.o main.o
+all : main
+
+scanner.o: scanner.c scanner.h types.h
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 file_io.o : file_io.c file_io.h
 	$(CC) $(CFLAGS) -o $@ -c $<
@@ -18,7 +21,7 @@ file_io.o : file_io.c file_io.h
 main.o : main.c types.h file_io.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 	
-main : main.o file_io.o
+main : main.o file_io.o scanner.o
 	$(CC) $(CFLAGS) -o $@ $^
 	
 clean:
