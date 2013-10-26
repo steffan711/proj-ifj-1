@@ -9,6 +9,27 @@
 
 
 /**
+ * Pomocna funkcia, upraveny strtod
+ *
+ * @param string
+ * @param double *( return )
+ * @return Uspesnost
+ */
+E_ERROR_TYPE _strtod( char *input, double *result )
+{
+	if( input == NULL )
+		return E_INTERPRET_ERROR;
+
+	char *endptr;
+	*result = strtod( input, &endptr );
+	
+	if( isprint( endptr[0] ) && endptr[0] != ' ' )
+		return E_NUM_CAST;
+	return E_OK;
+}
+
+
+/**
  * Vstavana funkcia, vracia bool z TERM
  *
  * @param TERM
@@ -72,7 +93,7 @@ E_ERROR_TYPE _doubleval( TERM *input, double *result )
             *result = input->data._double;
             break;
         case DATA_STRING:
-                    /** TODO own function */
+            return _strtod( input->data._string, result );
             break;
         case DATA_NULL:
             *result = 0.0;
@@ -196,6 +217,7 @@ E_ERROR_TYPE _find_string( char *input, char *find, int *result )
  * @param Vstupny retazec
  * @param Zoradeny retazec
  * @return Uspesnost
+{
  */
 E_ERROR_TYPE _sort_string( char *input, char *result )
 {
