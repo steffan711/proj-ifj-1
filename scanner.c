@@ -120,7 +120,7 @@ static inline void set_token(T_token* ptr, TOKEN_TYPE type, void* data_ptr)
 						//perror("Fuck:");
 						exit(E_INTERPRET_ERROR); // TODO: co s tymto ?
 					}
-					strcpy(ptr->data.s, (char*)data_ptr);
+					strcpy(ptr->data.s, (char*)data_ptr); // Ze vraj to tam vlozi aj ukoncovaciu 0
 					break;
 				}
 		}
@@ -292,90 +292,89 @@ void scanner_get_token(T_token* token)
 				{	
 					switch(znak)
 					{		
-						case '/':	{
+						case '/':	
 										next_state = t_fraction;
 										break;
-									}
-						case '$':	{	
+						case '$':		
 										next_state = t_id;
 										token->ttype= E_VAR;
 										break;
-									}			
-						case '=':	{
+	
+						case '=':	
 										next_state = t_ass;
 										break;
-									}
-						case '+':	{
-										next_state = t_add;
-										break;
-									}
-						case '-':	{
-										next_state = t_sub;
-										break;
-									}	
-						case '*':	{
-										next_state = t_star; 
-										break;
-									}
-						case '<':	{
+
+						case '+':	
+										set_token(token,E_PLUS,NULL);
+										return;
+									
+						case '-':	
+										set_token(token,E_MINUS,NULL);
+										return;
+									
+						case '*':	
+										set_token(token,E_MINUS,NULL);
+										return;
+									
+						case '<':	
 										next_state = t_less;
 										break;
-									}
-						case '>':	{
+									
+						case '>':	
 										next_state = t_greater;
 										break;
-									}
-						case '"':	{
+									
+						case '"':	
 										next_state = t_lit;
 										break;
-									}
-						case '.':	{	
-										next_state = t_concat;
-										break;
-									}
-						case '(':	{
+									
+						case '.':	
+										set_token(token,E_CONCAT,NULL);
+										return;
+									
+						case '(':	
 										buffer_push(znak); // debug
 										set_token(token,E_Lparentheses,NULL);
 										return;
-									}
-						case ')':	{
+									
+						case ')':	
 										buffer_push(znak);
 										set_token(token,E_Rparentheses,NULL);
 										return;
-									}
-						case '[':	{
+									
+						case '[':	
 										buffer_push(znak);
 										set_token(token,E_lBrack,NULL);
 										return;
-									}									
-						case ']':	{
+																		
+						case ']':	
 										buffer_push(znak);
 										set_token(token,E_rBrack,NULL);
 										return;
-									}
-						case '{':	{
+									
+						case '{':	
 										buffer_push(znak);
 										set_token(token,E_laBrack,NULL);
 										return;
-									}
-						case '}':	{
+									
+						case '}':	
 										buffer_push(znak);
 										set_token(token,E_raBrack,NULL);
 										return;
-									}									
-						case '!':	{
+																		
+						case '!':	
 										next_state = t_exclam;
 										break;
-									}					
-						case 0:		{
+									
+						case 0:		
 										set_token(token,E_EOF,NULL);
 										return;
-									}											
-						default: 	{	
+																				
+						default: 	
 										buffer_push(znak);
 										set_token(token,E_invld,NULL);
 										return;
-									}
+									
 					}	// switch
 					buffer_push(znak);
 				}	// if
@@ -466,256 +465,308 @@ void scanner_get_token(T_token* token)
 			
 			// --------------------------------------------------------
 			
-			case t_block_c:	{	
-								while(1) 
-								{
-									if( znak == 0 )
-									{
-										set_token(token,E_EOF,NULL);
-										return;
-									}
-									else if (znak == '*')
-									{
-										znak = getc(current_pos);
-										if( znak == '/')
-											break;
-										else
-											ungetc(current_pos);
-									}
-									else if(znak == '\n')
-									{
-										scanner_line++;
-										scanner_column = 0;
-									}
-									znak = getc(current_pos);
-								}
-								printf(":%d:%d:\n",scanner_line, scanner_column);
-								next_state = INIT;
-								break;
-							}	
+			case t_block_c:	
+			{	
+				while(1) 
+				{
+					if( znak == 0 )
+					{
+						set_token(token,E_EOF,NULL);
+						return;
+					}
+					else if (znak == '*')
+					{
+						znak = getc(current_pos);
+						if( znak == '/')
+							break;
+						else
+							ungetc(current_pos);
+					}
+					else if(znak == '\n')
+					{
+						scanner_line++;
+						scanner_column = 0;
+					}
+					znak = getc(current_pos);
+				}
+				printf(":%d:%d:\n",scanner_line, scanner_column);
+				next_state = INIT;
+				break;
+			}	
 													
 			// --------------------------------------------------------				
 							
-			case t_greater:	{ // >
-								if(znak == '=')
-								{ // >=?
-									if ( is_divider(getc(current_pos),operator_divider ) )
-										set_token(token,E_GREATEREQ,NULL);
-									else
-										set_token(token,E_invld,NULL);
-								}
-								else if ( is_divider(znak,operator_divider) )
-								{
-									printf("Je tam divider\n");
-									ungetc(current_pos);
-									set_token(token,E_GREATER,NULL);
-								}
-								else
-									set_token(token,E_invld,NULL);
-									
-								return;
-							}	
+			case t_greater:	
+			{ 
+				if(znak == '=')
+				{ // >=?
+					if ( is_divider(getc(current_pos),operator_divider ) )
+						set_token(token,E_GREATEREQ,NULL);
+					else
+						set_token(token,E_invld,NULL);
+				}
+				else if ( is_divider(znak,operator_divider) )
+				{
+					printf("Je tam divider\n");
+					ungetc(current_pos);
+					set_token(token,E_GREATER,NULL);
+				}
+				else
+					set_token(token,E_invld,NULL);
+					
+				return;
+			}	
 			// --------------------------------------------------------
 							
-			case t_less:	{
-								if(znak == '=')
-								{ // <=?
-									if ( is_divider(getc(current_pos),operator_divider ) )
-									{
-										ungetc(current_pos);
-										set_token(token,E_LESSEQ,NULL);
-									}
-									else
-										set_token(token,E_invld,NULL);
-								}
-								else if ( is_divider(znak,operator_divider ) || znak == '?') // koli <? php
-								{
-									ungetc(current_pos);
-									set_token(token,E_LESS,NULL);
-								}
-								else
-									set_token(token,E_invld,NULL);								
-								return;
-							}							
+			case t_less:	
+			{
+				if(znak == '=')
+				{ // <=?
+					if ( is_divider(getc(current_pos),operator_divider ) )
+					{
+						ungetc(current_pos);
+						set_token(token,E_LESSEQ,NULL);
+					}
+					else
+						set_token(token,E_invld,NULL);
+				}
+				else if ( is_divider(znak,operator_divider ) || znak == '?') // koli <? php
+				{
+					ungetc(current_pos);
+					set_token(token,E_LESS,NULL);
+				}
+				else
+					set_token(token,E_invld,NULL);								
+				return;
+			}							
 			// --------------------------------------------------------
 			
-			case t_fraction:{
-								if(znak == '/')
-								{
-									while(getc(current_pos) != '\n') {}; // preskoc vsetko az do konca riadku
-									scanner_line++;
-									next_state = INIT;
-									break;
-								}
-								else if (znak == '*')	
-								{
-									Buffer->size--;	// pop
-									next_state = t_block_c;
-									break;
-								}
-								else if (is_divider(znak,operator_divider))
-								{
-									ungetc(current_pos);
-									set_token(token,E_DIV,NULL);
-									return;
-								}
-								else
-								{
-									set_token(token,E_invld,NULL);
-									return;									
-								}
-							}
+			case t_fraction:
+			{
+				if(znak == '/')
+				{
+					while(getc(current_pos) != '\n') {}; // preskoc vsetko az do konca riadku
+					scanner_line++;
+					next_state = INIT;
+					break;
+				}
+				else if (znak == '*')	
+				{
+					Buffer->size--;	// pop
+					next_state = t_block_c;
+					break;
+				}
+				else if (is_divider(znak,operator_divider))
+				{
+					ungetc(current_pos);
+					set_token(token,E_DIV,NULL);
+					return;
+				}
+				else
+				{
+					set_token(token,E_invld,NULL);
+					return;									
+				}
+			}
 			// --------------------------------------------------------
 			
-			case t_concat:	{
-								if (is_divider(znak,operator_divider))
-									set_token(token,E_CONCAT,NULL);
-								else
-									set_token(token,E_invld,NULL);
-								return;
-							}
-			
-			// --------------------------------------------------------			
+			case t_concat:	
+			{
+				if (is_divider(znak,operator_divider))
+					set_token(token,E_CONCAT,NULL);
+				else
+					set_token(token,E_invld,NULL);
+				return;
+			}
 							
-			case t_comp:	{	
-								next_state = FINISH;
+			// --------------------------------------------------------
+							
+			case t_exclam:	
+			{	
+				if (znak == '=' && getc(current_pos) == '=')
+					set_token(token,E_not_eq,NULL);
+				else
+				{
+					ungetc(current_pos);
+					set_token(token,E_invld,NULL);
+				}
+				return;
+			}
+							
+			// --------------------------------------------------------	
+
+			case t_float:	
+			{	//123.znak
+
+				if(znak == 'e' || znak == 'E')
+				{
+					buffer_push(znak);
+					next_state = t_exp;
+					break;		
+				}
+				
+				while(isdigit(znak))
+				{
+					buffer_push(znak);
+					znak = getc(current_pos);	
+				} 
+				
+				// 123.45+
+				if(is_divider(znak,number_divider))
+				{
+					set_token(token,E_DOUBLE,Buffer->ptr);
+					ungetc(current_pos);
+					return;
+				}
+				else if (znak == 'e' || znak == 'E')
+				{
+					buffer_push(znak);
+					next_state = t_exp;
+					break;	
+				}
+				else
+				{
+					set_token(token,E_invld,NULL);	
+					return;
+				}							
+			}
+			// --------------------------------------------------------
+			case t_exp:		
+			{								
+				// optional +/-
+				if(znak == '+' || znak == '-') 
+				{
+					buffer_push(znak);
+					znak = getc(current_pos);
+				}
+				
+				// cisla :
+				do
+				{ 
+					if(isdigit(znak))
+					{
+						buffer_push(znak);
+						znak = getc(current_pos);	
+					}
+					else if(znak == 0) // ak by skor ako koniec cisla prisiel EOF
+					{
+						set_token(token,E_invld,NULL);
+						ungetc(current_pos);
+						return;
+					}
+					else 
+						break;	
+				} while(1);
+				
+				// koniec exponentu:							
+				if(is_divider(znak,number_divider))
+				{
+					// 123.45E-23 123.45E23
+					ungetc(current_pos);
+					set_token(token,E_DOUBLE,Buffer->ptr);	
+				}
+				else // 123.5E-3ň
+					set_token(token,E_invld,NULL);				
+				return;				
+
+			}
+			// --------------------------------------------------------	
+			
+			case t_lit: 	
+			{
+				do{
+					if(znak == '\\')
+					{
+						next_state = t_escape;
+						break;
+					}
+					buffer_push(znak);
+					znak = getc(current_pos);
+					if(znak == 0)
+					{
+						set_token(token,E_invld,NULL);
+						ungetc(current_pos);
+						return;
+					}
+					
+					if(znak == '$') // dolar musi byt cez escape
+					{
+						set_token(token,E_invld,NULL);
+						return;
+					}
+					
+				}while(znak != '"');
+				
+				
+				
+				if(next_state == t_escape)
+					break;
+				else
+				{
+					buffer_push(znak); // ulozime "
+					set_token(token,E_liter,NULL);
+					return;
+				}
+			}	
+							
+			// --------------------------------------------------------	
+			case t_escape:	
+			{
+				if(znak < ' ') // < 31
+				{
+					set_token(token,E_invld,NULL);
+					return;
+				}
+				
+				char hexa_cislo[1]; //16B, no a co
+				unsigned cislo;
+				
+				switch(znak)
+				{
+					case '"' :	
+					case '$' :
+					case '\\':
+								buffer_push(znak);
 								break;
-							}
-			
-			// --------------------------------------------------------
-			
-			case t_add:		{
-								if (is_divider(znak,operator_divider))
-									set_token(token,E_PLUS,NULL);
-								else
-									set_token(token,E_invld,NULL);
-								return;
-							}
-
-			// --------------------------------------------------------
-							
-			case t_sub:		{
-								if (is_divider(znak,operator_divider))
-								{	
-									ungetc(current_pos);
-									set_token(token,E_MINUS,NULL);
-								}
-								else
-									set_token(token,E_invld,NULL);
-								return;
-							}	
-			
-			// --------------------------------------------------------			
-			
-			case t_star:	{
 								
-								if (is_divider(znak,operator_divider))
-									set_token(token,E_MULT,NULL);
+					case 'x':	
+								hexa_cislo[0] = getc(current_pos);
+								if(hexa_cislo[0] != 0)
+									hexa_cislo[1] = getc(current_pos);
 								else
-									set_token(token,E_invld,NULL);
-								return;
-							}
-							
-			// --------------------------------------------------------
-							
-			case t_exclam:	{	// otestovat !!!
-
-								if (znak == '=' && getc(current_pos) == '=' && is_divider(getc(current_pos),operator_divider) )
-									set_token(token,E_not_eq,NULL);
-								else
-								{
-									ungetc(current_pos);
-									set_token(token,E_invld,NULL);
-								}
-								return;
-							}
-							
-			// --------------------------------------------------------	
-
-			case t_float:	{	//123.znak
-								//123e
-								//123E
-								printf("Sme vo floate\n");
-								// koniec mantisy :
-								if(znak == 'e' || znak == 'E')
-								{
-									buffer_push(znak);
-									next_state = t_exp;
-									break;		
-								}
-								
-								while(isdigit(znak))
-								{
-									buffer_push(znak);
-									znak = getc(current_pos);	
-								} 
-								
-								// 123.45+
-								if(is_divider(znak,number_divider))
-								{
-									set_token(token,E_DOUBLE,Buffer->ptr);
-									ungetc(current_pos);
+								{	// ak by na konci suboru bolo "\x tak by nas mohol navstivit ujo segfault
+									set_token(token,E_EOF,NULL);
 									return;
 								}
-								else if (znak == 'e' || znak == 'E')
-								{
-									buffer_push(znak);
-									next_state = t_exp;
-									break;	
-								}
+								
+								if(sscanf(hexa_cislo,"%x",&cislo) == 1)
+									buffer_push(cislo);
 								else
 								{
-									set_token(token,E_invld,NULL);	
+									set_token(token,E_invld,NULL);
 									return;
-								}							
-							}
-			// --------------------------------------------------------
-			case t_exp:		{								
-								// optional +/-
-								printf("Exponent: %c\n",znak);
-								if(znak == '+' || znak == '-') 
-								{
-									buffer_push(znak);
-									znak = getc(current_pos);
 								}
+								break;
 								
-								do
-								{ 
-									if(isdigit(znak))
-									{
-										buffer_push(znak);
-										znak = getc(current_pos);	
-									}
-									else 
-										break;	
-								} while(1);
-								
-								// koniec exponentu:
-								
-								if(is_divider(znak,number_divider))
-								{
-									// 123.45E-23 123.45E23
-									ungetc(current_pos);
-									set_token(token,E_DOUBLE,Buffer->ptr);	
-								}
-								else // 123.5E-3ň
-									set_token(token,E_invld,NULL);				
-								return;				
-
-							}
-			// --------------------------------------------------------	
-			
-			case t_lit: 	{
-								set_token(token,E_liter,NULL);
-								return;
-							}	
-							
-			// --------------------------------------------------------	
-			
-			default:		{	
-								next_state = FINISH;
-								return;
-							}
+					case 'n':	buffer_push(10); // \n
+								break;
+					
+					case 't':	buffer_push(11); // \t
+								break;
+					
+					
+					default:	buffer_push('\\'); // escape sekvencia nemoze sposobit chybu
+								buffer_push(znak); // cili to tam proste pushnem tak jak je a jeee
+								break;
+				}
+				next_state = t_lit;
+				break;
+			}
+			default:		
+			{	
+				next_state = FINISH;
+				return;
+			}
 		}
 	} // while 
 } // function

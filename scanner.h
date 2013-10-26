@@ -50,18 +50,15 @@ typedef enum {
 	t_int,		// integer
 	t_float,
 	t_ass,		// = 
-	t_comp,		// porovnanie ==
 	t_fraction,	// /
 	t_block_c, 	// blokovy komentar
-	t_add,		// +
-	t_sub,		// -
-	t_star,		// *
 	t_concat,	// .
 	t_greater,	// >
 	t_less,		// <
 	t_exclam,	// !
 	t_lit,		// literal
 	t_exp,		// exponent
+	t_escape, 	// escape sekvencia v retazci
 } FSM_STATE;
 
 
