@@ -314,7 +314,7 @@ void scanner_get_token(T_token* token)
 										return;
 									
 						case '*':	
-										set_token(token,E_MINUS,NULL);
+										set_token(token,E_MULT,NULL);
 										return;
 									
 						case '<':	
