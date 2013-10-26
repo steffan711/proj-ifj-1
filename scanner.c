@@ -244,9 +244,10 @@ int scanner_init(char *file_start)
  
   /** 9 ** 
  * @function scanner_get_token
- * @
  * @param (OUT)	ukazatel na token
- * @return -
+ * @return Po zavolani obsahuje parameter token nasledujuci token
+ * @pamat Ak token obsahuje stringove data (E_VAR,E_IDENT,E_lit), treba ich uvolnit
+ * Nejak takto: free(token.data.s)
  */	
 
 void scanner_get_token(T_token* token)
