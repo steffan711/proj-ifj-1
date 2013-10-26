@@ -684,7 +684,6 @@ void scanner_get_token(T_token* token)
 					
 					if(znak == 0)
 					{
-						printf("EOF");
 						set_token(token,E_invld,NULL);
 						ungetc(current_pos);
 						return;
