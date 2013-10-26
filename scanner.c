@@ -2,7 +2,7 @@
  * Projekt: IFJ13
  * Riesitelia: xcillo00, xmarti62, xnemce03, xilavs01
  *
- * Subor: scanner.c - modul lexikalniho analyzatoru
+ * Subor: scanner.c - modul lexikalneho analyzatoru
  * Autor: Vladimír Čillo, xcillo00
  */
 
@@ -92,7 +92,7 @@ static inline void set_token(T_token* ptr, TOKEN_TYPE type, void* data_ptr)
 	ptr->ttype = type;
 	ptr->line = scanner_line;
 	ptr->column = scanner_column;
-	ptr->data.i = 0;
+
 	if (data_ptr)
 	{
 		switch(ptr->ttype)
@@ -490,7 +490,7 @@ void scanner_get_token(T_token* token)
 					}
 					znak = getc(current_pos);
 				}
-				printf(":%d:%d:\n",scanner_line, scanner_column);
+
 				next_state = INIT;
 				break;
 			}	
@@ -508,7 +508,7 @@ void scanner_get_token(T_token* token)
 				}
 				else if ( is_divider(znak,operator_divider) )
 				{
-					printf("Je tam divider\n");
+
 					ungetc(current_pos);
 					set_token(token,E_GREATER,NULL);
 				}
@@ -720,7 +720,7 @@ void scanner_get_token(T_token* token)
 					return;
 				}
 				
-				char hexa_cislo[1]; //16B, no a co
+				char hexa_cislo[1];
 				unsigned cislo;
 				
 				switch(znak)
@@ -751,13 +751,6 @@ void scanner_get_token(T_token* token)
 									return;
 								}
 								
-								/*if(getc(current_pos) == E_EOF)
-								{
-									buffer_push();
-									set_token(token,E_liter,Buffer->ptr);
-									return;
-								}
-								ungetc(current_pos);*/
 								break;
 								
 					case 'n':	buffer_push(10); // \n
