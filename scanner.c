@@ -674,16 +674,17 @@ void scanner_get_token(T_token* token)
 			
 			case t_lit: 	
 			{
-				do{
+				while(znak != '"')
+				{
 					if(znak == '\\')
 					{
 						next_state = t_escape;
 						break;
 					}
-					buffer_push(znak);
-					znak = getc(current_pos);
+					
 					if(znak == 0)
 					{
+						printf("EOF");
 						set_token(token,E_invld,NULL);
 						ungetc(current_pos);
 						return;
@@ -694,8 +695,9 @@ void scanner_get_token(T_token* token)
 						set_token(token,E_invld,NULL);
 						return;
 					}
-					
-				}while(znak != '"');
+					buffer_push(znak);
+					znak = getc(current_pos);
+				}
 				
 				
 				
@@ -704,7 +706,7 @@ void scanner_get_token(T_token* token)
 				else
 				{
 					buffer_push(znak); // ulozime "
-					set_token(token,E_liter,NULL);
+					set_token(token,E_liter,Buffer->ptr);
 					return;
 				}
 			}	
@@ -740,12 +742,22 @@ void scanner_get_token(T_token* token)
 								}
 								
 								if(sscanf(hexa_cislo,"%x",&cislo) == 1)
+								{
 									buffer_push(cislo);
+								}
 								else
 								{
 									set_token(token,E_invld,NULL);
 									return;
 								}
+								
+								/*if(getc(current_pos) == E_EOF)
+								{
+									buffer_push();
+									set_token(token,E_liter,Buffer->ptr);
+									return;
+								}
+								ungetc(current_pos);*/
 								break;
 								
 					case 'n':	buffer_push(10); // \n
