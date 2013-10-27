@@ -344,6 +344,9 @@ void scanner_get_token( T_token* token )
                         case '!':
                                         next_state = T_EXCLAM;
                                         break;
+                        case ',':
+                                        set_token( token, E_COMA, NULL );
+                                        return;										
                         case 0:
                                         set_token( token, E_EOF, NULL );
                                         return;
