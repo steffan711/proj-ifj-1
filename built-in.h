@@ -6,16 +6,15 @@
  */
 
 #include "types.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include <stdbool.h>
-#include <limits.h>
-#include <ctype.h>
+
+
+#define MAX_DBL_DIGITS 20
 
 E_ERROR_TYPE _boolval( TERM *input, bool *result );
 E_ERROR_TYPE _doubleval( TERM *input, double *result );
 E_ERROR_TYPE _intval( TERM *input, unsigned *result );
-E_ERROR_TYPE _strval( TERM *input, char *result );
+E_ERROR_TYPE _strval( TERM *input, char **result );
 E_ERROR_TYPE _get_string( char *result );
 E_ERROR_TYPE _put_string( int *result, char *input, ... );
 E_ERROR_TYPE _get_substring( char *input, int begpos, int endpos, char *result );

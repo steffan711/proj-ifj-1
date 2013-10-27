@@ -5,6 +5,12 @@
  * @author Filip
  */
 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
+#include <ctype.h>
+#include <string.h>
 #include "built-in.h"
 
 
@@ -30,6 +36,24 @@ E_ERROR_TYPE _strtod( char *input, double *result )
 
 
 /**
+ * Pomocna funkcia, najrychlejsi sposob zistenia poctu cifier
+ *
+ * @param integer
+ * @return Uspesnost
+ */
+unsigned intNumSpaces( unsigned input )
+{
+	unsigned n = 1, result = 0;
+	while( input >= n )
+	{
+		n *= 10;
+		result++;
+	}
+	return result;
+}
+
+
+/**
  * Vstavana funkcia, vracia bool z TERM
  *
  * @param TERM
@@ -43,27 +67,32 @@ E_ERROR_TYPE _boolval( TERM *input, bool *result )
         case DATA_BOOL:
             *result = input->data._bool;
             break;
+			
         case DATA_INT:
             if( input->data._int == 0 )
                 *result = false;
             else
                 *result = true;
             break;
+			
         case DATA_DOUBLE:
             if( input->data._double == 0.0 )
                 *result = false;
             else
                 *result = true;
             break;
+			
         case DATA_STRING:
             if( input->data._string[0] == '\0' )
                 *result = false;
             else
                 *result = true;
             break;
+			
         case DATA_NULL:
             *result = false;
             break;
+			
         default:
             return E_INTERPRET_ERROR;        /**< error! todo */
     }
@@ -86,18 +115,23 @@ E_ERROR_TYPE _doubleval( TERM *input, double *result )
         case DATA_BOOL:
             *result = (double) input->data._bool;
             break;
+			
         case DATA_INT:
             *result = (double) input->data._int;
             break;
+			
         case DATA_DOUBLE:
             *result = input->data._double;
             break;
+			
         case DATA_STRING:
             return _strtod( input->data._string, result );
             break;
+			
         case DATA_NULL:
             *result = 0.0;
             break;
+			
         default:
             return E_INTERPRET_ERROR;        /**< error! todo */
     }
@@ -120,21 +154,26 @@ E_ERROR_TYPE _intval( TERM *input, unsigned *result )
         case DATA_BOOL:
             *result = input->data._bool;
             break;
+			
         case DATA_INT:
             *result = input->data._int;
             break;
+			
         case DATA_DOUBLE:
             if( input->data._double < (double) UINT_MAX + 1 && input->data._double >= 0.0 )
                 *result = (unsigned) input->data._double;
             else
                 return E_INTERPRET_ERROR;
             break;
+			
         case DATA_STRING:
             *result = atoi( input->data._string );
             break;
+			
         case DATA_NULL:
             *result = 0;
             break;
+			
         default:
             return E_INTERPRET_ERROR;        /**< error! todo */
     }
@@ -150,8 +189,86 @@ E_ERROR_TYPE _intval( TERM *input, unsigned *result )
  * @param char *( return )
  * @return Uspesnost
  */
-E_ERROR_TYPE _strval( TERM *input, char *result )
+E_ERROR_TYPE _strval( TERM *input, char **result )
 {
+	switch( input->type )
+    {
+        case DATA_BOOL:
+			if( input->data._bool == true )
+			{
+				*result = malloc( 2 * sizeof( char ) );
+				if( *result == NULL )
+					return E_INTERPRET_ERROR;
+				*result[0] = '1';
+				*result[1] = '\0';
+			}
+			else
+			{
+				*result = malloc( 1 * sizeof( char ) );
+				if( *result == NULL )
+					return E_INTERPRET_ERROR;
+				*result[0] = '\0';
+			}
+            break;
+			
+        case DATA_INT:
+			if( input->data._int <= 0 )
+			{
+				*result = malloc( 2 * sizeof( char ) );
+				if( *result == NULL )
+					return E_INTERPRET_ERROR;
+				*result[0] = '0';
+				*result[1] = '\0';
+			}
+			else
+			{
+				*result = malloc( ( intNumSpaces( input->data._int ) * sizeof( char ) ) + 1 );
+				if( *result == NULL )
+					return E_INTERPRET_ERROR;
+				sprintf( *result, "%u", input->data._int );
+			}
+            break;
+			
+        case DATA_DOUBLE:
+			if( input->data._double <= 0 )
+			{
+				*result = malloc( 2 * sizeof( char ) );
+				if( *result == NULL )
+					return E_INTERPRET_ERROR;
+				*result[0] = '0';
+				*result[1] = '\0';
+			}
+			else
+			{
+				char temp[MAX_DBL_DIGITS] = { '\0', };
+				sprintf( temp, "%g", input->data._double );
+				if( temp[MAX_DBL_DIGITS - 1] != '\0' )
+					return E_INTERPRET_ERROR;
+				*result = malloc( strlen( temp ) * sizeof( char ) + 1 );
+				if( *result == NULL )
+					return E_INTERPRET_ERROR;
+				strcpy( *result, temp );
+			}
+            break;
+			
+        case DATA_STRING:
+			*result = malloc( strlen( input->data._string ) * sizeof( char ) + 1 );
+			if( *result == NULL )
+				return E_INTERPRET_ERROR;
+			strcpy( *result, input->data._string );
+            break;
+			
+        case DATA_NULL:
+			*result = malloc( 1 * sizeof( char ) );
+			if( *result == NULL )
+				return E_INTERPRET_ERROR;
+			*result[0] = '\0';
+            break;
+			
+        default:
+            return E_INTERPRET_ERROR;        /**< error! todo */
+    }
+
     return E_OK;
 }
 
