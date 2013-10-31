@@ -60,7 +60,7 @@ E_ERROR_TYPE mmap_file(const char *filename, char **file_pointer)
    
     if ( ( source_file = malloc( file_size + 1 ) ) == NULL ) //+1 kvoli znaku znaku konca retazca
     {
-        fprintf( stderr, "Unable to allocate memory. Exitting ...\n" );
+        fprintf( stderr, "Unable to allocate memory. Exiting ...\n" );
         fclose( f );
 		source_file = NULL;
         return E_INTERPRET_ERROR;
@@ -80,7 +80,7 @@ E_ERROR_TYPE mmap_file(const char *filename, char **file_pointer)
     
     if ( check_file_header( source_file ) != E_OK ) // kontrola '<?php' na zaciatku suboru
     {
-        fprintf( stderr, "Invalid source file. Exitting ...\n" );
+        fprintf( stderr, "Invalid source file. Exiting ...\n" );
 		source_file = NULL;
         return E_OTHER;
     }
