@@ -20,8 +20,14 @@ file_io.o : file_io.c file_io.h
 	
 main.o : main.c types.h file_io.h
 	$(CC) $(CFLAGS) -o $@ -c $<
+
+test.o : test.c types.h file_io.h
+	$(CC) $(CFLAGS) -o $@ -c $<
 	
 main : main.o file_io.o scanner.o
+	$(CC) $(CFLAGS) -o $@ $^
+    
+test : test.o file_io.o scanner.o
 	$(CC) $(CFLAGS) -o $@ $^
 	
 clean:

@@ -47,8 +47,6 @@ int main( int argc, char *argv[] )
     /** MAGIC WILL SOON BEGIN TO HAPPEN HERE **/
 
 
-
-
     /** END OF MAGIC **/
 
     free( subor );

@@ -41,6 +41,16 @@ typedef enum
     E_RABRACK,      // }
     E_INVLD,        // je to invalid
     E_LITER,        // string
+	// ---- klucove slova
+	E_WHILE,
+	E_FUNCTION,
+	E_FALSE,
+	E_NULL,
+	E_TRUE,
+	E_IF,
+	E_ELSE,
+	E_RETURN,	
+	// ----
     E_EOF,          // padla
 } TOKEN_TYPE;
 
@@ -104,6 +114,7 @@ E_ERROR_TYPE scanner_init( char *file_start );
 void buffer_init();
 void scanner_shutdown();
 void print_token( T_token* token );
+//E_ERROR_TYPE scanner_init( char *file_start );
 
 void scanner_get_token( T_token* token );
 /** pozn. pre volajuceho

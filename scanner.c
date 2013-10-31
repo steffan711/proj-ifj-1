@@ -237,6 +237,58 @@ void buffer_init()
     Buffer->size = 0;
 }
 
+/**
+bool is_keyword();
+testuje string na klucove slovo
+
+*/
+
+bool is_keyword(const char* word, T_token* token)
+{
+	if (strcmp(word,"function") == 0)
+	{
+		set_token( token, E_FUNCTION, Buffer->ptr );
+		return true;
+	}
+	else if (strcmp(word,"else") == 0)
+	{
+		set_token( token, E_ELSE, Buffer->ptr );
+		return true;
+	}
+	else if (strcmp(word,"if") == 0)
+	{
+		set_token( token, E_IF, Buffer->ptr );
+		return true;
+	}
+	else if (strcmp(word,"false") == 0)
+	{
+		set_token( token, E_FALSE, Buffer->ptr );
+		return true;
+	}
+	else if (strcmp(word,"null") == 0)
+	{
+		set_token( token, E_NULL, Buffer->ptr );
+		return true;
+	}
+	else if (strcmp(word,"true") == 0)
+	{
+		set_token( token, E_TRUE, Buffer->ptr );
+		return true;
+	}
+	else if (strcmp(word,"while") == 0)
+	{
+		set_token( token, E_WHILE, Buffer->ptr );
+		return true;
+	}
+	else if (strcmp(word,"return") == 0)
+	{
+		set_token( token, E_RETURN, Buffer->ptr );
+		return true;
+	}
+	return false;
+
+}
+
 
 /**
  * Po zavolani obsahuje parameter token nasledujuci token
@@ -371,7 +423,14 @@ void scanner_get_token( T_token* token )
                 }
                 ungetc( current_pos );
                 Buffer->ptr[Buffer->size] = '\0';
-                set_token( token, token->ttype, Buffer->ptr );
+				unsigned a = strlen(Buffer->ptr);
+				if( a > 1 && a < 8 ) // 8 = strlen("function")
+				{
+					if(is_keyword(Buffer->ptr, token))
+						return;
+					else
+						set_token( token, token->ttype, Buffer->ptr );
+				}
                 return;
             }
 
