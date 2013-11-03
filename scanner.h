@@ -49,7 +49,8 @@ typedef enum
 	E_TRUE,
 	E_IF,
 	E_ELSE,
-	E_RETURN,	
+	E_RETURN,
+	
 	// ----
     E_EOF,          // padla
 } TOKEN_TYPE;

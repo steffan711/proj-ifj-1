@@ -13,8 +13,7 @@
 #include "scanner.h"
 
 
-/**
- * Main funkcia programu
+/**ie465re455Df54sfF
  *
  * Testovaci modul pre scanner.c
  */
@@ -36,6 +35,7 @@ int main( int argc, char *argv[] )
         printf("Nastala chyba\n");
         return ret_val;
     }
+     
 
     T_token token;
     scanner_init(subor);
@@ -43,8 +43,10 @@ int main( int argc, char *argv[] )
     while(token.ttype != E_EOF)
     {
         scanner_get_token(&token);
-        if(token.data._string != NULL)
+        print_token(&token);
+        if(token.data._string != NULL && token.ttype != E_INT && token.ttype != E_DOUBLE)
             free(token.data._string);
+        
     }
     
     

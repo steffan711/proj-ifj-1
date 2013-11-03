@@ -144,6 +144,7 @@ static inline bool is_divider( char znak, int switcher )
 // test: /* /a /7 /$
 
 
+
 /** 
  * //////////////////////////////////////////////////////////////POPIS FUNKCIE POPROSIM SEM
  * @param ukazatel na subor
@@ -193,35 +194,40 @@ void print_token( T_token* token )
 
     switch( token->ttype )
     {
-        case 1:     printf( "\nToken -> ttype: E_EQ\n" );           break;
-        case 2:     printf( "\nToken -> ttype: E_COMP\n" );         break;
-        case 3:     printf( "\nToken -> ttype: E_TRIPLEEQ\n" );     break;
-        case 4:     printf( "\nToken -> ttype: E_NOT_EQ\n" );       break;
-        case 5:     printf( "\nToken -> ttype: E_LESS\n" );         break;
-        case 6:     printf( "\nToken -> ttype: E_GREATER\n" );      break;
-        case 7:     printf( "\nToken -> ttype: E_LESSEQ\n" );       break;
-        case 8:     printf( "\nToken -> ttype: E_GREATEREQ\n" );    break;
-        case 9:     printf( "\nToken -> ttype: E_PLUS\n" );         break;
-        case 10:    printf( "\nToken -> ttype: E_MINUS\n" );        break;
-        case 11:    printf( "\nToken -> ttype: E_MULT\n" );         break;
-        case 12:    printf( "\nToken -> ttype: E_DIV\n" );          break;
-        case 13:    printf( "\nToken -> ttype: E_SEMICL\n" );       break;
-        case 14:    printf( "\nToken -> ttype: E_COMA\n" );         break;
-        case 15:    printf( "\nToken -> ttype: E_CONCAT\n" );       break;
-        case 16:    printf( "\nToken -> ttype: E_IDENT\n" );        break;
-        case 17:    printf( "\nToken -> ttype: E_VAR\n" );          break;
-        case 18:    printf( "\nToken -> ttype: E_INT\n" );          break;
-        case 19:    printf( "\nToken -> ttype: E_DOUBLE\n" );       break;
-        case 20:    printf( "\nToken -> ttype: E_STRING\n" );       break;
-        case 21:    printf( "\nToken -> ttype: E_LPARENTHESES\n" ); break;
-        case 22:    printf( "\nToken -> ttype: E_RPARENTHESES\n" ); break;
-        case 23:    printf( "\nToken -> ttype: E_LBRACK\n" );       break;
-        case 24:    printf( "\nToken -> ttype: E_RBRACK\n" );       break;
-        case 25:    printf( "\nToken -> ttype: E_LABRACK\n" );      break;
-        case 26:    printf( "\nToken -> ttype: E_RABLRACK\n" );      break;
-        case 27:    printf( "\nToken -> ttype: E_INVLD\n" );        break;
-        case 28:    printf( "\nToken -> ttype: E_LITER\n" );        break;
-        case 29:    printf( "\nToken -> ttype: E_EOF\n" );          break;
+        case E_EQ:          printf( "\nToken -> ttype: E_EQ\n" );           break;
+        case E_TRIPLEEQ:    printf( "\nToken -> ttype: E_TRIPLEEQ\n" );     break;
+        case E_NOT_EQ:      printf( "\nToken -> ttype: E_NOT_EQ\n" );       break;
+        case E_LESS:        printf( "\nToken -> ttype: E_LESS\n" );         break;
+        case E_GREATER:     printf( "\nToken -> ttype: E_GREATER\n" );      break;
+        case E_LESSEQ:      printf( "\nToken -> ttype: E_LESSEQ\n" );       break;
+        case E_GREATEREQ:   printf( "\nToken -> ttype: E_GREATEREQ\n" );    break;
+        case E_PLUS:        printf( "\nToken -> ttype: E_PLUS\n" );         break;
+        case E_MINUS:       printf( "\nToken -> ttype: E_MINUS\n" );        break;
+        case E_MULT:        printf( "\nToken -> ttype: E_MULT\n" );         break;
+        case E_DIV:         printf( "\nToken -> ttype: E_DIV\n" );          break;
+        case E_SEMICL:      printf( "\nToken -> ttype: E_SEMICL\n" );       break;
+        case E_COMA:        printf( "\nToken -> ttype: E_COMA\n" );         break;
+        case E_CONCAT:      printf( "\nToken -> ttype: E_CONCAT\n" );       break;
+        case E_IDENT:       printf( "\nToken -> ttype: E_IDENT\n" );        break;
+        case E_VAR:         printf( "\nToken -> ttype: E_VAR\n" );          break;
+        case E_INT:         printf( "\nToken -> ttype: E_INT\n" );          break;
+        case E_DOUBLE:      printf( "\nToken -> ttype: E_DOUBLE\n" );       break;
+        case E_STRING:      printf( "\nToken -> ttype: E_STRING\n" );       break;
+        case E_LPARENTHESES: printf( "\nToken -> ttype: E_LPARENTHESES\n" ); break;
+        case E_RPARENTHESES: printf( "\nToken -> ttype: E_RPARENTHESES\n" ); break;  
+        case E_LABRACK:     printf( "\nToken -> ttype: E_LABRACK\n" );      break;
+        case E_RABRACK:    printf( "\nToken -> ttype: E_RABLRACK\n" );      break;
+        case E_INVLD:       printf( "\nToken -> ttype: E_INVLD\n" );        break;
+        case E_LITER:       printf( "\nToken -> ttype: E_LITER\n" );        break;
+        case E_EOF:         printf( "\nToken -> ttype: E_EOF\n" );          break;
+        case E_WHILE:       printf( "\nToken -> ttype: E_WHILE\n" );        break;
+        case E_FUNCTION:    printf( "\nToken -> ttype: E_FUNCTION\n" );     break;
+        case E_FALSE:       printf( "\nToken -> ttype: E_FALSE\n" );        break;
+        case E_NULL:        printf( "\nToken -> ttype: E_NULL\n" );         break;
+        case E_TRUE:        printf( "\nToken -> ttype: E_TRUE\n" );         break;
+        case E_IF:          printf( "\nToken -> ttype: E_IF\n" );           break;
+        case E_ELSE:        printf( "\nToken -> ttype: E_ELSE\n" );         break;
+        case E_RETURN:      printf( "\nToken -> ttype: E_RETURN\n" );       break;  
         default:    break;
     }
 }
@@ -377,14 +383,6 @@ void scanner_get_token( T_token* token )
                                         buffer_push(znak);
                                         set_token( token, E_RPARENTHESES, NULL );
                                         return;
-                        case '[':
-                                        buffer_push( znak );
-                                        set_token( token, E_LBRACK, NULL );
-                                        return;
-                        case ']':
-                                        buffer_push( znak );
-                                        set_token( token, E_RBRACK, NULL );
-                                        return;
                         case '{':
                                         buffer_push( znak );
                                         set_token( token, E_LABRACK, NULL );
@@ -489,7 +487,7 @@ void scanner_get_token( T_token* token )
                     }
                     else if( is_divider( znak, operator_divider ) )
                     {
-                        set_token( token, E_COMP, NULL );
+                        set_token( token, E_INVLD, NULL );
                     }
                     return;
                 }
