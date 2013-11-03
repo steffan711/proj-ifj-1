@@ -81,6 +81,7 @@ E_ERROR_TYPE mmap_file(const char *filename, char **file_pointer)
     if ( check_file_header( source_file ) != E_OK ) // kontrola '<?php' na zaciatku suboru
     {
         fprintf( stderr, "Invalid source file. Exiting ...\n" );
+        free(source_file); // LOL
 		source_file = NULL;
         return E_OTHER;
     }
