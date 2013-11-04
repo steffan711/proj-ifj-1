@@ -50,8 +50,8 @@ typedef enum
 	E_IF,
 	E_ELSE,
 	E_RETURN,
-	
 	// ----
+    E_MALLOC,       // posral sa malloc, balime
     E_EOF,          // padla
 } TOKEN_TYPE;
 
@@ -106,8 +106,9 @@ typedef struct _tStringBuffer
  char*          current_pos;  // aktualna pozicia scannera v subore, prepisovat len ked je to nutne
  unsigned       scanner_line, scanner_column;
  const char*    file_origin;
- tStringBuffer 	stack;        // nekonecny zasobnik znakov
+ tStringBuffer stack;   // zasobnik znakov na retazce
  tStringBuffer* Buffer;
+ unsigned lex_length; // dlzka poslednej spracovanej lexemy, ak by niekoho nahodou zaujimalo, aka je dlha...
  
 /** Funkcie **/
 E_ERROR_TYPE buffer_push( char znak );
@@ -115,10 +116,10 @@ E_ERROR_TYPE scanner_init( char *file_start );
 void buffer_init();
 void scanner_shutdown();
 void print_token( T_token* token );
-//E_ERROR_TYPE scanner_init( char *file_start );
+
 
 void scanner_get_token( T_token* token );
 /** pozn. pre volajuceho
-            if( token.data._string != NULL )
-            free( token.data._string )
+            if( token.ttype == E_LIT) 
+                free( token.data._string )
 **/
