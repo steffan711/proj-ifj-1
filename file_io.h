@@ -15,7 +15,7 @@
   #undef getc
   #undef ungetc
   #undef EOF
-  #define getc( x ) ( *(x++) )
+  #define getc( x ) ( *((x)++) )
   #define ungetc( x ) (x--)
   #define EOF 0
 #endif
