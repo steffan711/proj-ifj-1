@@ -21,5 +21,5 @@
 #endif
 
 
-E_ERROR_TYPE check_file_header( char *source_file );
+E_ERROR_TYPE check_file_header( char **source_file );
 E_ERROR_TYPE mmap_file(const char* filename, char **file_pointer);
