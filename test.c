@@ -59,7 +59,7 @@ int main( int argc, char *argv[] )
     while(token.ttype != E_EOF)
     {
         scanner_get_token(&token);
-        //print_token(&token);
+        print_token(&token);
         if(token.ttype == E_LITER)
             free(token.data._string);
         
@@ -73,8 +73,6 @@ int main( int argc, char *argv[] )
     printf("---------------------------\n");
     
     scanner_shutdown();
-    if (subor == handle_subor)
-        printf("su rovnake\n");
     free( handle_subor );
     return 0;
 }
