@@ -16,17 +16,17 @@
  * @param Abstraktny vstupny subor
  * @return Uspesnost
  */
-E_ERROR_TYPE check_file_header( char *source_file )
+E_ERROR_TYPE check_file_header( char **source_file )
 {
     char pattern[] = "<?php";
     for ( unsigned int i = 0; i < sizeof( pattern ) - 1; i++ ) // -1, lebo pole je dlhsie o null terminator
     {
-        if ( getc( source_file ) != pattern[i] )
+        if ( getc( *source_file ) != pattern[i] )
         {
             return E_OTHER;
         }
     }
-    if ( !isspace( getc( source_file ) ) )
+    if ( !isspace( getc( *source_file ) ) )
     {
         return E_OTHER;
     }
@@ -78,11 +78,11 @@ E_ERROR_TYPE mmap_file(const char *filename, char **file_pointer)
     fclose( f );
     source_file[num_of_chars] = '\0';   //EOF 
     
-    if ( check_file_header( source_file ) != E_OK ) // kontrola '<?php' na zaciatku suboru
+    if ( check_file_header( &source_file ) != E_OK ) // kontrola '<?php' na zaciatku suboru
     {
         fprintf( stderr, "Invalid source file. Exiting ...\n" );
         free(source_file); // LOL
-		source_file = NULL;
+        source_file = NULL;
         return E_OTHER;
     }
 	
