@@ -2,7 +2,7 @@
  * @file test.c
  *
  * @brief Hlavna vetva
- * @author Vsetci
+ * @author Vlado
  */
 
 #include <stdio.h>
@@ -13,7 +13,7 @@
 #include "scanner.h"
 
 
-/**ie465re455Df54sfF
+/**
  *
  * Testovaci modul pre scanner.c
  */
@@ -26,30 +26,55 @@ int main( int argc, char *argv[] )
     }
 
     E_ERROR_TYPE ret_val;
-    char *subor;    /**< abstrakcia zdrojoveho suboru */
+    char *handle_subor;    /**< abstrakcia zdrojoveho handle_suboru */
 
-    ret_val = mmap_file( argv[1], &subor );
+    ret_val = mmap_file( argv[1], &handle_subor );
 
     if ( ret_val != E_OK )
-    {
-        printf("Nastala chyba\n");
-        return ret_val;
-    }
-     
-
-    T_token token;
-    scanner_init(subor);
+        return 2;
     
+    char *subor = handle_subor;
+    
+    if ( check_file_header( &subor ) != E_OK ) // kontrola '<?php' na zaciatku handle_suboru
+    {
+        fprintf( stderr, "Invalid source file. Exiting ...\n" );
+        free(handle_subor);
+        return E_OTHER;
+    }
+    
+    
+    
+    
+    T_token token;
+    token.ttype = E_INVLD;
+    
+    if( scanner_init(subor) != E_OK )
+    {
+        fprintf(stderr, "Fatal error. \n");
+        free( handle_subor );
+    }
+        
+        
+    printf("---------------------------");
     while(token.ttype != E_EOF)
     {
         scanner_get_token(&token);
-        print_token(&token);
-        if(token.data._string != NULL && token.ttype != E_INT && token.ttype != E_DOUBLE)
+        //print_token(&token);
+        if(token.ttype == E_LITER)
             free(token.data._string);
         
+        if( token.ttype == E_MALLOC)
+        {
+            fprintf(stderr, "Fatal error. \n");
+            free( handle_subor );
+            return EXIT_FAILURE;
+        }
     }
+    printf("---------------------------\n");
     
-    
-    free( subor );
-    return ret_val;
+    scanner_shutdown();
+    if (subor == handle_subor)
+        printf("su rovnake\n");
+    free( handle_subor );
+    return 0;
 }
