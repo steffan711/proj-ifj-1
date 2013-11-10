@@ -9,50 +9,54 @@
 #define allocation_coeficient 2
 #define pre_allocation 32
 
-/** Typy tokenov **/
+
+/** Typy tokenov + terminaly a nonterminaly + symboly do precedencnej tabulky,
+ ** akekolvek zmeny su prisne zakazane (zavisi na tom funkcnost tabulky)**/
 typedef enum
 {
-    E_EQ = 1,       // =
-    E_COMP,         // ==
-    E_TRIPLEEQ,     // ===
+    E_CONCAT,       // .
     E_NOT_EQ,       // !==
+    E_TRIPLEEQ,     // ===
+    E_PLUS,         // +
+    E_MULT,         // *
+    E_MINUS,        // -
+    E_DIV,          // /
     E_LESS,         // <
     E_GREATER,      // >
     E_LESSEQ,       // <=
     E_GREATEREQ,    // >=
-    E_PLUS,         // +
-    E_MINUS,        // -
-    E_MULT,         // *
-    E_DIV,          // /
+    E_LPARENTHESES, // (
+    E_RPARENTHESES, // )
+    E_TERM,          // term, pomocny enum pre precedencnu syntakticku analyzu
+    E_LABRACK,      // {
     E_SEMICL,       // ;
-    E_COMA,         // ,
-    E_CONCAT,       // .
-    E_IDENT,        // identifikator
     E_VAR,          // premenna
     E_BOOL,         // bool
     E_INT,          // integer
     E_DOUBLE,       // double
-    E_STRING,       // literal
-    E_LPARENTHESES, // (
-    E_RPARENTHESES, // )
-    E_LBRACK,       // [
-    E_RBRACK,       // ]
-    E_LABRACK,      // {
+    E_LITER,        // literal
+    R_E,            // prvok precedencnej tabulky >
+    R_C,            // prvok precedencnej tabulky <
+    R_N,            // prvok precedencnej tabulky no_rule
+    R_P,            // prvok precedencnej tabulky =
+    E_E,            // nonterminal, pouzivany v gramatike
+    E_EQ,           // =
     E_RABRACK,      // }
+    E_COMA,         // ,
+    E_IDENT,        // identifikator
     E_INVLD,        // je to invalid
-    E_LITER,        // string
-	// ---- klucove slova
-	E_WHILE,
-	E_FUNCTION,
-	E_FALSE,
-	E_NULL,
-	E_TRUE,
-	E_IF,
-	E_ELSE,
-	E_RETURN,
-	// ----
+        // ---- klucove slova
+        E_WHILE,
+        E_FUNCTION,
+        E_FALSE,
+        E_NULL,
+        E_TRUE,
+        E_IF,
+        E_ELSE,
+        E_RETURN,
+        // ----
     E_MALLOC,       // posral sa malloc, balime
-    E_EOF,          // padla
+    E_EOF          // padla
 } TOKEN_TYPE;
 
 /** Stavy konecnej masinky **/
@@ -106,8 +110,8 @@ typedef struct _tStringBuffer
  char*          current_pos;  // aktualna pozicia scannera v subore, prepisovat len ked je to nutne
  unsigned       scanner_line, scanner_column;
  const char*    file_origin;
- tStringBuffer stack;   // zasobnik znakov na retazce
- tStringBuffer* Buffer;
+ //tStringBuffer stack;   // zasobnik znakov na retazce
+ tStringBuffer Buffer;
  unsigned lex_length; // dlzka poslednej spracovanej lexemy, ak by niekoho nahodou zaujimalo, aka je dlha...
  
 /** Funkcie **/
@@ -116,7 +120,6 @@ E_ERROR_TYPE scanner_init( char *file_start );
 void buffer_init();
 void scanner_shutdown();
 void print_token( T_token* token );
-
 
 void scanner_get_token( T_token* token );
 /** pozn. pre volajuceho

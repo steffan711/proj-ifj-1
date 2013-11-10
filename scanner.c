@@ -22,22 +22,21 @@
  * @param znak ktory treba doplnit
  * @return Uspesnost
 */
-E_ERROR_TYPE buffer_push( char znak )
+inline E_ERROR_TYPE buffer_push( char znak )
 {
 
-    if( Buffer->allocated_size > Buffer->size ) // este sa donho zmesti
-    {
-        Buffer->ptr[Buffer->size++] = znak;
-    }
+    if( Buffer.allocated_size > Buffer.size ) // este sa donho zmesti
+        Buffer.ptr[Buffer.size++] = znak;
+        
     else // uz sa nezmesti do koze
     {
-        Buffer->allocated_size *= allocation_coeficient;
+        Buffer.allocated_size *= allocation_coeficient;
 
-        Buffer->ptr = realloc( Buffer->ptr,( Buffer->allocated_size ) * sizeof( char ) );
-        if( Buffer->ptr == NULL )
+        Buffer.ptr = realloc( Buffer.ptr,( Buffer.allocated_size ) );
+        if( Buffer.ptr == NULL )
             return E_INTERPRET_ERROR;
 
-        Buffer->ptr[Buffer->size++] = znak;
+        Buffer.ptr[Buffer.size++] = znak;
     }
     return E_OK;
 }
@@ -47,10 +46,10 @@ E_ERROR_TYPE buffer_push( char znak )
     
 void printBuffer() // vypise aktualny obsah zasobnika
 {
-    if( Buffer->ptr != NULL )
+    if( Buffer.ptr != NULL )
     {
-        for( unsigned i = 0; i < Buffer->size; i++ )
-            printf( "%c", Buffer->ptr[i] );
+        for( unsigned i = 0; i < Buffer.size; i++ )
+            printf( "%c", Buffer.ptr[i] );
     }
     else
         printf( "No string data\n" );
@@ -60,10 +59,7 @@ void printBuffer() // vypise aktualny obsah zasobnika
 
 void scanner_shutdown() // Funkcia zrusi buffer na stringy, po zavolani tejto funkcie nevolat scanner_get_token
 {
-    if(Buffer == NULL)
-        return;
-    free(Buffer->ptr);
-    free(Buffer);
+    free(Buffer.ptr);
 }
 
 
@@ -77,10 +73,8 @@ void scanner_shutdown() // Funkcia zrusi buffer na stringy, po zavolani tejto fu
  */
 static inline void set_token( T_token* token, TOKEN_TYPE type)
 {
-
-    /** !!!!!!!!!!! current_pos - lex_length (?) !!!!!!!!! **/
     token->line = scanner_line;
-    token->column = scanner_column - 1;
+    token->column = scanner_column-1;
     
     switch( type )
     {
@@ -117,7 +111,7 @@ static inline void set_token( T_token* token, TOKEN_TYPE type)
         }
         case E_LITER:
         {
-            token->data._string = malloc( ( Buffer->size )*sizeof( char ) + 1 ); // ukoncenie
+            token->data._string = malloc( ( Buffer.size )*sizeof( char ) + 1 ); // ukoncenie
             if( token->data._string == NULL )
                 set_token( token, E_MALLOC); // noch einmal
             else
@@ -144,12 +138,33 @@ static inline void set_token( T_token* token, TOKEN_TYPE type)
  */
 static inline bool is_divider( char znak, int switcher )
 {
-    switch( switcher )
-    {
-        case number_divider:    return ( isspace( znak ) || znak == '/' || znak == '+' || znak == '-' || znak == '*' || znak == ';' || znak == ',' || znak == 0) ? true : false;
-        case operator_divider:  return ( isspace( znak ) || znak == '$' || znak == 0 || isalnum( znak ) ) ? true : false;
-        default: return false;
-    }
+
+        if( switcher == number_divider ) 
+            switch (znak)  // co moze nasledovat za operandom ?
+            {
+                case '/':
+                case '+':
+                case '-':
+                case ';':
+                case ',':
+                case 0  : // EOF
+                case ')':
+                case '(':
+                case '*':
+                    return true;
+                default: return isspace( znak );
+            }
+        else // co moze nasledovat za operatorom ?             
+            switch (znak)
+            {
+                case '$':
+                case 0  :
+                case ')':
+                case '(':
+                    return true;
+                default: return ( isspace( znak ) || isalnum( znak ) ); // znak, cislo alebo medzera je ok
+            }
+
 }
 // test: /* /a /7 /$
 
@@ -162,22 +177,17 @@ static inline bool is_divider( char znak, int switcher )
 */
 E_ERROR_TYPE scanner_init( char *file_start )
 {
-    Buffer = &stack;
     current_pos = file_start;
     scanner_line = 1;
     scanner_column = 0;
     file_origin = file_start;
 
-    Buffer = malloc( sizeof( tStringBuffer ) );
-    if( Buffer == NULL ) 
-        return E_INTERPRET_ERROR;
-
-    Buffer->ptr = malloc( pre_allocation * sizeof( char ));
-    if( Buffer->ptr == NULL )
+    Buffer.ptr = malloc( pre_allocation);
+    if( Buffer.ptr == NULL )
         return E_INTERPRET_ERROR;    
 
-    Buffer->allocated_size = pre_allocation;
-    Buffer->size = 0;
+    Buffer.allocated_size = pre_allocation;
+    Buffer.size = 0;
     
     return E_OK;
 }
@@ -194,40 +204,39 @@ void print_token( T_token* token )
 
     switch( token->ttype ) 
     {
-        case E_EQ:          printf( "\nToken -> ttype: E_EQ\n" );           break;
-        case E_TRIPLEEQ:    printf( "\nToken -> ttype: E_TRIPLEEQ\n" );     break;
-        case E_NOT_EQ:      printf( "\nToken -> ttype: E_NOT_EQ\n" );       break;
-        case E_LESS:        printf( "\nToken -> ttype: E_LESS\n" );         break;
-        case E_GREATER:     printf( "\nToken -> ttype: E_GREATER\n" );      break;
-        case E_LESSEQ:      printf( "\nToken -> ttype: E_LESSEQ\n" );       break;
-        case E_GREATEREQ:   printf( "\nToken -> ttype: E_GREATEREQ\n" );    break;
-        case E_PLUS:        printf( "\nToken -> ttype: E_PLUS\n" );         break;
-        case E_MINUS:       printf( "\nToken -> ttype: E_MINUS\n" );        break;
-        case E_MULT:        printf( "\nToken -> ttype: E_MULT\n" );         break;
-        case E_DIV:         printf( "\nToken -> ttype: E_DIV\n" );          break;
-        case E_SEMICL:      printf( "\nToken -> ttype: E_SEMICL\n" );       break;
         case E_COMA:        printf( "\nToken -> ttype: E_COMA\n" );         break;
         case E_CONCAT:      printf( "\nToken -> ttype: E_CONCAT\n" );       break;
+        case E_DIV:         printf( "\nToken -> ttype: E_DIV\n" );          break;
+        case E_DOUBLE:      printf( "\nToken -> ttype: E_DOUBLE\n" );       break;
+        case E_ELSE:        printf( "\nToken -> ttype: E_ELSE\n" );         break;
+        case E_EOF:         printf( "\nToken -> ttype: E_EOF\n" );          break;
+        case E_EQ:          printf( "\nToken -> ttype: E_EQ\n" );           break;
+        case E_FALSE:       printf( "\nToken -> ttype: E_FALSE\n" );        break;
+        case E_FUNCTION:    printf( "\nToken -> ttype: E_FUNCTION\n" );     break;
+        case E_GREATEREQ:   printf( "\nToken -> ttype: E_GREATEREQ\n" );    break;
+        case E_GREATER:     printf( "\nToken -> ttype: E_GREATER\n" );      break;
         case E_IDENT:       printf( "\nToken -> ttype: E_IDENT\n" );        break;
-        case E_VAR:         printf( "\nToken -> ttype: E_VAR\n" );          break;
+        case E_IF:          printf( "\nToken -> ttype: E_IF\n" );           break;
         case E_INT:         printf( "\nToken -> ttype: E_INT\n" );          break;
         case E_INVLD:       printf( "\nToken -> ttype: E_INVLD\n" );        break;
-        case E_IF:          printf( "\nToken -> ttype: E_IF\n" );           break;       
-        case E_DOUBLE:      printf( "\nToken -> ttype: E_DOUBLE\n" );       break;
-        case E_STRING:      printf( "\nToken -> ttype: E_STRING\n" );       break;
-        case E_LPARENTHESES:printf( "\nToken -> ttype: E_LPARENTHESES\n" ); break;
-        case E_RPARENTHESES:printf( "\nToken -> ttype: E_RPARENTHESES\n" ); break;  
         case E_LABRACK:     printf( "\nToken -> ttype: E_LABRACK\n" );      break;
-        case E_RABRACK:     printf( "\nToken -> ttype: E_RABLRACK\n" );     break;
+        case E_LESSEQ:      printf( "\nToken -> ttype: E_LESSEQ\n" );       break;
+        case E_LESS:        printf( "\nToken -> ttype: E_LESS\n" );         break;
         case E_LITER:       printf( "\nToken -> ttype: E_LITER\n" );        break;
-        case E_EOF:         printf( "\nToken -> ttype: E_EOF\n" );          break;
-        case E_WHILE:       printf( "\nToken -> ttype: E_WHILE\n" );        break;
-        case E_FUNCTION:    printf( "\nToken -> ttype: E_FUNCTION\n" );     break;
-        case E_FALSE:       printf( "\nToken -> ttype: E_FALSE\n" );        break;
+        case E_LPARENTHESES:printf( "\nToken -> ttype: E_LPARENTHESES\n" ); break;
+        case E_MINUS:       printf( "\nToken -> ttype: E_MINUS\n" );        break;
+        case E_MULT:        printf( "\nToken -> ttype: E_MULT\n" );         break;
+        case E_NOT_EQ:      printf( "\nToken -> ttype: E_NOT_EQ\n" );       break;
         case E_NULL:        printf( "\nToken -> ttype: E_NULL\n" );         break;
+        case E_PLUS:        printf( "\nToken -> ttype: E_PLUS\n" );         break;
+        case E_RABRACK:     printf( "\nToken -> ttype: E_RABLRACK\n" );     break;
+        case E_RETURN:      printf( "\nToken -> ttype: E_RETURN\n" );       break; 
+        case E_RPARENTHESES:printf( "\nToken -> ttype: E_RPARENTHESES\n" ); break;
+        case E_SEMICL:      printf( "\nToken -> ttype: E_SEMICL\n" );       break;
+        case E_TRIPLEEQ:    printf( "\nToken -> ttype: E_TRIPLEEQ\n" );     break;
         case E_TRUE:        printf( "\nToken -> ttype: E_true\n" );         break;
-        case E_ELSE:        printf( "\nToken -> ttype: E_ELSE\n" );         break;
-        case E_RETURN:      printf( "\nToken -> ttype: E_RETURN\n" );       break;  
+        case E_VAR:         printf( "\nToken -> ttype: E_VAR\n" );          break;
+        case E_WHILE:       printf( "\nToken -> ttype: E_WHILE\n" );        break;
         default:                                                            break;
     
     } // switch
@@ -255,57 +264,161 @@ void print_token( T_token* token )
 }
 
 
-void buffer_init()
+extern inline int sstrcmp( const char * str1, const char * str2, int str1_size, int str2_size )
 {
-    for( unsigned i = 0; i < Buffer->size; i++ )
-        Buffer->ptr[i] = '\0';
-    Buffer->size = 0;
+    // if (str1_size == 0 || str2_size == 0) ak budeme pocitat s tym ze na vstupe bude retazec dlzky 0
+        // return 0;
+
+    if ( str1_size > str2_size )
+        return 1;
+    else if ( str1_size < str2_size )
+        return -1;
+
+    int result;
+    const char * offset = str1 + str1_size;
+
+    do {
+        result = ( unsigned ) *str1++ - ( unsigned ) *str2++;
+    } while ( ( result == 0 ) && ( str1 != offset ) );
+
+    return result;
 }
 
 
 bool is_keyword(const char* word, T_token* token) // testuje string na klucove slovo
 {
-	if (strcmp(word,"function") == 0)
-	{
-		set_token( token, E_FUNCTION);
-		return true;
-	}
-	else if (strcmp(word,"else") == 0)
-	{
-		set_token( token, E_ELSE);
-		return true;
-	}
-	else if (strcmp(word,"if") == 0)
-	{
-		set_token( token, E_IF);
-		return true;
-	}
-	else if (strcmp(word,"false") == 0)
-	{
-		set_token( token, E_FALSE);
-		return true;
-	}
-	else if (strcmp(word,"null") == 0)
-	{
-		set_token( token, E_NULL);
-		return true;
-	}
-	else if (strcmp(word,"true") == 0)
-	{
-		set_token( token, E_TRUE);
-		return true;
-	}
-	else if (strcmp(word,"while") == 0)
-	{
-		set_token( token, E_WHILE);
-		return true;
-	}
-	else if (strcmp(word,"return") == 0)
-	{
-		set_token( token, E_RETURN);
-		return true;
-	}
-	return NULL;
+    int i;
+    if ( ( i = sstrcmp( word, "true", lex_length, 4 ) ) == 0 ) 
+    {
+        token->ttype = E_TRUE;
+        token->data._string = NULL;
+        return true;
+    }
+    else if ( i < 0 )
+    {
+        if ( ( i = sstrcmp( word, "else", lex_length, 4 ) ) == 0 ) 
+        {
+            token->ttype = E_ELSE;
+            token->data._string = NULL;
+            return true;
+        }
+        else if ( i < 0 ) 
+        {
+            if ( sstrcmp( word, "if", lex_length, 2 ) == 0 )
+            {
+                token->ttype = E_IF;
+                token->data._string = NULL;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if ( sstrcmp( word, "null", lex_length, 4 ) == 0 )
+            {
+                token->ttype = E_NULL; 
+                token->data._string = NULL;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+    else
+    {
+        if ( ( i = sstrcmp( word, "return", lex_length, 6 ) ) == 0 )
+        {
+            token->ttype = E_RETURN;
+            token->data._string = NULL;
+            return true;
+        }
+        else if ( i < 0 )
+        {
+            if ( ( i = sstrcmp( word, "while", lex_length, 5 ) ) == 0 )
+            {
+                token->ttype = E_WHILE;
+                token->data._string = NULL;
+                return true;
+            }
+            else if ( i < 0 )
+            {
+                if ( sstrcmp( word, "false", lex_length, 5 ) == 0 )
+                {
+                    token->ttype = E_FALSE; 
+                    token->data._string = NULL;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if ( sstrcmp( word, "function", lex_length, 8 ) == 0 )
+            {
+                token->ttype = E_FUNCTION;
+                token->data._string = NULL;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+
+        /*if (sstrcmp(word,"function",lex_length, 8) == 0)
+        {
+                token->ttype = E_FUNCTION;
+                return true;
+        }
+        else if (sstrcmp(word,"else",lex_length,4) == 0)
+        {
+                token->ttype = E_ELSE;
+                return true;
+        }
+        else if (sstrcmp(word,"if",lex_length,2) == 0)
+        {
+                token->ttype = E_IF;
+                return true;
+        }
+        else if (sstrcmp(word,"false",lex_length,5) == 0)
+        {
+                token->ttype = E_FALSE;
+                return true;
+        }
+        else if (sstrcmp(word,"null",lex_length,4) == 0)
+        {
+                token->ttype = E_NULL;
+                return true;
+        }
+        else if (sstrcmp(word,"true",lex_length,4) == 0)
+        {
+                token->ttype = E_TRUE;
+                return true;
+        }
+        else if (sstrcmp(word,"while",lex_length,5) == 0)
+        {
+                token->ttype = E_WHILE;
+                return true;
+        }
+        else if (sstrcmp(word,"return",lex_length,6) == 0)
+        {
+                token->ttype = E_RETURN;
+                return true;
+        }
+        return NULL;*/
 }
 
 
@@ -318,9 +431,8 @@ bool is_keyword(const char* word, T_token* token) // testuje string na klucove s
 void scanner_get_token( T_token* token )
 {
     // inicializacia :
-    FSM_STATE next_state = INIT;
-    token->ttype = E_INVLD; 
-    Buffer->size = 0;
+    FSM_STATE next_state = INIT; 
+    Buffer.size = 0;
     lex_length = 0;
     int znak;
 
@@ -354,6 +466,7 @@ void scanner_get_token( T_token* token )
                     lex_length++;
                     token->ttype = E_INT;
                     next_state = T_INT;
+                    
                 }
                 else
                 {
@@ -365,7 +478,11 @@ void scanner_get_token( T_token* token )
                         case '$':
                                         next_state = T_ID;
                                         token->ttype = E_VAR;
+                                        lex_length--; // $ nie je sucastou mena premennej
                                         break;
+                        case ';':
+                                        set_token( token, E_SEMICL);
+                                        return;	                                          
                         case '=':
                                         next_state = T_ASS;
                                         break;
@@ -412,10 +529,7 @@ void scanner_get_token( T_token* token )
                                         break;
                         case ',':
                                         set_token( token, E_COMA);
-                                        return;	
-                        case ';':
-                                        set_token( token, E_SEMICL);
-                                        return;	                                        
+                                        return;	                                      
                         case 0:
                                         set_token( token, E_EOF);
                                         return;
@@ -423,10 +537,9 @@ void scanner_get_token( T_token* token )
                                         set_token( token, E_INVLD);
                                         return;
                     } // switch
-                    lex_length++;
                 } // if
                 break;
-            } // while
+            } // init
 
             // --------------------------------------------------------
             case T_ID:
@@ -441,7 +554,7 @@ void scanner_get_token( T_token* token )
                 ungetc( current_pos );
                 set_token( token, token->ttype);
                 
-                // TODO: is keyword
+                is_keyword(current_pos-lex_length, token);
                 return;
             }
 
@@ -452,6 +565,7 @@ void scanner_get_token( T_token* token )
                 {
                     lex_length++;
                     znak = getc( current_pos );
+                    scanner_column++;
                 }
                 if( znak == '.' )
                 {
@@ -554,6 +668,8 @@ void scanner_get_token( T_token* token )
                         set_token( token, E_GREATEREQ);
                     else
                         set_token( token, E_INVLD);
+                    // ungetc( current_pos );
+                    return;
                 }
                 else if( is_divider( znak, operator_divider ) )
                 {
@@ -601,13 +717,13 @@ void scanner_get_token( T_token* token )
                 }
                 else if( znak == '*' )
                 {
-                   // tu bolo ponutie z buffera
                     next_state = T_BLOCK_C;
                     break;
                 }
                 else if( is_divider( znak, operator_divider ) )
                 {
                     ungetc( current_pos );
+                    lex_length--;
                     set_token( token, E_DIV);
                     return;
                 }
