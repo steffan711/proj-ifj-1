@@ -83,7 +83,7 @@ E_ERROR_TYPE _boolval( TERM *input, bool *result )
             break;
 			
         case DATA_STRING:
-            if( input->data._string[0] == '\0' )
+            if( input->data._string[0] == 0 )
                 *result = false;
             else
                 *result = true;
@@ -199,15 +199,15 @@ E_ERROR_TYPE _strval( TERM *input, char **result )
 				*result = malloc( 2 * sizeof( char ) );
 				if( *result == NULL )
 					return E_INTERPRET_ERROR;
-				*result[0] = '1';
-				*result[1] = '\0';
+				*( *result ) = '1';
+				*( *result + 1 ) = 0;
 			}
 			else
 			{
 				*result = malloc( 1 * sizeof( char ) );
 				if( *result == NULL )
 					return E_INTERPRET_ERROR;
-				*result[0] = '\0';
+				*( *result ) = 0;
 			}
             break;
 			
@@ -217,12 +217,12 @@ E_ERROR_TYPE _strval( TERM *input, char **result )
 				*result = malloc( 2 * sizeof( char ) );
 				if( *result == NULL )
 					return E_INTERPRET_ERROR;
-				*result[0] = '0';
-				*result[1] = '\0';
+				*( *result ) = '0';
+				*( *result + 1 ) = 0;
 			}
 			else
 			{
-				*result = malloc( ( intNumSpaces( input->data._int ) * sizeof( char ) ) + 1 );
+				*result = malloc( ( intNumSpaces( input->data._int ) + 1 ) * sizeof( char ) );
 				if( *result == NULL )
 					return E_INTERPRET_ERROR;
 				sprintf( *result, "%u", input->data._int );
@@ -230,21 +230,13 @@ E_ERROR_TYPE _strval( TERM *input, char **result )
             break;
 			
         case DATA_DOUBLE:
-			if( input->data._double <= 0 )
+			if( 1 )
 			{
-				*result = malloc( 2 * sizeof( char ) );
-				if( *result == NULL )
-					return E_INTERPRET_ERROR;
-				*result[0] = '0';
-				*result[1] = '\0';
-			}
-			else
-			{
-				char temp[MAX_DBL_DIGITS] = { '\0', };
+				char temp[MAX_DBL_DIGITS] = { 0, };
 				sprintf( temp, "%g", input->data._double );
-				if( temp[MAX_DBL_DIGITS - 1] != '\0' )
+				if( temp[MAX_DBL_DIGITS - 1] != 0 )
 					return E_INTERPRET_ERROR;
-				*result = malloc( strlen( temp ) * sizeof( char ) + 1 );
+				*result = malloc( ( strlen( temp ) + 1 ) * sizeof( char ) );
 				if( *result == NULL )
 					return E_INTERPRET_ERROR;
 				strcpy( *result, temp );
@@ -252,7 +244,7 @@ E_ERROR_TYPE _strval( TERM *input, char **result )
             break;
 			
         case DATA_STRING:
-			*result = malloc( strlen( input->data._string ) * sizeof( char ) + 1 );
+			*result = malloc( ( strlen( input->data._string ) + 1 ) * sizeof( char ) );
 			if( *result == NULL )
 				return E_INTERPRET_ERROR;
 			strcpy( *result, input->data._string );
@@ -262,7 +254,7 @@ E_ERROR_TYPE _strval( TERM *input, char **result )
 			*result = malloc( 1 * sizeof( char ) );
 			if( *result == NULL )
 				return E_INTERPRET_ERROR;
-			*result[0] = '\0';
+			*( *result ) = 0;
             break;
 			
         default:
@@ -341,7 +333,10 @@ E_ERROR_TYPE _find_string( char *input, char *find, int *result )
  * @return void
  */
 void quicksort( char *input, int left, int right )
-{	
+{
+	if( right - left <= 1 )
+		return;
+	
 	char pivot = input[(left + right) / 2], temp;
     int l = left, r = right;
     
@@ -374,7 +369,7 @@ E_ERROR_TYPE _sort_string( char *input, char **result )
 	int len = strlen( input ) + 1;
 	
 	char *help = malloc( len * sizeof( char ) );
-	help[len - 1] = '\0';
+	help[len - 1] = 0;
 	
 	strcpy( help, input );
 

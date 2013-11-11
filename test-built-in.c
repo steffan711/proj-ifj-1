@@ -85,6 +85,8 @@ void TEST1()
             printf( "string(\"11\")   -> bool: %d\n", res );
         else
             printf( "string(\"11\")   -> bool: error\n" );
+			
+	free( term.data._string );
 }
 /** /boolval test */
 
@@ -168,6 +170,8 @@ void TEST2()
             printf( "string(\"e\")    -> int: %d\n", res );
         else
             printf( "string(\"e\")    -> int: error\n" );
+			
+	free( term.data._string );
 }
 /** /intval test */
 
@@ -233,6 +237,7 @@ void TEST3()
     
         term.data._string[0] = 0;
         term.data._string[1] = 0;
+        term.data._string[2] = 0;
         if( _doubleval( &term, &res ) == E_OK )
             printf( "string(\"\")     -> double: %f\n", res );
         else
@@ -257,11 +262,13 @@ void TEST3()
 		term.data._string[2] = '1';
         term.data._string[3] = ' ';
         term.data._string[4] = 's';
-        term.data._string[5] = '\0';
+        term.data._string[5] = 0;
         if( _doubleval( &term, &res ) == E_OK )
             printf( "string(\"4e1 s\")-> double: %f\n", res );
         else
             printf( "string(\"4e1 s\")-> double: error\n" );
+	
+	free( term.data._string );
 }
 /** /doubleval test */
 
@@ -343,6 +350,7 @@ void TEST4()
     
         term.data._string[0] = 0;
         term.data._string[1] = 0;
+		term.data._string[2] = 0;
         if( _strval( &term, &res ) == E_OK )
             printf( "string(\"\")     -> string: %s\n", res );
         else
@@ -380,6 +388,8 @@ void TEST4()
             printf( "string(\"4e1 s\")-> string: error\n" );
 		if( res != NULL )
 			free( res );
+
+	free( term.data._string );
 }
 /** /strval test */
 
@@ -414,10 +424,38 @@ void TEST5()
             printf( "sort_string(\"%s\")-> string: %s\n", slovo, res );
         else
             printf( "string(\"%s\")-> string: error\n", slovo );
-		// if( res != NULL )
-			// free( res );
-		if( slovo != NULL )
+		if( res != NULL )
 			free( res );
+			
+	slovo[0] = '\0';
+	slovo[1] = '\0';
+	slovo[2] = '\0';
+	slovo[3] = '\0';
+	slovo[4] = '\0';
+	slovo[5] = '\0';
+	slovo[6] = '\0';
+	slovo[7] = '\0';
+	slovo[8] = '\0';
+	slovo[9] = '\0';
+	slovo[10] = '\0';
+	slovo[11] = '\0';
+	slovo[12] = '\0';
+	slovo[13] = '\0';
+	slovo[14] = '\0';
+	slovo[15] = '\0';
+	slovo[16] = '\0';
+	slovo[17] = '\0';
+	slovo[18] = '\0';
+	slovo[19] = '\0';
+	
+		if( _sort_string( slovo, &res ) == E_OK )
+            printf( "sort_string(\"%s\")-> string: %s\n", slovo, res );
+        else
+            printf( "string(\"%s\")-> string: error\n", slovo );
+		if( res != NULL )
+			free( res );
+			
+	free( slovo );
 }
 /** /sort_string test */
 
