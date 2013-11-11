@@ -19,4 +19,4 @@ E_ERROR_TYPE _get_string( char *result );
 E_ERROR_TYPE _put_string( int *result, char *input, ... );
 E_ERROR_TYPE _get_substring( char *input, int begpos, int endpos, char *result );
 E_ERROR_TYPE _find_string( char *input, char *find, int *result );
-E_ERROR_TYPE _sort_string( char *input, char *result );
+E_ERROR_TYPE _sort_string( char *input, char **result );

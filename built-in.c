@@ -282,6 +282,7 @@ E_ERROR_TYPE _strval( TERM *input, char **result )
  */
 E_ERROR_TYPE _get_string( char *result )
 {
+	
     return E_OK;
 }
 
@@ -295,6 +296,7 @@ E_ERROR_TYPE _get_string( char *result )
  */
 E_ERROR_TYPE _put_string( int *result, char *input, ... )
 {
+	
     return E_OK;
 }
 
@@ -310,6 +312,7 @@ E_ERROR_TYPE _put_string( int *result, char *input, ... )
  */
 E_ERROR_TYPE _get_substring( char *input, int begpos, int endpos, char *result )
 {
+	
     return E_OK;
 }
 
@@ -324,7 +327,38 @@ E_ERROR_TYPE _get_substring( char *input, int begpos, int endpos, char *result )
  */
 E_ERROR_TYPE _find_string( char *input, char *find, int *result )
 {
+	
     return E_OK;
+}
+
+
+/**
+ * Pomocna funkcia, implementacia quicksortu
+ *
+ * @param retazec
+ * @param leva medz
+ * @param prava medz
+ * @return void
+ */
+void quicksort( char *input, int left, int right )
+{	
+	char pivot = input[(left + right) / 2], temp;
+    int l = left, r = right;
+    
+    do {
+        while( input[l] < pivot && l < right ) l++;
+        while( input[r] > pivot && r > left ) r--;
+ 
+        if( l <= r )
+		{
+            temp = input[l];
+            input[l++] = input[r];
+            input[r--] = temp;
+        }
+    } while( l < r );
+ 
+    if( r > left ) quicksort( input, left, r );
+    if( l < right ) quicksort( input, l, right );
 }
 
 
@@ -334,9 +368,19 @@ E_ERROR_TYPE _find_string( char *input, char *find, int *result )
  * @param Vstupny retazec
  * @param Zoradeny retazec
  * @return Uspesnost
-{
  */
-E_ERROR_TYPE _sort_string( char *input, char *result )
+E_ERROR_TYPE _sort_string( char *input, char **result )
 {
+	int len = strlen( input ) + 1;
+	
+	char *help = malloc( len * sizeof( char ) );
+	help[len - 1] = '\0';
+	
+	strcpy( help, input );
+
+	quicksort( help, 0, len - 2 );
+	
+	*result = help;
+	
     return E_OK;
 }

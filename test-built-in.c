@@ -384,8 +384,47 @@ void TEST4()
 /** /strval test */
 
 
-int main( int argc, char *argv[] )
+/** sort_string test */
+void TEST5()
 {
+	char *res = NULL;
+	char *slovo = malloc( sizeof( char ) * 20 );
+	slovo[0] = 'v';
+	slovo[1] = 'r';
+	slovo[2] = 'z';
+	slovo[3] = 'l';
+	slovo[4] = 'o';
+	slovo[5] = 'j';
+	slovo[6] = 'm';
+	slovo[7] = 'l';
+	slovo[8] = 't';
+	slovo[9] = 'j';
+	slovo[10] = 'i';
+	slovo[11] = 'g';
+	slovo[12] = 'g';
+	slovo[13] = 'f';
+	slovo[14] = 'e';
+	slovo[15] = 'u';
+	slovo[16] = 's';
+	slovo[17] = 'a';
+	slovo[18] = 'b';
+	slovo[19] = '\0';
+	
+		if( _sort_string( slovo, &res ) == E_OK )
+            printf( "sort_string(\"%s\")-> string: %s\n", slovo, res );
+        else
+            printf( "string(\"%s\")-> string: error\n", slovo );
+		// if( res != NULL )
+			// free( res );
+		if( slovo != NULL )
+			free( res );
+}
+/** /sort_string test */
+
+
+
+int main()
+{	
     printf( "\n--------------TEST1 (_boolval) BEGIN!!\n\n" );
     TEST1();
     printf( "\n--------------TEST1 (_boolval) END!!\n" );
@@ -398,5 +437,8 @@ int main( int argc, char *argv[] )
 	printf( "\n--------------TEST4 (_strval) BEGIN!!\n\n" );
     TEST4();
     printf( "\n--------------TEST4 (_strval) END!!\n" );
+	printf( "\n--------------TEST5 (_sort_string) BEGIN!!\n\n" );
+    TEST5();
+    printf( "\n--------------TEST5 (_sort_string) END!!\n" );
     return 0;
 }
