@@ -6,8 +6,7 @@
  */
 
 #include <stdbool.h>
-#define allocation_coeficient 2
-#define pre_allocation 32
+
 
 
 /** Typy tokenov + terminaly a nonterminaly + symboly do precedencnej tabulky,
@@ -55,8 +54,8 @@ typedef enum
         E_ELSE,
         E_RETURN,
         // ----
-    E_MALLOC,       // posral sa malloc, balime
-    E_EOF          // padla
+    // token e_malloc odstraneny
+    E_EOF,          // padla
 } TOKEN_TYPE;
 
 /** Stavy konecnej masinky **/
@@ -76,16 +75,14 @@ typedef enum
     T_EXCLAM,       // !
     T_LIT,          // literal
     T_EXP,          // exponent
-    T_ESCAPE,       // escape sekvencia v retazci
 } FSM_STATE;
 
 typedef struct token
 {
     TOKEN_TYPE ttype;
     unsigned line;
-    unsigned column;
+    unsigned length; // pocet znakov v retazci vratane ukoncovacej nuly 
     union {
-        bool   _bool;
         int    _int;
         double _double;
         char*  _string;
@@ -107,22 +104,13 @@ typedef struct _tStringBuffer
 } tStringBuffer;
 
  /** Globalne premenne **/
- char*          current_pos;  // aktualna pozicia scannera v subore, prepisovat len ked je to nutne
+ char*          current_pos;  // aktualna pozicia scannera v subore, pneprepisovat
  unsigned       scanner_line, scanner_column;
- const char*    file_origin;
- //tStringBuffer stack;   // zasobnik znakov na retazce
- tStringBuffer Buffer;
- unsigned lex_length; // dlzka poslednej spracovanej lexemy, ak by niekoho nahodou zaujimalo, aka je dlha...
+ const char*    file_origin; // zaciatok suboru v pamati
+ tStringBuffer Buffer; // zasobnik znakov na retazce
+ 
  
 /** Funkcie **/
-E_ERROR_TYPE buffer_push( char znak );
-E_ERROR_TYPE scanner_init( char *file_start );
-void buffer_init();
-void scanner_shutdown();
-void print_token( T_token* token );
-
+void scanner_init( char *file_start );
 void scanner_get_token( T_token* token );
-/** pozn. pre volajuceho
-            if( token.ttype == E_LIT) 
-                free( token.data._string )
-**/
+void print_token( T_token* token );

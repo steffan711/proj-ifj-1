@@ -43,16 +43,10 @@ int main( int argc, char *argv[] )
     }
     
     
-    
-    
     T_token token;
     token.ttype = E_INVLD;
     
-    if( scanner_init(subor) != E_OK )
-    {
-        fprintf(stderr, "Fatal error. \n");
-        free( handle_subor );
-    }
+    scanner_init(subor);
         
         
     printf("---------------------------");
@@ -60,19 +54,9 @@ int main( int argc, char *argv[] )
     {
         scanner_get_token(&token);
         print_token(&token);
-        if(token.ttype == E_LITER)
-            free(token.data._string);
-        
-        if( token.ttype == E_MALLOC)
-        {
-            fprintf(stderr, "Fatal error. \n");
-            free( handle_subor );
-            return EXIT_FAILURE;
-        }
     }
     printf("---------------------------\n");
     
-    scanner_shutdown();
     free( handle_subor );
     return 0;
 }

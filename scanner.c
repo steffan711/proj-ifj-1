@@ -13,54 +13,8 @@
 #include "types.h"
 #include "file_io.h"
 #include "scanner.h"
-#include <string.h> // strcpy
 
 
-/* 
- * Vlozi jeden znak do zasobnika znakov
- * @param ukazatel na zasobnik znakov
- * @param znak ktory treba doplnit
- * @return Uspesnost
-*/
-inline E_ERROR_TYPE buffer_push( char znak )
-{
-
-    if( Buffer.allocated_size > Buffer.size ) // este sa donho zmesti
-        Buffer.ptr[Buffer.size++] = znak;
-        
-    else // uz sa nezmesti do koze
-    {
-        Buffer.allocated_size *= allocation_coeficient;
-
-        Buffer.ptr = realloc( Buffer.ptr,( Buffer.allocated_size ) );
-        if( Buffer.ptr == NULL )
-            return E_INTERPRET_ERROR;
-
-        Buffer.ptr[Buffer.size++] = znak;
-    }
-    return E_OK;
-}
-
-
-
-    
-void printBuffer() // vypise aktualny obsah zasobnika
-{
-    if( Buffer.ptr != NULL )
-    {
-        for( unsigned i = 0; i < Buffer.size; i++ )
-            printf( "%c", Buffer.ptr[i] );
-    }
-    else
-        printf( "No string data\n" );
-    
-}
-
-
-void scanner_shutdown() // Funkcia zrusi buffer na stringy, po zavolani tejto funkcie nevolat scanner_get_token
-{
-    free(Buffer.ptr);
-}
 
 
 
@@ -69,66 +23,33 @@ void scanner_shutdown() // Funkcia zrusi buffer na stringy, po zavolani tejto fu
  *
  * @param 1 ukazatel na token
  * @param 2 token type
- * @param 3 prepinac
  */
-static inline void set_token( T_token* token, TOKEN_TYPE type)
+static inline void set_token( T_token* token, TOKEN_TYPE type, unsigned dlzka, void* data )
 {
     token->line = scanner_line;
-    token->column = scanner_column-1;
-    
-    switch( type )
-    {
-        case E_DOUBLE:
-        {
-            if( sscanf(current_pos-lex_length, "%lf", &token->data._double ) == 1 )
-                token->ttype = E_DOUBLE;
-            else 
-            {
-                token->ttype = E_INVLD;
-                token->data._string = NULL; // dam vam tam tu nulu, ak by sa niekto chcel hrabat v invalidnom tokene
-            }
-            return;
-        }
-        case E_INT:
-        {
-            token->ttype = E_INT;
-            if( sscanf( ( char* ) current_pos-lex_length, "%d", &token->data._int ) == 1)
-                return;
-            else
-            {
-                token->ttype = E_INVLD;
-                token->data._string = NULL;
-            }
-            break;
-            
-        }
-        case E_IDENT:
-        case E_VAR:
-        {   
-            token->ttype = type;
-            token->data._string = current_pos - lex_length; 
-            break;
-        }
-        case E_LITER:
-        {
-            token->data._string = malloc( ( Buffer.size )*sizeof( char ) + 1 ); // ukoncenie
-            if( token->data._string == NULL )
-                set_token( token, E_MALLOC); // noch einmal
-            else
-            {   // dest, source, num of chars
-                strncpy( token->data._string, current_pos - lex_length, lex_length ); // Ze vraj to tam vlozi aj ukoncovaciu 0
-                token->ttype = E_LITER;
-            }
-            break;
-        }
-        default: 
-        {
-            token->ttype = type;
-            token->data._string = NULL; 
-            break;
-        }
-    } // switch 
+    token->length = dlzka;
+    token->ttype = type;
+    token->data._string = data;
 }
+
+	
+/**
+ * Funkcia realizuje prevod hexadecimalneho cisla na integer
+ */
+static inline int hex2int( char a, char b)
+{
+    int c;
+    if ( a >= '0' && a <= '9' )
+        c = (a-'0')*16;
+    else
+        c = (a-'A'+10)*16;
+    if ( b >= '0' && b <= '9' )
+        c = c+(b-'0');
+    else
+        c = c+(b-'A'+10);
+    return c;
+}
+
 
 
 /**
@@ -138,60 +59,46 @@ static inline void set_token( T_token* token, TOKEN_TYPE type)
  */
 static inline bool is_divider( char znak, int switcher )
 {
-
-        if( switcher == number_divider ) 
-            switch (znak)  // co moze nasledovat za operandom ?
-            {
-                case '/':
-                case '+':
-                case '-':
-                case ';':
-                case ',':
-                case 0  : // EOF
-                case ')':
-                case '(':
-                case '*':
-                    return true;
-                default: return isspace( znak );
-            }
-        else // co moze nasledovat za operatorom ?             
-            switch (znak)
-            {
-                case '$':
-                case 0  :
-                case ')':
-                case '(':
-                    return true;
-                default: return ( isspace( znak ) || isalnum( znak ) ); // znak, cislo alebo medzera je ok
-            }
-
+    if( switcher == number_divider ) // co moze nasledovat za operandom ?
+        switch (znak)  
+        {
+            case '/':
+            case '+':
+            case '-':
+            case ';':
+            case ',':
+            case 0  : // EOF
+            case ')':
+            case '(':
+            case '*':
+                return true;
+            default: return isspace( znak );
+        }
+    else // co moze nasledovat za operatorom ?             
+        switch (znak)
+        {
+            case '$':
+            case 0  :
+            case ')':
+            case '(':
+                return true;
+            default: return ( isspace( znak ) || isalnum( znak ) ); // znak, cislo alebo medzera je ok
+        }
 }
-// test: /* /a /7 /$
-
 
 
 /**
- * //////////////////////////////////////////////////////////////POPIS FUNKCIE POPROSIM SEM
+ * @brief inicializuje scanner pred jeho prvym pouzitim
  * @param ukazatel na subor
  * @return Uspesnost
 */
-E_ERROR_TYPE scanner_init( char *file_start )
+void scanner_init( char *file_start )
 {
     current_pos = file_start;
     scanner_line = 1;
     scanner_column = 0;
     file_origin = file_start;
-
-    Buffer.ptr = malloc( pre_allocation);
-    if( Buffer.ptr == NULL )
-        return E_INTERPRET_ERROR;    
-
-    Buffer.allocated_size = pre_allocation;
-    Buffer.size = 0;
-    
-    return E_OK;
 }
-
 
 /**
  * debugovacia funkcia, vypisuje token
@@ -199,9 +106,8 @@ E_ERROR_TYPE scanner_init( char *file_start )
  */
 void print_token( T_token* token )
 {
-
-    char* tmp = current_pos - lex_length;
-
+    
+    printf( "\nToken -> length: %u", token->length);
     switch( token->ttype ) 
     {
         case E_COMA:        printf( "\nToken -> ttype: E_COMA\n" );         break;
@@ -229,7 +135,7 @@ void print_token( T_token* token )
         case E_NOT_EQ:      printf( "\nToken -> ttype: E_NOT_EQ\n" );       break;
         case E_NULL:        printf( "\nToken -> ttype: E_NULL\n" );         break;
         case E_PLUS:        printf( "\nToken -> ttype: E_PLUS\n" );         break;
-        case E_RABRACK:     printf( "\nToken -> ttype: E_RABLRACK\n" );     break;
+        case E_RABRACK:     printf( "\nToken -> ttype: E_RABRACK\n" );     break;
         case E_RETURN:      printf( "\nToken -> ttype: E_RETURN\n" );       break; 
         case E_RPARENTHESES:printf( "\nToken -> ttype: E_RPARENTHESES\n" ); break;
         case E_SEMICL:      printf( "\nToken -> ttype: E_SEMICL\n" );       break;
@@ -241,34 +147,25 @@ void print_token( T_token* token )
     
     } // switch
     
+    
+    printf( "Token -> data: ");
     if( token->ttype == E_INT )
-        printf( "Token -> data: %d", token->data._int );
-    else if( token->ttype == E_DOUBLE )
-        printf( "Token -> data: %e", token->data._double );
-    else if( token->ttype == E_LITER )
-    {
-        printf( "Token -> data: ");
-        printBuffer();
-    }
-    else if( token->data._string )
-    {
-        printf( "Token -> data: ");
-        for( unsigned i = 0; i < lex_length; i++)
-            printf("%c", *(tmp++)); // Snad to bude fungovat
-    }
-    else
-        printf( "Token -> data: NO DATA" );
+        printf( "%d", token->data._int );
         
-    printf( "\nToken -> column: %u", token->column );
+    else if( token->ttype == E_DOUBLE )
+        printf( "%e", token->data._double );
+
+    else if( token->data._string )
+        for( unsigned i = 0; i < token->length; i++)
+            printf("%c", token->data._string[i]); 
+    else
+        printf( "NO DATA" );
     printf( "\nToken -> line: %u\n", token->line );
 }
 
 
 extern inline int sstrcmp( const char * str1, const char * str2, int str1_size, int str2_size )
 {
-    // if (str1_size == 0 || str2_size == 0) ak budeme pocitat s tym ze na vstupe bude retazec dlzky 0
-        // return 0;
-
     if ( str1_size > str2_size )
         return 1;
     else if ( str1_size < str2_size )
@@ -285,7 +182,7 @@ extern inline int sstrcmp( const char * str1, const char * str2, int str1_size, 
 }
 
 
-bool is_keyword(const char* word, T_token* token) // testuje string na klucove slovo
+static inline bool is_keyword(const char* word, T_token* token, unsigned lex_length) // testuje string na klucove slovo
 {
     int i;
     if ( ( i = sstrcmp( word, "true", lex_length, 4 ) ) == 0 ) 
@@ -310,10 +207,7 @@ bool is_keyword(const char* word, T_token* token) // testuje string na klucove s
                 token->data._string = NULL;
                 return true;
             }
-            else
-            {
-                return false;
-            }
+            else return false;
         }
         else
         {
@@ -323,10 +217,7 @@ bool is_keyword(const char* word, T_token* token) // testuje string na klucove s
                 token->data._string = NULL;
                 return true;
             }
-            else
-            {
-                return false;
-            }
+            else return false;
         }
     }
     else
@@ -353,15 +244,9 @@ bool is_keyword(const char* word, T_token* token) // testuje string na klucove s
                     token->data._string = NULL;
                     return true;
                 }
-                else
-                {
-                    return false;
-                }
+                else return false;
             }
-            else
-            {
-                return false;
-            }
+            else return false;
         }
         else
         {
@@ -371,60 +256,14 @@ bool is_keyword(const char* word, T_token* token) // testuje string na klucove s
                 token->data._string = NULL;
                 return true;
             }
-            else
-            {
-                return false;
-            }
+            else return false;
         }
     }
-
-        /*if (sstrcmp(word,"function",lex_length, 8) == 0)
-        {
-                token->ttype = E_FUNCTION;
-                return true;
-        }
-        else if (sstrcmp(word,"else",lex_length,4) == 0)
-        {
-                token->ttype = E_ELSE;
-                return true;
-        }
-        else if (sstrcmp(word,"if",lex_length,2) == 0)
-        {
-                token->ttype = E_IF;
-                return true;
-        }
-        else if (sstrcmp(word,"false",lex_length,5) == 0)
-        {
-                token->ttype = E_FALSE;
-                return true;
-        }
-        else if (sstrcmp(word,"null",lex_length,4) == 0)
-        {
-                token->ttype = E_NULL;
-                return true;
-        }
-        else if (sstrcmp(word,"true",lex_length,4) == 0)
-        {
-                token->ttype = E_TRUE;
-                return true;
-        }
-        else if (sstrcmp(word,"while",lex_length,5) == 0)
-        {
-                token->ttype = E_WHILE;
-                return true;
-        }
-        else if (sstrcmp(word,"return",lex_length,6) == 0)
-        {
-                token->ttype = E_RETURN;
-                return true;
-        }
-        return NULL;*/
 }
 
 
 /**
  * Po zavolani obsahuje parameter token nasledujuci token
- * Ak token obsahuje stringove data (E_VAR,E_IDENT,E_lit), treba ich uvolnit: free( token.data._string )
  *
  * @param ukazatel na token (return)
  */
@@ -432,8 +271,7 @@ void scanner_get_token( T_token* token )
 {
     // inicializacia :
     FSM_STATE next_state = INIT; 
-    Buffer.size = 0;
-    lex_length = 0;
+    unsigned lex_length = 0;
     int znak;
 
     while ( next_state != FINISH )
@@ -442,8 +280,7 @@ void scanner_get_token( T_token* token )
         scanner_column++;
         switch( next_state )
         {
-            // --------------------------------------------------------
-            case INIT:    
+            case INIT:     
             {
                 while( isspace( znak ) )    // white space skip
                 {
@@ -460,13 +297,14 @@ void scanner_get_token( T_token* token )
                 {
                     next_state = T_ID;
                     token->ttype = E_IDENT;
+                    break;
                 }
                 else if( isdigit( znak ) ) // 0-9
                 {
                     lex_length++;
                     token->ttype = E_INT;
                     next_state = T_INT;
-                    
+                    break;
                 }
                 else
                 {
@@ -481,19 +319,19 @@ void scanner_get_token( T_token* token )
                                         lex_length--; // $ nie je sucastou mena premennej
                                         break;
                         case ';':
-                                        set_token( token, E_SEMICL);
+                                        set_token( token, E_SEMICL, lex_length, NULL);
                                         return;	                                          
                         case '=':
                                         next_state = T_ASS;
                                         break;
                         case '+':
-                                        set_token( token, E_PLUS);
+                                        set_token( token, E_PLUS, lex_length, NULL);
                                         return;
                         case '-':
-                                        set_token( token, E_MINUS);
+                                        set_token( token, E_MINUS, lex_length, NULL);
                                         return;
                         case '*':
-                                        set_token( token, E_MULT);
+                                        set_token( token, E_MULT, lex_length, NULL);
                                         return;
                         case '<':
                                         next_state = T_LESS;
@@ -502,46 +340,44 @@ void scanner_get_token( T_token* token )
                                         next_state = T_GREATER;
                                         break;
                         case '"':
-                                        buffer_push(znak);
+                                        lex_length=0;
                                         next_state = T_LIT;
                                         break;
                         case '.':
-                                        set_token( token, E_CONCAT);
+                                        set_token( token, E_CONCAT, lex_length, NULL);
                                         return;
                         case '(':
                                         
-                                        set_token( token, E_LPARENTHESES);
+                                        set_token( token, E_LPARENTHESES, lex_length, NULL);
                                         return;
                         case ')':
 
-                                        set_token( token, E_RPARENTHESES);
+                                        set_token( token, E_RPARENTHESES, lex_length, NULL);
                                         return;
                         case '{':
  
-                                        set_token( token, E_LABRACK);
+                                        set_token( token, E_LABRACK, lex_length, NULL);
                                         return;
                         case '}':
 
-                                        set_token( token, E_RABRACK);
+                                        set_token( token, E_RABRACK, lex_length, NULL);
                                         return;
                         case '!':
                                         next_state = T_EXCLAM;
                                         break;
                         case ',':
-                                        set_token( token, E_COMA);
+                                        set_token( token, E_COMA, lex_length, NULL);
                                         return;	                                      
                         case 0:
-                                        set_token( token, E_EOF);
+                                        set_token( token, E_EOF, lex_length, NULL);
                                         return;
                         default:
-                                        set_token( token, E_INVLD);
+                                        set_token( token, E_INVLD, lex_length, NULL);
                                         return;
                     } // switch
-                } // if
-                break;
+                    break;
+                }
             } // init
-
-            // --------------------------------------------------------
             case T_ID:
             {
                 lex_length++;
@@ -552,13 +388,10 @@ void scanner_get_token( T_token* token )
                     scanner_column++;
                 }
                 ungetc( current_pos );
-                set_token( token, token->ttype);
-                
-                is_keyword(current_pos-lex_length, token);
+                set_token( token, token->ttype, lex_length, current_pos-lex_length);
+                is_keyword(current_pos-lex_length, token, lex_length);
                 return;
             }
-
-            // --------------------------------------------------------
             case T_INT:
             {    
                 while( isdigit( znak ) )
@@ -579,42 +412,43 @@ void scanner_get_token( T_token* token )
                     lex_length++;
                     break;                    
                 }
-                else if( is_divider( znak, number_divider ) ) // validny oddelovac integera
+                else if( is_divider( znak, number_divider ) ) // validny oddelovac cisla
                 {
                     ungetc( current_pos );
-                    set_token( token, E_INT);
+                    set_token( token, E_INT, lex_length, NULL );
+                    if( sscanf( current_pos-lex_length, "%d", &token->data._int ) == 1)
+                        ;
+                    else
+                        set_token( token, E_INVLD, lex_length, NULL );
                     return;
                 }
                 else
                 {
                     ungetc( current_pos );
-                    set_token( token, E_INVLD);
+                    set_token( token, E_INVLD, lex_length, NULL);
                     return;
                 }
                 break;
             }
-
-            // --------------------------------------------------------
-            
-            case T_ASS:                          // =
+            case T_ASS: // =
             {
                 if ( znak == '=' )               // ==
                 {
                     znak = getc( current_pos );
-                    printf( "t_ass %c", znak );
+                    //printf( "t_ass %c", znak );
                     if( znak == '=' )            // ===
                     {
                         if( getc( current_pos ) != '=' )
                         {
                             ungetc( current_pos );
-                            set_token( token, E_TRIPLEEQ);
+                            set_token( token, E_TRIPLEEQ, lex_length, NULL);
                         }
                         else
-                            set_token( token, E_INVLD);    // ====
+                            set_token( token, E_INVLD, lex_length, NULL);    // ====
                     }
                     else if( is_divider( znak, operator_divider ) )
                     {
-                        set_token( token, E_INVLD);
+                        set_token( token, E_INVLD, lex_length, NULL);
                         ungetc( current_pos );
                         return;
                     }
@@ -622,21 +456,19 @@ void scanner_get_token( T_token* token )
                 }
                 else if( is_divider( znak, operator_divider ) )
                 {
-                    set_token( token, E_EQ);
+                    set_token( token, E_EQ, lex_length, NULL);
                     ungetc( current_pos );
                 }
                 
                 return;
             }
-
-            // --------------------------------------------------------
             case T_BLOCK_C:
             {
                 while(1)
                 {
                     if( znak == 0 )
                     {
-                        set_token( token, E_EOF);
+                        set_token( token, E_EOF, lex_length, NULL);
                         return;
                     }
                     else if( znak == '*' )
@@ -658,31 +490,27 @@ void scanner_get_token( T_token* token )
                 next_state = INIT;
                 break;
             }
-
-            // --------------------------------------------------------
             case T_GREATER:
             {
                 if( znak == '=' )
                 { // >=?
                     if( is_divider( getc( current_pos ), operator_divider ) )
-                        set_token( token, E_GREATEREQ);
+                        set_token( token, E_GREATEREQ, lex_length, NULL);
                     else
-                        set_token( token, E_INVLD);
+                        set_token( token, E_INVLD, lex_length, NULL);
                     // ungetc( current_pos );
                     return;
                 }
                 else if( is_divider( znak, operator_divider ) )
                 {
                     ungetc( current_pos );
-                    set_token( token, E_GREATER);
+                    set_token( token, E_GREATER, lex_length, NULL);
                 }
                 else
-                    set_token( token, E_INVLD);
+                    set_token( token, E_INVLD, lex_length, NULL);
 
                 return;
             }
-
-            // --------------------------------------------------------
             case T_LESS:
             {
                 if( znak == '=' )
@@ -690,27 +518,32 @@ void scanner_get_token( T_token* token )
                     if ( is_divider( getc( current_pos ), operator_divider ) )
                     {
                         ungetc( current_pos );
-                        set_token( token, E_LESSEQ);
+                        set_token( token, E_LESSEQ, lex_length, NULL);
                     }
                     else
-                        set_token( token, E_INVLD);
+                        set_token( token, E_INVLD, lex_length, NULL);
                 }
                 else if ( is_divider( znak, operator_divider ) || znak == '?' ) // koli <? php
                 {
                     ungetc( current_pos );
-                    set_token( token, E_LESS);
+                    set_token( token, E_LESS, lex_length, NULL);
                 }
                 else
-                    set_token( token, E_INVLD);
+                    set_token( token, E_INVLD, lex_length, NULL);
                 return;
             }
-
-            // --------------------------------------------------------
             case T_FRACTION:
             {
                 if( znak == '/' )
                 {
-                    while( getc( current_pos ) != '\n' ) {}; // preskoc vsetko az do konca riadku
+                    while( (znak = getc( current_pos )) != '\n') // preskoc vsetko az do konca riadku
+                    {  
+                        if(znak == 0)
+                        {
+                            set_token(token, E_EOF, lex_length, NULL);
+                            return;
+                        }
+                    }
                     scanner_line++;
                     next_state = INIT;
                     break;
@@ -724,40 +557,34 @@ void scanner_get_token( T_token* token )
                 {
                     ungetc( current_pos );
                     lex_length--;
-                    set_token( token, E_DIV);
+                    set_token( token, E_DIV, lex_length, NULL);
                     return;
                 }
                 else
                 {
-                    set_token( token, E_INVLD);
+                    set_token( token, E_INVLD, lex_length, NULL);
                     return;
                 }
             }
-
-            // --------------------------------------------------------
             case T_CONCAT:
             {
                 if( is_divider( znak, operator_divider ) )
-                    set_token( token, E_CONCAT);
+                    set_token( token, E_CONCAT, lex_length, NULL);
                 else
-                    set_token( token, E_INVLD);
+                    set_token( token, E_INVLD, lex_length, NULL);
                 return;
             }
-
-            // --------------------------------------------------------
             case T_EXCLAM:
             {
                 if( znak == '=' && getc( current_pos ) == '=' )
-                    set_token( token, E_NOT_EQ);
+                    set_token( token, E_NOT_EQ, lex_length, NULL);
                 else
                 {
                     ungetc( current_pos );
-                    set_token( token, E_INVLD);
+                    set_token( token, E_INVLD, lex_length, NULL);
                 }
                 return;
             }
-
-            // --------------------------------------------------------
             case T_FLOAT:
             {    //123.znak
                 if( znak == 'e' || znak == 'E' )
@@ -776,8 +603,9 @@ void scanner_get_token( T_token* token )
                 // 123.45+
                 if( is_divider( znak, number_divider ) )
                 {
-                    set_token( token, E_DOUBLE);
                     ungetc( current_pos );
+                    set_token( token, E_DOUBLE, lex_length, NULL ); 
+                    sscanf( current_pos - lex_length, "%lf", &token->data._double );
                     return;
                 }
                 else if( znak == 'e' || znak == 'E' )
@@ -788,12 +616,10 @@ void scanner_get_token( T_token* token )
                 }
                 else
                 {
-                    set_token( token, E_INVLD);
+                    set_token( token, E_INVLD, lex_length, NULL);
                     return;
                 }
             }
-
-            // --------------------------------------------------------
             case T_EXP:
             {
                 // optional +/-
@@ -812,7 +638,7 @@ void scanner_get_token( T_token* token )
                     }
                     else if( znak == 0 ) // ak by skor ako koniec cisla prisiel EOF
                     {
-                        set_token( token, E_INVLD);
+                        set_token( token, E_INVLD, lex_length, NULL);
                         ungetc( current_pos );
                         return;
                     }
@@ -823,116 +649,108 @@ void scanner_get_token( T_token* token )
                 // koniec exponentu:
                 if( is_divider( znak, number_divider ) )
                 {
-                    // 123.45E-23 123.45E23
                     ungetc( current_pos );
-                    set_token( token, E_DOUBLE);
+                    set_token( token, E_DOUBLE, lex_length, NULL ); 
+                    sscanf( current_pos - lex_length, "%lf", &token->data._double );
                 }
                 else // 123.5E-3ň
-                    set_token( token, E_INVLD);
+                    set_token( token, E_INVLD, lex_length, NULL);
                 return;
             }
-
-            // --------------------------------------------------------
             case T_LIT:
             {
-                
-                while( znak != '"' )
+                int offset = -1;
+                lex_length++;
+                while( znak != '"' ) // koniec stringu
                 {
-                    if( znak == '\\' )
+                    lex_length++;
+                    if(  znak < ' ' || znak == '$') // znaky ktore sa v retazci nesmu vyskytovat
                     {
-                        next_state = T_ESCAPE;
-                        break;
+                        set_token( token, E_INVLD, lex_length, NULL);
+                        return;
                     }
                     
-                    if( znak == 0 )
+                    if( znak == '\\' ) // escape sekvencia 
                     {
-                        set_token( token, E_INVLD);
-                        ungetc( current_pos );
-                        return;
-                    }
+                        znak = getc( current_pos );
+                        lex_length++;
+                        switch( znak )
+                        {
+                            case '"' :
+                            case '$' :
+                            case '\\':
+                                offset--;
+                                break;
+                            case 'n' :
+                                offset--;
+                                znak = '\n';
+                                break;
+                            case 't' :
+                                offset--;
+                                znak = '\t';
+                                break;
+                            case 'x':
+                            {
+                                int n_a, n_b;
+                                n_a = getc( current_pos );
+                                lex_length++;
+                                if( n_a != 0 )
+                                    n_b = getc( current_pos );
+                                else
+                                { 
+                                    set_token( token, E_EOF, lex_length, NULL);
+                                    return;
+                                }
+                                
+                                lex_length++;
+                                
+                                if( (( n_a >= '0' && n_a <= '9'  ) || ( n_a >= 'A' && n_a <= 'F' )) && (( n_b >= '0' && n_b <= '9'  ) || ( n_b >= 'A' && n_b <= 'F' )) ) // n_a a n_b su platne hexadecimalne cislice 
+                                {
+                                    znak = hex2int(n_a, n_b);
+                                    offset -= 3;
+                                }
+                                else // nespravny format hexa cisla
+                                {
+                                   set_token( token, E_INVLD, lex_length, NULL); 
+                                   return;
+                                }
+                                break;
+                            }
+                            default: // vbez zmeny
+                                break;
+                        }
 
-                    if( znak == '$' ) // dolar musi byt cez escape
-                    {
-                        set_token( token, E_INVLD);
-                        return;
-                    }
-                    buffer_push( znak );
+                    } // escape sekvencia
+                    *(current_pos + offset) = znak;
                     znak = getc( current_pos );
-                    scanner_column++;
-                }
+                    
+                } //while
 
-                if( next_state == T_ESCAPE )
-                    break;
+                if( offset ) 
+                {
+                    int count = offset;
+                    current_pos += offset;
+                    while(offset != -1)
+                    {
+                        *current_pos++ = ' ';
+                        lex_length--;
+                        offset++;
+                    }
+                    *current_pos = ' ';
+                    current_pos += (count+1);
+                    *current_pos++ = '\0';
+                }
                 else
-                {
-                    buffer_push( znak ); // ulozime "
-                    set_token( token, E_LITER);
-                    return;
-                }
-            }
+                    ungetc(current_pos);
+                set_token( token, E_LITER, lex_length-1, current_pos - lex_length);
+                return;
+            } // T_LIT
 
-            // --------------------------------------------------------
-            case T_ESCAPE:
-            {
-                if( znak < ' ' ) // < 31
-                {
-                    set_token( token, E_INVLD);
-                    return;
-                }
-
-                char hexa_cislo[1];
-                unsigned cislo;
-
-                switch( znak )
-                {
-                    case '"' :
-                    case '$' :
-                    case '\\':
-                                buffer_push( znak );
-                                break;
-
-                    case 'x':
-                                hexa_cislo[0] = getc( current_pos );
-                                if( hexa_cislo[0] != 0 )
-                                    hexa_cislo[1] = getc( current_pos );
-                                else
-                                { // ak by na konci suboru bolo "\x tak by nas mohol navstivit ujo segfault
-                                    set_token( token, E_EOF);
-                                    return;
-                                }
-
-                                if( sscanf( hexa_cislo, "%x", &cislo ) == 1 )
-                                {
-                                    buffer_push( cislo );
-                                }
-                                else
-                                {
-                                    set_token( token, E_INVLD);
-                                    return;
-                                }
-                                break;
-
-                    case 'n':
-                                buffer_push(10); // \n
-                                break;
-
-                    case 't':
-                                buffer_push(11); // \t
-                                break;
-
-                    default:
-                                buffer_push('\\'); // escape sekvencia nemoze sposobit chybu
-                                buffer_push( znak ); // cili to tam proste pushnem tak jak je a jeee
-                                break;
-                }
-                next_state = T_LIT;
-                break;
-            }
             default:
             {
                 next_state = FINISH;
                 return;
             }
         }
-    } // while
-} // function
+    } 
+}
