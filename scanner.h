@@ -5,7 +5,8 @@
  * @author Vladimír Čillo, xcillo00
  */
 
-
+#ifndef SCANNER_H
+#define SCANNER_H
 
 /** Typy tokenov + terminaly a nonterminaly + symboly do precedencnej tabulky,
  ** akekolvek zmeny su prisne zakazane (zavisi na tom funkcnost tabulky)**/
