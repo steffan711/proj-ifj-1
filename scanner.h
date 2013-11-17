@@ -111,3 +111,6 @@ typedef struct _tStringBuffer
 void scanner_init( char *file_start );
 void scanner_get_token( T_token* token );
 void print_token( T_token* token );
+
+#end if
+
