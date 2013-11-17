@@ -5,8 +5,6 @@
  * @author Vladimír Čillo, xcillo00
  */
 
-#include <stdbool.h>
-
 
 
 /** Typy tokenov + terminaly a nonterminaly + symboly do precedencnej tabulky,
@@ -30,7 +28,6 @@ typedef enum
     E_LABRACK,      // {
     E_SEMICL,       // ;
     E_VAR,          // premenna
-    E_BOOL,         // bool
     E_INT,          // integer
     E_DOUBLE,       // double
     E_LITER,        // literal
@@ -54,7 +51,6 @@ typedef enum
         E_ELSE,
         E_RETURN,
         // ----
-    // token e_malloc odstraneny
     E_EOF,          // padla
 } TOKEN_TYPE;
 
@@ -95,19 +91,19 @@ typedef enum
     number_divider,
 } divider;          // oznacenie mnoziny znakov ktora moze nasledovat za nejakym znakom
 
-/** Bezodny IKEA buffer **/
+/** Bezodny IKEA buffer - R.I.P
 typedef struct _tStringBuffer	
 {
     unsigned allocated_size;
     unsigned size;  // aktualny pocet znakov v retaci, ptr[size] = '\0'
     char *ptr;      // ukazatel na retazec
-} tStringBuffer;
+} tStringBuffer; **/
 
  /** Globalne premenne **/
  char*          current_pos;  // aktualna pozicia scannera v subore, pneprepisovat
- unsigned       scanner_line, scanner_column;
+ unsigned       scanner_line;
  const char*    file_origin; // zaciatok suboru v pamati
- tStringBuffer Buffer; // zasobnik znakov na retazce
+
  
  
 /** Funkcie **/
