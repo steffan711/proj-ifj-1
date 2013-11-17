@@ -158,7 +158,7 @@ void print_token( T_token* token )
 
     else if( token->data._string )
         for( unsigned i = 0; i < token->length; i++)
-            printf("%c", token->data._string[i]); 
+            putchar(token->data._string[i]); 
     else
         printf( "NO DATA" );
     printf( "\nToken -> line: %u\n", token->line );
@@ -183,82 +183,58 @@ extern inline int sstrcmp( const char * str1, const char * str2, int str1_size, 
 }
 
 
-static inline bool is_keyword(const char* word, T_token* token, unsigned lex_length) // testuje string na klucove slovo
+static inline void is_keyword(const char* word, T_token* token, unsigned lex_length) // testuje string na klucove slovo
 {
-    int i;
-    if ( ( i = sstrcmp( word, "true", lex_length, 4 ) ) == 0 ) 
+    switch(word[0]) // prvy znak nam vela napovie
     {
-        token->ttype = E_TRUE;
-        token->data._string = NULL;
-        return true;
-    }
-    else if ( i < 0 )
-    {
-        if ( ( i = sstrcmp( word, "else", lex_length, 4 ) ) == 0 ) 
-        {
-            token->ttype = E_ELSE;
-            token->data._string = NULL;
-            return true;
-        }
-        else if ( i < 0 ) 
-        {
-            if ( sstrcmp( word, "if", lex_length, 2 ) == 0 )
-            {
-                token->ttype = E_IF;
-                token->data._string = NULL;
-                return true;
-            }
-            else return false;
-        }
-        else
-        {
-            if ( sstrcmp( word, "null", lex_length, 4 ) == 0 )
-            {
-                token->ttype = E_NULL; 
-                token->data._string = NULL;
-                return true;
-            }
-            else return false;
-        }
-    }
-    else
-    {
-        if ( ( i = sstrcmp( word, "return", lex_length, 6 ) ) == 0 )
-        {
-            token->ttype = E_RETURN;
-            token->data._string = NULL;
-            return true;
-        }
-        else if ( i < 0 )
-        {
-            if ( ( i = sstrcmp( word, "while", lex_length, 5 ) ) == 0 )
-            {
-                token->ttype = E_WHILE;
-                token->data._string = NULL;
-                return true;
-            }
-            else if ( i < 0 )
-            {
-                if ( sstrcmp( word, "false", lex_length, 5 ) == 0 )
-                {
-                    token->ttype = E_FALSE; 
-                    token->data._string = NULL;
-                    return true;
-                }
-                else return false;
-            }
-            else return false;
-        }
-        else
-        {
-            if ( sstrcmp( word, "function", lex_length, 8 ) == 0 )
-            {
-                token->ttype = E_FUNCTION;
-                token->data._string = NULL;
-                return true;
-            }
-            else return false;
-        }
+        case 'e':   if ( sstrcmp( word, "else", lex_length, 4 ) == 0 ) 
+                    {
+                        token->ttype = E_ELSE;
+                        token->data._string = NULL;
+                    }
+                    return;
+        case 'n':   if ( sstrcmp( word, "null", lex_length, 4 ) == 0 )
+                    {
+                        token->ttype = E_NULL; 
+                        token->data._string = NULL;
+                    }
+                    return;
+        case 't':   if ( sstrcmp( word, "true", lex_length, 4 ) == 0 ) 
+                    {
+                        token->ttype = E_TRUE;
+                        token->data._string = NULL;
+                    }
+                    return;
+        case 'i':   if ( sstrcmp( word, "if", lex_length, 2 ) == 0 )
+                    {
+                        token->ttype = E_IF;
+                        token->data._string = NULL;
+                    }
+                    return;            
+        case 'r':   if ( sstrcmp( word, "return", lex_length, 6 ) == 0 )
+                    {
+                        token->ttype = E_RETURN;
+                        token->data._string = NULL;
+                    }
+                    return;
+        case 'w':   if ( sstrcmp( word, "while", lex_length, 5 ) == 0 )
+                    {
+                        token->ttype = E_WHILE;
+                        token->data._string = NULL;
+                    } 
+                    return;
+        case 'f':   if ( sstrcmp( word, "false", lex_length, 5 ) == 0 )
+                    {
+                        token->ttype = E_FALSE; 
+                        token->data._string = NULL;
+                    }
+                    else if ( sstrcmp( word, "function", lex_length, 8 ) == 0 )
+                    {
+                        token->ttype = E_FUNCTION;
+                        token->data._string = NULL; 
+                    }
+                    return;                    
+        default:    return;
     }
 }
 
@@ -275,7 +251,7 @@ void scanner_get_token( T_token* token )
     unsigned lex_length = 0;
     int znak;
 
-    do 
+    do
     {    
         znak = getc( current_pos );
         switch( next_state )
@@ -670,14 +646,12 @@ void scanner_get_token( T_token* token )
                     lex_length++;
                     if(  znak < ' ' || znak == '$') // znaky ktore sa v retazci nesmu vyskytovat
                     {
-                        printf("\nSME TU  ");
-                        //putchar('X');
-                        putchar(znak);
-                        //putchar('X');
-                        //putchar('\n');
                         set_token( token, E_INVLD, lex_length, NULL);
                         return;
                     }
+                    
+                    if(znak == '\n') // retazec zapisany na viac riadkov
+                        scanner_line++;
                     
                     if( znak == '\\' ) // escape sekvencia 
                     {
@@ -733,7 +707,7 @@ void scanner_get_token( T_token* token )
                                     set_token( token, E_EOF, lex_length, NULL);
                                     return;
                                 }
-                                else // nespravny format hexa cisla
+                                else // nie je to hexa cislo => string bez zmeny
                                 {
                                    ungetc(current_pos);
                                    ungetc(current_pos);
@@ -752,7 +726,6 @@ void scanner_get_token( T_token* token )
                     
                 } //while
 
-                // nedeterministicka cast
                 int count = offset;
                 current_pos += offset;
                 while(offset != -1)
@@ -770,7 +743,7 @@ void scanner_get_token( T_token* token )
             } // T_LIT
 
             default:
-                next_state = FINISH;
+                break;
         }
-    }while( next_state != FINISH );
+    }while( 1 );
 }
