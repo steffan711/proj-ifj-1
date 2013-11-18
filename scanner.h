@@ -9,7 +9,7 @@
 #define SCANNER_H
 
 /** Typy tokenov + terminaly a nonterminaly + symboly do precedencnej tabulky,
- ** akekolvek zmeny su prisne zakazane (zavisi na tom funkcnost tabulky)**/git 
+ ** akekolvek zmeny su prisne zakazane (zavisi na tom funkcnost tabulky)**/ 
 typedef enum
 {
     E_CONCAT,       // .
