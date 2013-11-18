@@ -293,19 +293,15 @@ void scanner_get_token( T_token* token )
                                     set_token( token, E_CONCAT, lex_length, NULL);
                                     return;
                     case '(':
-                                    
                                     set_token( token, E_LPARENTHESES, lex_length, NULL);
                                     return;
                     case ')':
-    
                                     set_token( token, E_RPARENTHESES, lex_length, NULL);
                                     return;
                     case '{':
-    
                                     set_token( token, E_LABRACK, lex_length, NULL);
                                     return;
                     case '}':
-    
                                     set_token( token, E_RABRACK, lex_length, NULL);
                                     return;
                     case '!':
@@ -578,7 +574,7 @@ void scanner_get_token( T_token* token )
                         return;
                     }
                 }
-                case T_EXP:
+                case T_EXP: // nacitavanie exponentu
                 {
                     // optional +/-
                     if( znak == '+' || znak == '-' )
@@ -615,7 +611,7 @@ void scanner_get_token( T_token* token )
                         set_token( token, E_INVLD, lex_length, NULL);
                     return;
                 } // T_EXP
-                case T_LIT: 
+                case T_LIT: // nacitavanie retazca
                 {
                     int offset = -1;
                     lex_length++;
@@ -672,7 +668,7 @@ void scanner_get_token( T_token* token )
                                     n_b = getc( current_pos );
                                     lex_length++;
                                     
-                                    if(( n_b >= '0' && n_b <= '9'  ) || ( n_b >= 'A' && n_b <= 'F' )) // n_b je platna hexadecimalne cislice 
+                                    if(( n_b >= '0' && n_b <= '9'  ) || ( n_b >= 'A' && n_b <= 'F' )) // TODO: rozsirit aj na a-f
                                     {
                                         znak = hex2int(n_a, n_b);
                                         offset -= 3;
