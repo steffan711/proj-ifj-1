@@ -13,10 +13,10 @@
 #include "expressions.h"
 
 /** inicializacne velkosti zasobnikov, ktorych pamat sa pri naplneni linearne zvacsuje */
-#define SIZEOF_ESTACK 64
-#define SIZEOF_PFXSTACK 64
+#define SIZEOF_ESTACK 8
+#define SIZEOF_PFXSTACK 8
 
-//#define TESTY
+#define TESTY
 
 #ifdef TESTY
 #include <string.h>
@@ -78,7 +78,6 @@ const TOKEN_TYPE prec_table [][16] = {
 /*  {  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_N,  R_C,  R_N,  R_N},
 };
 
-#ifdef TESTY
 const char *enums[] = { //iba na testovacie ucely
 ".", "!==", "===","+","*","-","/","<",">","<=",">=","(",")","i","{",";","E_VAR","E_INT","E_DOUBLE",    
 "E_LITER","EVAL", "SHIFT", "x","PUSH","E","E_EQ","E_RABRACK","E_COMA","E_IDENT","E_INVLD","E_WHILE",
@@ -130,7 +129,6 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
     free(op2);
     return E_OK;
 }
-#endif
 
 /**
  * Funkcia alokuje pamat zasobnika PFXStack
@@ -159,7 +157,7 @@ extern inline E_ERROR_TYPE PFXStackPush ( T_token *token )
     {
         PFXStack.max_size += SIZEOF_PFXSTACK;
         T_token **help;
-        if ( ( help = realloc( PFXStack.postfix, PFXStack.max_size ) ) == NULL )
+        if ( ( help = realloc( PFXStack.postfix, PFXStack.max_size * sizeof( T_token ** ) ) ) == NULL )
         {
             return E_INTERPRET_ERROR;
         }
@@ -364,13 +362,13 @@ extern inline E_ERROR_TYPE estackPush ( TOKEN_TYPE type )
     {
         eStack.size = eStack.size + SIZEOF_ESTACK;
         TOKEN_TYPE *help;
-        if ((help = realloc(eStack.data, eStack.size)) == NULL)
+        if ( ( help = realloc( eStack.data, eStack.size * sizeof( TOKEN_TYPE ) ) ) == NULL )
         {
             return E_INTERPRET_ERROR;
         }
         eStack.data = help;
     }
-
+    
     eStack.data[eStack.top] = type;
 
     eStack.topterm = eStack.top;
@@ -391,7 +389,7 @@ extern inline E_ERROR_TYPE estackChangeLT ( void )
     {
         eStack.size = eStack.size + SIZEOF_ESTACK;
         TOKEN_TYPE *help;
-        if ( ( help = realloc( eStack.data, eStack.size ) ) == NULL )
+        if ( ( help = realloc( eStack.data, eStack.size * sizeof( TOKEN_TYPE ) ) ) == NULL )
         {
             return E_INTERPRET_ERROR;
         }

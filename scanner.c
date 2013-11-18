@@ -72,6 +72,7 @@ static inline bool is_divider( char znak, int switcher )
             case ')':
             case '(':
             case '*':
+            case '!':
                 return true;
             default: return isspace( znak );
         }
