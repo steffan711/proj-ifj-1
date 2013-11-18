@@ -7,22 +7,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include "types.h"
 #include "file_io.h"
+#include "scanner.h"
+#include "syntax.h"
 
-
-// ERRNO.H ? **< edit: not yet, but soon
-
-/**
- * Main funkcia programu
- *
- * @todo Core is missing, at least
- *
- * @param parameter info, expected to be exactly 2
- * @param parameter, expected to include name of file
- * @return Vrati uspesnost vykonania programu
- */
 int main( int argc, char *argv[] )
 {
     if( argc != 2 )
@@ -32,25 +21,39 @@ int main( int argc, char *argv[] )
     }
 
     E_ERROR_TYPE ret_val;
-	char *subor;	/**< abstrakcia zdrojoveho suboru */
+    char *handle_subor;    /**< abstrakcia zdrojoveho handle_suboru */
 
-	ret_val = mmap_file( argv[1], &subor );
+    ret_val = mmap_file( argv[1], &handle_subor );
 
-	if ( ret_val != E_OK )
-	{
-		printf("Nastala chyba\n");
-		return ret_val;
-	}
-
-
-
-    /** MAGIC WILL SOON BEGIN TO HAPPEN HERE **/
-
-
-    /** END OF MAGIC **/
-
-    free( subor );
-    return ret_val;
+    if ( ret_val != E_OK )
+        return 2;la
+    
+    char *subor = handle_subor;
+    
+    if ( check_file_header( &subor ) != E_OK ) // kontrola '<?php' na zaciatku handle_suboru
+    {
+        fprintf( stderr, "Invalid source file. Exiting ...\n" );
+        free(handle_subor);
+        return E_OTHER;
+    }
+    
+    
+    T_token token;
+    token.ttype = E_INVLD;
+    
+    scanner_init(subor);
+        
+        
+    printf("---------------------------");
+    while(token.ttype != E_EOF)
+    {
+        scanner_get_token(&token);
+        print_token(&token);
+    }
+    printf("---------------------------\n");
+    
+    free( handle_subor );
+    return 0;
 }
 
 
