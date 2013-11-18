@@ -544,8 +544,11 @@ void scanner_get_token( T_token* token )
             }
             case T_EXCLAM:
             {
-                if( znak == '=' && getc( current_pos ) == '=' ) // skratove vyhodnocovanie
+                if( znak == '=' && getc( current_pos ) == '=' && getc( current_pos ) != '=' ) // skratove vyhodnocovanie
+                {
+                    ungetc(current_pos);
                     set_token( token, E_NOT_EQ, lex_length, NULL);
+                }
                 else
                 {
                     ungetc( current_pos );
