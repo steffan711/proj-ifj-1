@@ -189,51 +189,27 @@ static inline void is_keyword(const char* word, T_token* token, unsigned lex_len
     switch(word[0]) // prvy znak nam vela napovie
     {
         case 'e':   if ( sstrcmp( word, "else", lex_length, 4 ) == 0 ) 
-                    {
-                        token->ttype = E_ELSE;
-                        token->data._string = NULL;
-                    }
+                        set_token( token, E_ELSE, lex_length, NULL);
                     return;
         case 'n':   if ( sstrcmp( word, "null", lex_length, 4 ) == 0 )
-                    {
-                        token->ttype = E_NULL; 
-                        token->data._string = NULL;
-                    }
+                        set_token( token, E_NULL, lex_length, NULL);
                     return;
         case 't':   if ( sstrcmp( word, "true", lex_length, 4 ) == 0 ) 
-                    {
-                        token->ttype = E_TRUE;
-                        token->data._string = NULL;
-                    }
+                        set_token( token, E_TRUE, lex_length, NULL);
                     return;
         case 'i':   if ( sstrcmp( word, "if", lex_length, 2 ) == 0 )
-                    {
-                        token->ttype = E_IF;
-                        token->data._string = NULL;
-                    }
+                        set_token( token, E_IF, lex_length, NULL);
                     return;            
         case 'r':   if ( sstrcmp( word, "return", lex_length, 6 ) == 0 )
-                    {
-                        token->ttype = E_RETURN;
-                        token->data._string = NULL;
-                    }
+                        set_token( token, E_RETURN, lex_length, NULL);
                     return;
         case 'w':   if ( sstrcmp( word, "while", lex_length, 5 ) == 0 )
-                    {
-                        token->ttype = E_WHILE;
-                        token->data._string = NULL;
-                    } 
+                        set_token( token, E_WHILE, lex_length, NULL);
                     return;
         case 'f':   if ( sstrcmp( word, "false", lex_length, 5 ) == 0 )
-                    {
-                        token->ttype = E_FALSE; 
-                        token->data._string = NULL;
-                    }
+                        set_token( token, E_FALSE, lex_length, NULL);
                     else if ( sstrcmp( word, "function", lex_length, 8 ) == 0 )
-                    {
-                        token->ttype = E_FUNCTION;
-                        token->data._string = NULL; 
-                    }
+                        set_token( token, E_FUNCTION, lex_length, NULL);
                     return;                    
         default:    return;
     }
@@ -338,7 +314,7 @@ void scanner_get_token( T_token* token )
                     case ',':
                                     set_token( token, E_COMA, lex_length, NULL);
                                     return;	                                      
-                    case 0:
+                    case EOF:
                                     set_token( token, E_EOF, lex_length, NULL);
                                     return;
                     default:
@@ -690,7 +666,7 @@ void scanner_get_token( T_token* token )
                                     {
                                         ungetc(current_pos);
                                         lex_length--;
-                                        break; // !!!
+                                        break; 
                                     }  
                                     
                                     n_b = getc( current_pos );
