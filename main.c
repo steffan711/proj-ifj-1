@@ -26,7 +26,7 @@ int main( int argc, char *argv[] )
     ret_val = mmap_file( argv[1], &handle_subor );
 
     if ( ret_val != E_OK )
-        return 2;la
+        return 2;
     
     char *subor = handle_subor;
     
@@ -36,21 +36,10 @@ int main( int argc, char *argv[] )
         free(handle_subor);
         return E_OTHER;
     }
-    
-    
-    T_token token;
-    token.ttype = E_INVLD;
-    
+ 
     scanner_init(subor);
-        
-        
-    printf("---------------------------");
-    while(token.ttype != E_EOF)
-    {
-        scanner_get_token(&token);
-        print_token(&token);
-    }
-    printf("---------------------------\n");
+    
+    check_syntax();
     
     free( handle_subor );
     return 0;
