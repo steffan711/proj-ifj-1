@@ -37,6 +37,7 @@ int main( int argc, char *argv[] )
         return E_OTHER;
     }
  
+    
     scanner_init(subor);
     
     check_syntax();

@@ -18,6 +18,10 @@
 
 #define TESTY
 
+#ifdef TESTY
+#include <string.h>
+#endif
+
 /** struktura eStack zasobnik pre precedencnu analyzu (e - enum stack)*/
 static struct {
 	TOKEN_TYPE *data;
@@ -76,7 +80,7 @@ const TOKEN_TYPE prec_table [][16] = {
 
 #ifdef TESTY
 const char *enums[] = { //iba na testovacie ucely
-".", "!==", "===","+","*","-","/","<",">","<=",">=","(",")","i","{",";","E_VAR","E_BOOL","E_INT","E_DOUBLE",    
+".", "!==", "===","+","*","-","/","<",">","<=",">=","(",")","i","{",";","E_VAR","E_INT","E_DOUBLE",    
 "E_LITER","EVAL", "SHIFT", "x","PUSH","E","E_EQ","E_RABRACK","E_COMA","E_IDENT","E_INVLD","E_WHILE",
  "E_FUNCTION","E_FALSE","E_NULL","E_TRUE","E_IF","E_ELSE","E_RETURN","E_MALLOC","E_EOF"
 };
@@ -483,11 +487,21 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 free( token );
                 return E_LEX;
             }
+            free( token );
             return E_SYNTAX; //chybny vstupny token
         }
     }
     
     do {
+        #ifdef TESTY
+            printf("na vstupe je: \x1B[32m%s\x1B[0m\n", enums[actual_ttype]);
+            for (int i = 0; i <= eStack.top; i++) { printf("\x1B[34m-----\x1B[0m"); for(unsigned j = 0; j < strlen(enums[eStack.data[i]]); j++) printf("\x1B[34m-\x1B[0m");}
+            printf("\n");
+            for (int i = 0; i < eStack.top; i++) { printf(" %s  \x1B[34m|\x1B[0m ", enums[eStack.data[i]]);}
+            printf(" %s  \x1B[34m|\x1B[0m\n", enums[eStack.data[eStack.top]]);
+            for (int i = 0; i <= eStack.top; i++) { printf("\x1B[34m-----\x1B[0m"); for(unsigned j = 0; j < strlen(enums[eStack.data[i]]); j++) printf("\x1B[34m-\x1B[0m");}
+            printf("\n");
+        #endif
         switch ( prec_table[eStack.last_terminal][actual_ttype] )    //invariant - nikdy nepristupim na index mimo pola tabulky
         {
             case R_E:
@@ -536,6 +550,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                             PFXdispose( ); free( token );
                             return E_LEX;
                         }
+                        PFXdispose( ); free( token );
                         return E_SYNTAX; //chybny vstupny token
                     }
                 }
@@ -574,6 +589,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                             PFXdispose( ); free( token );
                             return E_LEX;
                         }
+                        PFXdispose( ); free( token );
                         return E_SYNTAX; //chybny vstupny token
                     }
                 }
@@ -583,7 +599,17 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 return E_SYNTAX;  //chyba neexistuje pravidlo v tabulke
         }    
     } while ( ( eStack.last_terminal != E_LABRACK ) || ( actual_ttype != termination_ttype ) );
+    #ifdef TESTY
+        printf("Ukoncil sa cyklus a na vstupe je: \x1B[31m%s\x1B[0m\n", enums[actual_ttype]);
+        for (int i = 0; i <= eStack.top; i++) { printf("\x1B[32m------\x1B[0m"); }
+        printf("\n");
+        for (int i = 0; i < eStack.top; i++) { printf(" %s  \x1B[32m|\x1B[0m ", enums[eStack.data[i]]);}
+        printf(" %s  \x1B[32m|\x1B[0m\n", enums[eStack.data[eStack.top]]);
+        for (int i = 0; i <= eStack.top; i++) { printf("\x1B[32m------\x1B[0m"); }
+        printf("\n");
+    #endif
     
+    printf("uspech\n");
     //tu sa este doplni volanie semantickeho ze vyraz sa vyhodnotil
     free( token );
     PFXdispose( );
