@@ -16,7 +16,7 @@
 #define SIZEOF_ESTACK 64
 #define SIZEOF_PFXSTACK 64
 
-#define TESTY
+//#define TESTY
 
 #ifdef TESTY
 #include <string.h>
@@ -608,8 +608,6 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
         for (int i = 0; i <= eStack.top; i++) { printf("\x1B[32m------\x1B[0m"); }
         printf("\n");
     #endif
-    
-    printf("uspech\n");
     //tu sa este doplni volanie semantickeho ze vyraz sa vyhodnotil
     free( token );
     PFXdispose( );
