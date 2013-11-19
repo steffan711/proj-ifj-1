@@ -87,6 +87,19 @@ const char *enums[] = { //iba na testovacie ucely
 E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
 {
     static int counter = 0;
+    if (op2 == NULL)
+    {
+        if (op1->ttype == E_E)
+        {
+            printf("\x1b[32mResult is in L%d\x1b[0m\n", op1->data._int);
+        }
+        else
+        {
+            printf("\x1b[31mFATAL ERROR - RESULT IS NOT ON STACK\n\x1b[0m");
+        }
+        free(op1);
+        return E_OK;
+    }
     printf("\x1b[31mINSTRUCTION NUMBER %d:\x1b[0m    ", counter);
     if (op1->ttype == E_VAR)
     {
@@ -326,7 +339,7 @@ extern inline E_ERROR_TYPE estackPop ( void )
                     findterm( );
                     eStack.data[++eStack.top] = E_E;
                     //pri chybe je navratovou hodnotou predana semanticka chyba, vyuziva sa tu vyhodnocovanie parametrov zprava dolava (_cdecl)
-                    return eval( PFXStackTop( ), PFXStackTopPop( ), help ); 
+                    return eval( PFXStackTop( ), PFXStackTopPop( ), help );
                 }
                 else
                 {
@@ -606,9 +619,12 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
         for (int i = 0; i <= eStack.top; i++) { printf("\x1B[32m------\x1B[0m"); }
         printf("\n");
     #endif
-    //tu sa este doplni volanie semantickeho ze vyraz sa vyhodnotil
+    if ( ( error_code = eval( PFXStackTopPop( ), NULL, E_TERM ) ) != E_OK )
+    {
+        free( token );
+        return error_code;
+    }
     free( token );
-    PFXdispose( );
     return E_OK;
 }
 
