@@ -12,23 +12,10 @@
 #include "file_io.h"
 #include "scanner.h"
 #include "debug.h"
+#define TRUE 1
 
 
-/**
- * Funkcia naplni strukturu tokenu potrebnymi datami
- *
- * @param 1 ukazatel na token
- * @param 2 token type
- */
-static inline void set_token( T_token* token, TOKEN_TYPE type, unsigned dlzka, void* data )
-{
-    token->line = scanner_line;
-    token->length = dlzka;
-    token->ttype = type;
-    token->data._string = data;
-}
 
-	
 /**
  * Funkcia realizuje prevod hexadecimalneho cisla na integer
  */
@@ -78,6 +65,21 @@ extern inline int sstrcmp( const char * str1, const char * str2, int str1_size, 
 
 
 /**
+ * Funkcia naplni strukturu tokenu potrebnymi datami
+ *
+ * @param 1 ukazatel na token
+ * @param 2 token type
+ */
+static inline void set_token( T_token* token, TOKEN_TYPE type, unsigned dlzka, void* data )
+{
+    token->line = scanner_line;
+    token->length = dlzka;
+    token->ttype = type;
+    token->data._string = data;
+}
+
+
+/**
  * Po zavolani obsahuje parameter token nasledujuci token
  *
  * @param ukazatel na token (return)
@@ -101,7 +103,7 @@ void scanner_get_token( T_token* token )
                 znak = getc( current_pos );
             }
             
-            if( znak == '$')
+            if( znak == '$' )
             {
                 next_state = T_VAR;
                 lex_length--; // $ nie je sucastou mena premennej
@@ -195,27 +197,27 @@ void scanner_get_token( T_token* token )
                     switch(*(current_pos - lex_length)) // prvy znak identifikatoru
                     {
                         case 'e':   if ( sstrcmp( current_pos - lex_length, "else", lex_length, 4 ) == 0 ) 
-                                        set_token( token, E_ELSE, lex_length, NULL);
+                                        set_token( token, E_ELSE, 0, NULL);
                                     return;
                         case 'n':   if ( sstrcmp( current_pos - lex_length, "null", lex_length, 4 ) == 0 )
-                                        set_token( token, E_NULL, lex_length, NULL);
+                                        set_token( token, E_NULL, 0, NULL);
                                     return;
                         case 't':   if ( sstrcmp( current_pos - lex_length, "true", lex_length, 4 ) == 0 ) 
-                                        set_token( token, E_TRUE, lex_length, NULL);
+                                        set_token( token, E_TRUE, 0, NULL);
                                     return;
                         case 'i':   if ( sstrcmp( current_pos - lex_length, "if", lex_length, 2 ) == 0 )
-                                        set_token( token, E_IF, lex_length, NULL);
+                                        set_token( token, E_IF, 0, NULL);
                                     return;            
                         case 'r':   if ( sstrcmp( current_pos - lex_length, "return", lex_length, 6 ) == 0 )
-                                        set_token( token, E_RETURN, lex_length, NULL);
+                                        set_token( token, E_RETURN, 0, NULL);
                                     return;
                         case 'w':   if ( sstrcmp( current_pos - lex_length, "while", lex_length, 5 ) == 0 )
-                                        set_token( token, E_WHILE, lex_length, NULL);
+                                        set_token( token, E_WHILE, 0, NULL);
                                     return;
                         case 'f':   if ( sstrcmp( current_pos - lex_length, "false", lex_length, 5 ) == 0 )
-                                        set_token( token, E_FALSE, lex_length, NULL);
+                                        set_token( token, E_FALSE, 0, NULL);
                                     else if ( sstrcmp( current_pos - lex_length, "function", lex_length, 8 ) == 0 )
-                                        set_token( token, E_FUNCTION, lex_length, NULL);
+                                        set_token( token, E_FUNCTION, 0, NULL);
                                     return;                    
                         default:    set_token( token, E_IDENT, lex_length, current_pos-lex_length);
                                     return;
@@ -297,7 +299,7 @@ void scanner_get_token( T_token* token )
                         else if( znak == '\n' )
                             scanner_line++;
                         znak = getc( current_pos );
-                    }while(1);
+                    }while(TRUE);
     
                     next_state = INIT;
                     break;
@@ -417,7 +419,7 @@ void scanner_get_token( T_token* token )
                         }
                         else
                             break;
-                    } while(1);
+                    } while(TRUE);
                     
                     // koniec exponentu:
                     ungetc( current_pos );
@@ -529,5 +531,5 @@ void scanner_get_token( T_token* token )
                 default:
                     break;
             } // switch next state
-    }while( 1 );
+    }while( TRUE );
 }
