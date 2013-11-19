@@ -1,4 +1,4 @@
-CFLAGS = -pedantic -Wall -g -Wextra -std=c99
+CFLAGS = -pedantic -Wall -Wextra -std=c99
 #CC=gcc-4.8
 .PHONY = clean run all cleanall
 EXE = main
@@ -30,7 +30,7 @@ generator.o : generator.c generator.h types.h
 main.o : main.c types.h file_io.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-test.o : test.c types.h file_io.h
+lextest.o : lextest.c types.h file_io.h
 	$(CC) $(CFLAGS) -o $@ -c $<
     
 debug.o : debug.c scanner.h debug.h
@@ -45,7 +45,7 @@ main : main.o file_io.o scanner.o syntax.o expr.o
 gentest : gentest.o file_io.o scanner.o syntax.o expr.o generator.o
 	$(CC) $(CFLAGS) -o $@ $^
     
-test : test.o file_io.o scanner.o debug.o
+lextest : lextest.o file_io.o scanner.o debug.o
 	$(CC) $(CFLAGS) -o $@ $^
 	
 clean:
