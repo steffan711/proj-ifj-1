@@ -268,12 +268,46 @@ E_ERROR_TYPE _strval( TERM *input, char **result )
 /**
  * Vstavana funkcia, nacitava string zo stdin
  *
- * @param TERM
  * @param char *( return )
  * @return Uspesnost
  */
-E_ERROR_TYPE _get_string( char *result )
-{
+E_ERROR_TYPE _get_string( char **result )
+{	
+	int c = getchar(), counter = 0, max = INIT_STRING_SIZE;
+		
+	if( c == EOF || c == '\n' )
+	{
+		*result = malloc( sizeof( char ) );
+		if( *result == NULL )
+			return E_INTERPRET_ERROR;
+		*( *result ) = 0;
+		return E_OK;
+	}
+
+	char *help = malloc( INIT_STRING_SIZE * sizeof( char ) );
+	if( help == NULL )
+		return E_INTERPRET_ERROR;
+	
+	while( c != '\n' && c != EOF )
+	{
+		if( counter < ( max - 1 ) )
+			help[counter] = c;
+		else
+		{
+			max *= 2;
+			help = realloc( help, max );
+			if( help == NULL )
+				return E_INTERPRET_ERROR;
+			help[counter] = c;
+		}
+		
+		counter++;
+		c = getchar();
+	}
+	
+	help[counter] = 0;
+	
+	*result = help;
 	
     return E_OK;
 }
@@ -288,6 +322,8 @@ E_ERROR_TYPE _get_string( char *result )
  */
 E_ERROR_TYPE _put_string( int *result, char *input, ... )
 {
+
+	// WAITING FOR EXACT IMPLEMENTATION REQUIREMENTS...
 	
     return E_OK;
 }
@@ -302,8 +338,25 @@ E_ERROR_TYPE _put_string( int *result, char *input, ... )
  * @param char *( return ) - string podla pozicii
  * @return Uspesnost
  */
-E_ERROR_TYPE _get_substring( char *input, int begpos, int endpos, char *result )
+E_ERROR_TYPE _get_substring( char *input, int begpos, int endpos, char **result )
 {
+	int inplen = strlen( input ),
+	    sublen = ( endpos - begpos ),
+		counter = 0;
+	
+	if( begpos < 0 || endpos < 0 || begpos > endpos || begpos > inplen || endpos > inplen )
+		return E_OTHER;
+	
+	char *help = malloc( ( sublen + 1 ) * sizeof( char ) );
+	if( help == NULL )
+		return E_INTERPRET_ERROR;
+	
+	for( int i = begpos; i < endpos; i++ )
+		help[counter++] = input[i];
+	
+	help[counter] = 0;
+	
+	*result = help;
 	
     return E_OK;
 }
@@ -319,41 +372,10 @@ E_ERROR_TYPE _get_substring( char *input, int begpos, int endpos, char *result )
  */
 E_ERROR_TYPE _find_string( char *input, char *find, int *result )
 {
+	if( find[0] == 0 )
+		*result = 0;
 	
     return E_OK;
-}
-
-
-/**
- * Pomocna funkcia, implementacia quicksortu
- *
- * @param retazec
- * @param leva medz
- * @param prava medz
- * @return void
- */
-void quicksort( char *input, int left, int right )
-{
-	if( right - left <= 1 )
-		return;
-	
-	char pivot = input[(left + right) / 2], temp;
-    int l = left, r = right;
-    
-    do {
-        while( input[l] < pivot && l < right ) l++;
-        while( input[r] > pivot && r > left ) r--;
- 
-        if( l <= r )
-		{
-            temp = input[l];
-            input[l++] = input[r];
-            input[r--] = temp;
-        }
-    } while( l < r );
- 
-    if( r > left ) quicksort( input, left, r );
-    if( l < right ) quicksort( input, l, right );
 }
 
 
@@ -373,7 +395,7 @@ E_ERROR_TYPE _sort_string( char *input, char **result )
 	
 	strcpy( help, input );
 
-	quicksort( help, 0, len - 2 );
+	quicksort( help, 0, len - 1 );
 	
 	*result = help;
 	
