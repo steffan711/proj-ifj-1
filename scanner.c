@@ -57,13 +57,11 @@ extern inline int sstrcmp( const char * str1, const char * str2, int str1_size, 
         return 1;
     else if ( str1_size < str2_size )
         return -1;
-    int i = 0;
     int result;
     const char * offset = str1 + str1_size;
 
     do {
-        result = ( unsigned ) str1[i] - ( unsigned ) str2[i];
-        i++;
+        result = ( unsigned ) *str1++ - ( unsigned ) *str2++;
     } while ( ( result == 0 ) && ( str1 != offset ) );
 
     return result;
