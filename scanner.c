@@ -22,6 +22,13 @@
 static inline int hex2int( char a, char b)
 {
     int c;
+    
+    if(a >= 'a' && a <= 'f') // male pismena 
+		a -= ' ';
+
+	if(b >= 'a' && b <= 'f')
+		b -= ' ';
+    
     if ( a >= '0' && a <= '9' )
         c = (a-'0')*16;
     else
@@ -172,7 +179,7 @@ void scanner_get_token( T_token* token )
                     case ',':
                                     set_token( token, E_COMA, lex_length, NULL);
                                     return;	                                      
-                    case EOF:
+                    case EOF:       // TODO: EOF if(current_pos - )
                                     set_token( token, E_EOF, lex_length, NULL);
                                     return;
                     default:
@@ -193,6 +200,7 @@ void scanner_get_token( T_token* token )
                         lex_length++;
                     }
                     ungetc( current_pos );  
+                    
                     /** Porovnanie s klucovymi slovami**/
                     switch(*(current_pos - lex_length)) // prvy znak identifikatoru
                     {
@@ -285,8 +293,9 @@ void scanner_get_token( T_token* token )
                     do{
                         if( znak == EOF )
                         {
-                            set_token( token, E_EOF, lex_length, NULL);
-                            return;
+                            ungetc(current_pos);
+                            next_state = INIT;
+                            break;
                         }
                         else if( znak == '*' )
                         {
@@ -469,6 +478,8 @@ void scanner_get_token( T_token* token )
                                     lex_length++;
                                     if( ( n_a >= '0' && n_a <= '9'  ) || ( n_a >= 'A' && n_a <= 'F' ) )
                                         ; 
+                                    else if( n_a >= 'a' && n_a <= 'f') // prevod malych pismen na velke
+                                        n_a -= ' ';
                                     else if( n_a == EOF )
                                     { 
                                         set_token( token, E_EOF, lex_length, NULL);
@@ -484,11 +495,10 @@ void scanner_get_token( T_token* token )
                                     n_b = getc( current_pos );
                                     lex_length++;
                                     
-                                    if(( n_b >= '0' && n_b <= '9'  ) || ( n_b >= 'A' && n_b <= 'F' )) // TODO: rozsirit aj na a-f
-                                    {
-                                        znak = hex2int(n_a, n_b);
-                                        offset -= 3;
-                                    }
+                                    if(( n_b >= '0' && n_b <= '9'  ) || ( n_b >= 'A' && n_b <= 'F' ) ) 
+                                        ;
+                                    else if( n_b >= 'a' && n_b <= 'f') // prevod malych pismen na velke
+                                        n_b -= ' ';
                                     else if( n_b == EOF )
                                     { 
                                         set_token( token, E_EOF, lex_length, NULL);
@@ -501,6 +511,8 @@ void scanner_get_token( T_token* token )
                                         lex_length -= 2;
                                         break;
                                     }
+                                    znak = hex2int(n_a, n_b);
+                                    offset -= 3;
                                     break;
                                 }
                                 default: // bez zmeny
