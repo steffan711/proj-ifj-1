@@ -7,22 +7,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include "types.h"
 #include "file_io.h"
+#include "scanner.h"
+#include "syntax.h"
 
-
-// ERRNO.H ? **< edit: not yet, but soon
-
-/**
- * Main funkcia programu
- *
- * @todo Core is missing, at least
- *
- * @param parameter info, expected to be exactly 2
- * @param parameter, expected to include name of file
- * @return Vrati uspesnost vykonania programu
- */
 int main( int argc, char *argv[] )
 {
     if( argc != 2 )
@@ -30,29 +19,31 @@ int main( int argc, char *argv[] )
         fprintf( stderr, "Error: No input file specified !\n" );
         return E_OTHER;
     }
-    
+
     E_ERROR_TYPE ret_val;
-    char *subor;    /**< abstrakcia zdrojoveho suboru */
-    
-    ret_val = mmap_file( argv[1], &subor ); 
-    
+    char *handle_subor;    /**< abstrakcia zdrojoveho handle_suboru */
+
+    ret_val = mmap_file( argv[1], &handle_subor );
+
     if ( ret_val != E_OK )
+        return 2;
+    
+    char *subor = handle_subor;
+    
+    if ( check_file_header( &subor ) != E_OK ) // kontrola '<?php' na zaciatku handle_suboru
     {
-        printf("Nastala chyba\n");
-        return ret_val;    
+        fprintf( stderr, "Invalid source file. Exiting ...\n" );
+        free(handle_subor);
+        return E_OTHER;
     }
+ 
     
+    scanner_init(subor);
     
-
-    /** MAGIC WILL SOON BEGIN TO HAPPEN HERE **/
+    check_syntax();
     
-    
-    
-    
-    /** END OF MAGIC **/
-
-    free( subor );
-    return ret_val;
+    free( handle_subor );
+    return 0;
 }
 
 
