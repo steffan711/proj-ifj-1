@@ -50,4 +50,5 @@ clean:
 
 cleanall :
 	$(RM) *.o
-	$(RM) $(EXE)
+	$(RM) $(EXE) gentest test
+    
