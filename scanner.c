@@ -23,12 +23,6 @@ static inline int hex2int( char a, char b)
 {
     int c;
     
-    if(a >= 'a' && a <= 'f') // male pismena 
-		a -= ' ';
-
-	if(b >= 'a' && b <= 'f')
-		b -= ' ';
-    
     if ( a >= '0' && a <= '9' )
         c = (a-'0')*16;
     else
