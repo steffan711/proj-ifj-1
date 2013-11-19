@@ -8,6 +8,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+int sstrcmp( const char * str1, const char * str2, int str1_size, int str2_size );
+
 /* Definicia chybovych kodov */
 typedef enum {
    E_OK, 

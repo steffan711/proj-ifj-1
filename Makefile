@@ -1,5 +1,5 @@
 CFLAGS = -pedantic -Wall -g -Wextra -std=c99
-CC=gcc-4.8
+#CC=gcc-4.8
 .PHONY = clean run all cleanall
 EXE = main
 
@@ -23,14 +23,23 @@ syntax.o: syntax.c types.h expressions.h syntax.h scanner.h
 	
 expr.o: expressions.c types.h expressions.h scanner.h
 	$(CC) $(CFLAGS) -o $@ -c $<
+    
+generator.o : generator.c generator.h types.h
+	$(CC) $(CFLAGS) -o $@ -c $<
 	
 main.o : main.c types.h file_io.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 test.o : test.c types.h file_io.h
 	$(CC) $(CFLAGS) -o $@ -c $<
+    
+gentest.o : gentest.c types.h generator.h
+	$(CC) $(CFLAGS) -o $@ -c $<
 	
 main : main.o file_io.o scanner.o syntax.o expr.o
+	$(CC) $(CFLAGS) -o $@ $^
+    
+gentest : gentest.o file_io.o scanner.o syntax.o expr.o generator.o
 	$(CC) $(CFLAGS) -o $@ $^
     
 test : test.o file_io.o scanner.o
