@@ -99,13 +99,7 @@ typedef struct _tStringBuffer
     char *ptr;      // ukazatel na retazec
 } tStringBuffer; **/
 
- /** Globalne premenne **/
- char*          current_pos;  // aktualna pozicia scannera v subore, pneprepisovat
- unsigned       scanner_line;
- const char*    file_origin; // zaciatok suboru v pamati
 
- 
- 
 /** Funkcie **/
 void scanner_init( char *file_start );
 void scanner_get_token( T_token* token );
