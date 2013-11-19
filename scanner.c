@@ -366,7 +366,6 @@ void scanner_get_token( T_token* token )
                     }
                     else
                     {
-                        ungetc( current_pos );
                         set_token( token, E_INVLD, lex_length, NULL);
                         return;
                     }
@@ -374,34 +373,18 @@ void scanner_get_token( T_token* token )
                 }
                 case T_ASS: // =
                 {
-                    if ( znak == '=' )               // ==
+                    if ( znak == '=' )  // ==
                     {
-                        znak = getc( current_pos );
-                        if( znak == '=' )            // ===
-                        {
-                            if( getc( current_pos ) != '=' )
-                            {
-                                ungetc( current_pos );
-                                set_token( token, E_TRIPLEEQ, lex_length, NULL);
-                            }
-                            else
-                                set_token( token, E_INVLD, lex_length, NULL);    // ====
-                        }
-                        else if( is_divider( znak, operator_divider ) )
-                        {
+                        if( ( znak = getc( current_pos ) ) == '=' ) // === ?
+                             set_token( token, E_TRIPLEEQ, lex_length, NULL);
+                        else // nie je to token ===
                             set_token( token, E_INVLD, lex_length, NULL);
-                            ungetc( current_pos );
-                            return;
-                        }
                     }
-                    else if( is_divider( znak, operator_divider ) )
-                    {
-                        set_token( token, E_EQ, lex_length, NULL);
+                    else 
+                    {   
                         ungetc( current_pos );
+                        set_token( token, E_EQ, lex_length, NULL);
                     }
-                    else
-                        set_token( token, E_INVLD, lex_length, NULL);
-                    
                     return;
                 }
                 case T_BLOCK_C:
@@ -451,23 +434,13 @@ void scanner_get_token( T_token* token )
                 }
                 case T_LESS:
                 {
-                    if( znak == '=' )
-                    { // <=?
-                        if ( is_divider( getc( current_pos ), operator_divider ) )
-                        {
-                            ungetc( current_pos );
+                    if( znak == '=' ) // <=
                             set_token( token, E_LESSEQ, lex_length, NULL);
-                        }
-                        else
-                            set_token( token, E_INVLD, lex_length, NULL);
-                    }
-                    else if ( is_divider( znak, operator_divider ) || znak == '?' ) // koli <? php
+                    else
                     {
                         ungetc( current_pos );
                         set_token( token, E_LESS, lex_length, NULL);
                     }
-                    else
-                        set_token( token, E_INVLD, lex_length, NULL);
                     return;
                 }
                 case T_FRACTION:
@@ -513,7 +486,7 @@ void scanner_get_token( T_token* token )
                 }
                 case T_EXCLAM:
                 {
-                    if( znak == '=' && getc( current_pos ) == '=') // skratove vyhodnocovanie
+                    if( znak == '=' && getc( current_pos ) == '=')
                         set_token( token, E_NOT_EQ, lex_length, NULL);
                     else
                         set_token( token, E_INVLD, lex_length, NULL);
@@ -526,13 +499,12 @@ void scanner_get_token( T_token* token )
                         znak = getc( current_pos );
                         lex_length++;
                     }
-                    else // inak je to pas
+                    else // inak je to lexikalna chyba
                     {
                         set_token( token, E_INVLD, lex_length, NULL);
                         return;
                     }
-                
-                
+                    //123.4znak
                     if( znak == 'e' || znak == 'E' )
                     {
                         lex_length++;
@@ -545,16 +517,8 @@ void scanner_get_token( T_token* token )
                         lex_length++;
                         znak = getc( current_pos );
                     }
-    
-                    // 123.45+
-                    if( is_divider( znak, number_divider ) )
-                    {
-                        ungetc( current_pos );
-                        set_token( token, E_DOUBLE, lex_length, NULL ); 
-                        sscanf( current_pos - lex_length, "%lf", &token->data._double );
-                        return;
-                    }
-                    else if( znak == 'e' || znak == 'E' )
+                    // 123.45678znak
+                    if( znak == 'e' || znak == 'E' )
                     {
                         lex_length++;
                         next_state = T_EXP;
@@ -562,57 +526,47 @@ void scanner_get_token( T_token* token )
                     }
                     else
                     {
-                        set_token( token, E_INVLD, lex_length, NULL);
+                        ungetc( current_pos );
+                        set_token( token, E_DOUBLE, lex_length, NULL ); 
+                        sscanf( current_pos - lex_length, "%lf", &token->data._double );
                         return;
                     }
                 }
                 case T_EXP: // nacitavanie exponentu
                 {
-                    // optional +/-
-                    if( znak == '+' || znak == '-' )
+                    if( znak == '+' || znak == '-' ) // optional +/-
                     {
                         lex_length++;
                         znak = getc( current_pos );
                     }
-                    // cisla :
-                    do
+                    
+                    do // cisla exponentu :
                     {
                         if( isdigit( znak ) )
                         {
                             lex_length++;
                             znak = getc( current_pos );
                         }
-                        else if( znak == EOF ) // ak by skor ako koniec cisla prisiel EOF
-                        {
-                            set_token( token, E_INVLD, lex_length, NULL);
-                            ungetc( current_pos );
-                            return;
-                        }
                         else
                             break;
                     } while(1);
                     
                     // koniec exponentu:
-                    if( is_divider( znak, number_divider ) )
-                    {
-                        ungetc( current_pos );
-                        set_token( token, E_DOUBLE, lex_length, NULL ); 
-                        sscanf( current_pos - lex_length, "%lf", &token->data._double );
-                    }
-                    else // 123.5E-3ň
-                        set_token( token, E_INVLD, lex_length, NULL);
+                    ungetc( current_pos );
+                    set_token( token, E_DOUBLE, lex_length, NULL ); 
+                    sscanf( current_pos - lex_length, "%lf", &token->data._double );
                     return;
                 } // T_EXP
                 case T_LIT: // nacitavanie retazca
                 {
                     int offset = -1;
                     lex_length++;
-                    while( znak != '"' ) // koniec stringu
+                    while( znak != '"' ) // koniec retazca
                     {
                         lex_length++;
                         if(  znak < ' ' || znak == '$') // znaky ktore sa v retazci nesmu vyskytovat
                         {
-                            set_token( token, E_INVLD, lex_length, NULL);
+                            set_token( token, E_INVLD, lex_length, NULL); // sposobia lexiklanu chybu
                             return;
                         }
                         
