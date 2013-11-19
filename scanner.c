@@ -50,46 +50,6 @@ static inline int hex2int( char a, char b)
     return c;
 }
 
-
-
-/**
- * @param 1 nacitany oddelovac
- * @param 2 specifikacia mnoziny validnych oddelovacov
- * @return rozhodne ci je token spravne ukonceny
- */
-static inline bool is_divider( char znak, int switcher )
-{
-    if( switcher == number_divider ) // co moze nasledovat za operandom ?
-        switch (znak)  
-        {
-            case '/':
-            case '+':
-            case '-':
-            case '=':
-            case ';':
-            case ',':
-            case EOF: // EOF
-            case ')':
-            case '(':
-            case '*':
-            case '!':
-                return true;
-            default: return isspace( znak );
-        }
-    else // co moze nasledovat za operatorom ?             
-        switch (znak)
-        {
-            case '$':
-            case EOF:
-            case ')':
-            case '(':
-            case '"': 
-                return true;
-            default: return ( isspace( znak ) || isalnum( znak ) ); // znak, cislo alebo medzera je ok
-        }
-}
-
-
 /**
  * @brief inicializuje scanner pred jeho prvym pouzitim
  * @param ukazatel na subor
@@ -354,22 +314,13 @@ void scanner_get_token( T_token* token )
                         lex_length++;
                         break;                    
                     }
-                    else if( is_divider( znak, number_divider ) ) // validny oddelovac cisla
+                    else
                     {
                         ungetc( current_pos );
                         set_token( token, E_INT, lex_length, NULL );
-                        if( sscanf( current_pos-lex_length, "%d", &token->data._int ) == 1)
-                            return;
-                        else
-                            set_token( token, E_INVLD, lex_length, NULL );
+                        sscanf( current_pos-lex_length, "%d", &token->data._int );
                         return;
                     }
-                    else
-                    {
-                        set_token( token, E_INVLD, lex_length, NULL);
-                        return;
-                    }
-                    break;
                 }
                 case T_ASS: // =
                 {
@@ -414,22 +365,12 @@ void scanner_get_token( T_token* token )
                 case T_GREATER:
                 {
                     if( znak == '=' )
-                    { // >=?
-                        if( is_divider( getc( current_pos ), operator_divider ) )
-                            set_token( token, E_GREATEREQ, lex_length, NULL);
-                        else
-                            set_token( token, E_INVLD, lex_length, NULL);
-                        // ungetc( current_pos );
-                        return;
-                    }
-                    else if( is_divider( znak, operator_divider ) )
+                        set_token( token, E_GREATEREQ, lex_length, NULL);
+                    else 
                     {
                         ungetc( current_pos );
                         set_token( token, E_GREATER, lex_length, NULL);
                     }
-                    else
-                        set_token( token, E_INVLD, lex_length, NULL);
-    
                     return;
                 }
                 case T_LESS:
@@ -445,11 +386,11 @@ void scanner_get_token( T_token* token )
                 }
                 case T_FRACTION:
                 {
-                    if( znak == '/' )
+                    if( znak == '/' ) // token //
                     {
                         while( (znak = getc( current_pos )) != '\n') // preskoc vsetko az do konca riadku
                         {  
-                            if(znak == 0)
+                            if(znak == EOF)
                             {
                                 set_token(token, E_EOF, lex_length, NULL);
                                 return;
@@ -459,30 +400,17 @@ void scanner_get_token( T_token* token )
                         next_state = INIT;
                         break;
                     }
-                    else if( znak == '*' )
+                    else if( znak == '*' ) // zaciatok blokoveho komentara
                     {
                         next_state = T_BLOCK_C;
                         break;
                     }
-                    else if( is_divider( znak, operator_divider ) )
+                    else // operator delenia
                     {
                         ungetc( current_pos );
                         set_token( token, E_DIV, 0, NULL);
                         return;
                     }
-                    else
-                    {
-                        set_token( token, E_INVLD, lex_length, NULL);
-                        return;
-                    }
-                }
-                case T_CONCAT:
-                {
-                    if( is_divider( znak, operator_divider ) )
-                        set_token( token, E_CONCAT, lex_length, NULL);
-                    else
-                        set_token( token, E_INVLD, lex_length, NULL);
-                    return;
                 }
                 case T_EXCLAM:
                 {
