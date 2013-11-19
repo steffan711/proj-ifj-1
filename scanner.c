@@ -184,7 +184,7 @@ extern inline int sstrcmp( const char * str1, const char * str2, int str1_size, 
 }
 
 
-static inline void is_keyword(const char* word, T_token* token, unsigned lex_length) // testuje string na klucove slovo
+static inline void is_keyword(const char* word, T_token* token, unsigned lex_length) // testuje retazec na klucove slovo
 {
     switch(word[0]) // prvy znak nam vela napovie
     {
@@ -231,7 +231,7 @@ void scanner_get_token( T_token* token )
     do
     {    
         znak = getc( current_pos );
-        if(next_state == INIT)
+        if( next_state == INIT )
         {
             while( isspace( znak ) )    // white space skip
             {
@@ -377,7 +377,6 @@ void scanner_get_token( T_token* token )
                     if ( znak == '=' )               // ==
                     {
                         znak = getc( current_pos );
-                        //printf( "t_ass %c", znak );
                         if( znak == '=' )            // ===
                         {
                             if( getc( current_pos ) != '=' )
@@ -394,7 +393,6 @@ void scanner_get_token( T_token* token )
                             ungetc( current_pos );
                             return;
                         }
-    
                     }
                     else if( is_divider( znak, operator_divider ) )
                     {
@@ -515,16 +513,10 @@ void scanner_get_token( T_token* token )
                 }
                 case T_EXCLAM:
                 {
-                    if( znak == '=' && getc( current_pos ) == '=' && getc( current_pos ) != '=' ) // skratove vyhodnocovanie
-                    {
-                        ungetc(current_pos);
+                    if( znak == '=' && getc( current_pos ) == '=') // skratove vyhodnocovanie
                         set_token( token, E_NOT_EQ, lex_length, NULL);
-                    }
                     else
-                    {
-                        ungetc( current_pos );
                         set_token( token, E_INVLD, lex_length, NULL);
-                    }
                     return;
                 }
                 case T_FLOAT:
