@@ -76,44 +76,6 @@ extern inline int sstrcmp( const char * str1, const char * str2, int str1_size, 
     return result;
 }
 
-/**
- * \brief Testuje retazec na klucove slovo
- *
- * \param [in] word retazec, ktory treba otestovat 
- * \param [in] token ukazatel na token
- * \param [in] lex_length dlzka retazca
- */
-static inline void is_keyword(const char* word, T_token* token, unsigned lex_length)
-{
-    switch(word[0]) // prvy znak nam vela napovie
-    {
-        case 'e':   if ( sstrcmp( word, "else", lex_length, 4 ) == 0 ) 
-                        set_token( token, E_ELSE, lex_length, NULL);
-                    return;
-        case 'n':   if ( sstrcmp( word, "null", lex_length, 4 ) == 0 )
-                        set_token( token, E_NULL, lex_length, NULL);
-                    return;
-        case 't':   if ( sstrcmp( word, "true", lex_length, 4 ) == 0 ) 
-                        set_token( token, E_TRUE, lex_length, NULL);
-                    return;
-        case 'i':   if ( sstrcmp( word, "if", lex_length, 2 ) == 0 )
-                        set_token( token, E_IF, lex_length, NULL);
-                    return;            
-        case 'r':   if ( sstrcmp( word, "return", lex_length, 6 ) == 0 )
-                        set_token( token, E_RETURN, lex_length, NULL);
-                    return;
-        case 'w':   if ( sstrcmp( word, "while", lex_length, 5 ) == 0 )
-                        set_token( token, E_WHILE, lex_length, NULL);
-                    return;
-        case 'f':   if ( sstrcmp( word, "false", lex_length, 5 ) == 0 )
-                        set_token( token, E_FALSE, lex_length, NULL);
-                    else if ( sstrcmp( word, "function", lex_length, 8 ) == 0 )
-                        set_token( token, E_FUNCTION, lex_length, NULL);
-                    return;                    
-        default:    return;
-    }
-}
-
 
 /**
  * Po zavolani obsahuje parameter token nasledujuci token
@@ -141,8 +103,7 @@ void scanner_get_token( T_token* token )
             
             if( znak == '$')
             {
-                next_state = T_ID;
-                token->ttype = E_VAR;
+                next_state = T_VAR;
                 lex_length--; // $ nie je sucastou mena premennej
             }
             else if( isalpha( znak ) || znak == '_' ) // A-Za-z_
@@ -229,9 +190,49 @@ void scanner_get_token( T_token* token )
                         znak = getc( current_pos );
                         lex_length++;
                     }
+                    ungetc( current_pos );  
+                    /** Porovnanie s klucovymi slovami**/
+                    switch(*(current_pos - lex_length)) // prvy znak identifikatoru
+                    {
+                        case 'e':   if ( sstrcmp( current_pos - lex_length, "else", lex_length, 4 ) == 0 ) 
+                                        set_token( token, E_ELSE, lex_length, NULL);
+                                    return;
+                        case 'n':   if ( sstrcmp( current_pos - lex_length, "null", lex_length, 4 ) == 0 )
+                                        set_token( token, E_NULL, lex_length, NULL);
+                                    return;
+                        case 't':   if ( sstrcmp( current_pos - lex_length, "true", lex_length, 4 ) == 0 ) 
+                                        set_token( token, E_TRUE, lex_length, NULL);
+                                    return;
+                        case 'i':   if ( sstrcmp( current_pos - lex_length, "if", lex_length, 2 ) == 0 )
+                                        set_token( token, E_IF, lex_length, NULL);
+                                    return;            
+                        case 'r':   if ( sstrcmp( current_pos - lex_length, "return", lex_length, 6 ) == 0 )
+                                        set_token( token, E_RETURN, lex_length, NULL);
+                                    return;
+                        case 'w':   if ( sstrcmp( current_pos - lex_length, "while", lex_length, 5 ) == 0 )
+                                        set_token( token, E_WHILE, lex_length, NULL);
+                                    return;
+                        case 'f':   if ( sstrcmp( current_pos - lex_length, "false", lex_length, 5 ) == 0 )
+                                        set_token( token, E_FALSE, lex_length, NULL);
+                                    else if ( sstrcmp( current_pos - lex_length, "function", lex_length, 8 ) == 0 )
+                                        set_token( token, E_FUNCTION, lex_length, NULL);
+                                    return;                    
+                        default:    set_token( token, E_IDENT, lex_length, current_pos-lex_length);
+                                    return;
+                    }     
+                }
+                case T_VAR:
+                {
+                    lex_length++;
+                    if( isalpha( znak = getc( current_pos ) ) || znak == '_' )
+                        lex_length++;
+                    do
+                    {
+                        znak = getc( current_pos );
+                        lex_length++;
+                    }while( isalnum( znak ) || znak == '_' );
                     ungetc( current_pos );
-                    set_token( token, token->ttype, lex_length, current_pos-lex_length);
-                    is_keyword(current_pos-lex_length, token, lex_length);
+                    set_token( token, E_VAR, lex_length, current_pos-lex_length);
                     return;
                 }
                 case T_INT:

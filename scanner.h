@@ -60,6 +60,7 @@ typedef enum
 {
     INIT,
     T_ID,           // identifikator
+    T_VAR,          // premenna
     T_INT,          // integer
     T_FLOAT,
     T_ASS,          // = 
