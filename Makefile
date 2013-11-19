@@ -33,6 +33,9 @@ main.o : main.c types.h file_io.h
 test.o : test.c types.h file_io.h
 	$(CC) $(CFLAGS) -o $@ -c $<
     
+debug.o : debug.c scanner.h debug.h
+	$(CC) $(CFLAGS) -o $@ -c $<
+    
 gentest.o : gentest.c types.h generator.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 	
@@ -42,7 +45,7 @@ main : main.o file_io.o scanner.o syntax.o expr.o
 gentest : gentest.o file_io.o scanner.o syntax.o expr.o generator.o
 	$(CC) $(CFLAGS) -o $@ $^
     
-test : test.o file_io.o scanner.o
+test : test.o file_io.o scanner.o debug.o
 	$(CC) $(CFLAGS) -o $@ $^
 	
 clean:
