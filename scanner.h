@@ -59,14 +59,12 @@ typedef enum
 typedef enum
 {
     INIT,
-    FINISH,         // EOF
     T_ID,           // identifikator
     T_INT,          // integer
     T_FLOAT,
     T_ASS,          // = 
     T_FRACTION,     // /
     T_BLOCK_C,      // blokovy komentar
-    T_CONCAT,       // .
     T_GREATER,      // >
     T_LESS,         // <
     T_EXCLAM,       // !
