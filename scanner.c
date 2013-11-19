@@ -174,7 +174,6 @@ void scanner_get_token( T_token* token )
                                     set_token( token, E_COMA, lex_length, NULL);
                                     return;	                                      
                     case EOF:       // TODO: EOF if(current_pos - )
-                                    printf("Spracoval som korektne ukonceny subor\n");
                                     set_token( token, E_EOF, lex_length, NULL);
                                     return;
                     default:
