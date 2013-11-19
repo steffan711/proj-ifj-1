@@ -1,5 +1,5 @@
-CFLAGS = -pedantic -Wall -Wextra -std=c99
-
+CFLAGS = -pedantic -Wall -g -Wextra -std=c99
+#CC=gcc-4.8
 .PHONY = clean run all cleanall
 EXE = main
 
@@ -10,21 +10,36 @@ EXE = main
 # $^ - vsetky dependencies
 ###############
 
-all: main
+all : main
 
 ial.o: ial.c ial.h
 	$(CC) $(CFLAGS) -o $@ -c $<
-
+	
 built-in.o: built-in.c built-in.h types.h ial.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-file_io.o: file_io.c file_io.h
+scanner.o: scanner.c scanner.h types.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-main.o: main.c types.h file_io.h
+file_io.o : file_io.c file_io.h
 	$(CC) $(CFLAGS) -o $@ -c $<
-
-main: main.o file_io.o built-in.o ial.o
+    
+syntax.o: syntax.c types.h expressions.h syntax.h scanner.h
+	$(CC) $(CFLAGS) -o $@ -c $<
+	
+expr.o: expressions.c types.h expressions.h scanner.h
+	$(CC) $(CFLAGS) -o $@ -c $<
+    
+generator.o : generator.c generator.h types.h
+	$(CC) $(CFLAGS) -o $@ -c $<
+	
+main.o : main.c types.h file_io.h
+	$(CC) $(CFLAGS) -o $@ -c $<
+    
+debug.o : debug.c scanner.h debug.h
+	$(CC) $(CFLAGS) -o $@ -c $<
+	
+main : main.o file_io.o scanner.o syntax.o expr.o ial.o built-in.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 clean:
@@ -32,17 +47,30 @@ clean:
 
 cleanall :
 	$(RM) *.o
-	$(RM) $(EXE)
-
+	$(RM) $(EXE) gentest test test-built-in
+    
 clear_screen:
 	clear
-
+	
 ## \/ \/ \/ TESTY \/ \/ \/
 
-tests: clear_screen test-built-in
+tests: clear_screen test-built-in test gentest
+
+test.o : test.c types.h file_io.h
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+gentest.o : gentest.c types.h generator.h
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 test-built-in.o: test-built-in.c types.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 test-built-in: built-in.o test-built-in.o ial.o
 	$(CC) $(CFLAGS) -o $@ $^
+	
+gentest : gentest.o file_io.o scanner.o syntax.o expr.o generator.o
+	$(CC) $(CFLAGS) -o $@ $^
+	
+test : test.o file_io.o scanner.o debug.o
+	$(CC) $(CFLAGS) -o $@ $^
+	
