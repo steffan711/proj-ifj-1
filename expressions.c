@@ -16,7 +16,7 @@
 #define SIZEOF_ESTACK 1
 #define SIZEOF_PFXSTACK 1
 
-//#define TESTY
+#define TESTY
 
 #ifdef TESTY
 #include <string.h>
@@ -56,28 +56,31 @@ extern inline void findterm( void );
 |  R_C  |  R_E  |  R_P  |  R_N  |
 |   <   |   >   |   =   |   x   |
 */
-const TOKEN_TYPE prec_table [][16] = {
-/* XXXX      .    !==   ===    +     *     -     /     <     >     <=    >=    (     )    TERM   {     ;      */
-/*  .  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/* !== */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_C,  R_E,  R_E},
-/* === */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  +  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  *  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  -  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  /  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  <  */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  >  */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  <= */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  >= */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  (  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_P,  R_C,  R_N,  R_N},
-/*  )  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_N,  R_E,  R_N,  R_E,  R_E},
-/* TERM*/  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_N,  R_E,  R_N,  R_E,  R_E},
-/*  {  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_N,  R_C,  R_N,  R_N},
+
+const TOKEN_TYPE prec_table [][18] = {
+/* XXXX      .    !==   ===    +     *     -     /     <     >     <=    >=    (     )     f     ,    TERM   {     ;  */
+/*  .  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
+/* !== */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
+/* === */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
+/*  +  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
+/*  *  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
+/*  -  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
+/*  /  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
+/*  <  */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
+/*  >  */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
+/*  <= */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
+/*  >= */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
+/*  (  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_P,  R_C,  R_P,  R_C,  R_N,  R_N},
+/*  )  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_N,  R_E,  R_N,  R_E,  R_N,  R_E,  R_E},
+/*  f  */  {R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_P,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N},
+/*  ,  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_P,  R_C,  R_P,  R_C,  R_N,  R_N},
+/* TERM*/  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_N,  R_E,  R_N,  R_E,  R_N,  R_E,  R_E},
+/*  {  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_N,  R_N,  R_N,  R_C,  R_N,  R_N},
 };
 
 const char *enums[] = { //iba na testovacie ucely
-".", "!==", "===","+","*","-","/","<",">","<=",">=","(",")","i","{",";","E_VAR","E_INT","E_DOUBLE",    
-"E_LITER","EVAL", "SHIFT", "x","PUSH","E","E_EQ","E_RABRACK","E_COMA","E_IDENT","E_INVLD","E_WHILE",
+".", "!==", "===","+","*","-","/","<",">","<=",">=","(",")","E_IDENT","E_COMA","i","{",";","E_VAR","E_INT","E_DOUBLE",    
+"E_LITER","EVAL", "SHIFT", "x","PUSH","E","E_EQ","E_RABRACK","E_INVLD","E_WHILE",
  "E_FUNCTION","E_FALSE","E_NULL","E_TRUE","E_IF","E_ELSE","E_RETURN","E_MALLOC","E_EOF"
 };
 
@@ -282,16 +285,19 @@ extern inline E_ERROR_TYPE estackPop ( void )
                 }
                 else
                 {
+                    //doplnenie analyzy funkcie
                     return E_SYNTAX;
                 }
             }
             else
             {
+                //doplnenie analyzy funkcie
                 return E_SYNTAX;
             }
         }
         else
         {
+            //doplnenie analyzy funkcie
             return E_SYNTAX;
         }
     }
@@ -443,7 +449,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
             actual_ttype = E_TERM;
             if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
             {
-                PFXdispose( ); free( token );
+                free( token );
                 return E_INTERPRET_ERROR;
             }
             //ak som nasiel nejaky term potom sa musi vyhradit nove miesto pre dalsi

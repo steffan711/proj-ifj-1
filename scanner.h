@@ -25,6 +25,8 @@ typedef enum
     E_GREATEREQ,    // >=
     E_LPARENTHESES, // (
     E_RPARENTHESES, // )
+    E_IDENT,        // identifikator
+    E_COMA,         // ,
     E_TERM,          // term, pomocny enum pre precedencnu syntakticku analyzu
     E_LABRACK,      // {
     E_SEMICL,       // ;
@@ -39,8 +41,6 @@ typedef enum
     E_E,            // nonterminal, pouzivany v gramatike
     E_EQ,           // =
     E_RABRACK,      // }
-    E_COMA,         // ,
-    E_IDENT,        // identifikator
     E_INVLD,        // je to invalid
         // ---- klucove slova
         E_WHILE,
