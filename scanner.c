@@ -149,7 +149,7 @@ void scanner_get_token( T_token* token )
                                     next_state = T_GREATER;
                                     break;
                     case '"':
-                                    lex_length=0;
+                                    lex_length = 0;
                                     next_state = T_LIT;
                                     break;
                     case '.':
