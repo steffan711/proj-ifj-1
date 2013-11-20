@@ -16,14 +16,14 @@
 
 
  /** Globalne premenne **/
- char*          current_pos;  // aktualna pozicia scannera v subore, pneprepisovat
+ char*          current_pos;  // aktualna pozicia scannera v subore
  unsigned       scanner_line;
  const char*    file_origin; // zaciatok suboru v pamati
 
 /**
  * Funkcia realizuje prevod hexadecimalneho cisla na integer
  */
-static inline int hex2int( char a, char b)
+static inline int hex2int( char a, char b )
 {
     int c;
     
@@ -173,7 +173,7 @@ void scanner_get_token( T_token* token )
                     case ',':
                                     set_token( token, E_COMA, lex_length, NULL);
                                     return;	                                      
-                    case EOF:       // TODO: EOF if(current_pos - )
+                    case EOF:       // TODO: EOF if(current_pos - file_size = 0)
                                     set_token( token, E_EOF, lex_length, NULL);
                                     return;
                     default:
@@ -185,7 +185,7 @@ void scanner_get_token( T_token* token )
         else
             switch( next_state )
             {
-                case T_ID:
+                case T_ID: // identifikator
                 {
                     lex_length++;
                     while( isalnum( znak ) || znak == '_' )
@@ -249,21 +249,27 @@ void scanner_get_token( T_token* token )
                     set_token( token, E_IDENT, lex_length, current_pos-lex_length);
                     return;
                 }
-                case T_VAR:
+                case T_VAR: // premenna
                 {
-                    lex_length++;
-                    if( isalpha( znak = getc( current_pos ) ) || znak == '_' )
+                    if( isalpha( znak ) || znak == '_' )
                         lex_length++;
+                    else // premenna bez mena / s neplatnym menom
+                    {
+                        set_token( token, E_INVLD, 0, NULL); 
+                        return;
+                    }            
+                        
                     do
                     {
                         znak = getc( current_pos );
                         lex_length++;
                     }while( isalnum( znak ) || znak == '_' );
+                    
                     ungetc( current_pos );
                     set_token( token, E_VAR, lex_length, current_pos-lex_length);
                     return;
                 }
-                case T_INT:
+                case T_INT: 
                 {    
                     while( isdigit( znak ) )
                     {
@@ -306,7 +312,7 @@ void scanner_get_token( T_token* token )
                     }
                     return;
                 }
-                case T_BLOCK_C:
+                case T_BLOCK_C: // komentar
                 {
                     do{
                         if( znak == EOF )
@@ -331,7 +337,7 @@ void scanner_get_token( T_token* token )
                     next_state = INIT;
                     break;
                 }
-                case T_GREATER:
+                case T_GREATER: 
                 {
                     if( znak == '=' )
                         set_token( token, E_GREATEREQ, lex_length, NULL);
@@ -509,7 +515,7 @@ void scanner_get_token( T_token* token )
                                     n_b = getc( current_pos );
                                     lex_length++;
                                     
-                                    if(( n_b >= '0' && n_b <= '9'  ) || ( n_b >= 'A' && n_b <= 'F' ) ) 
+                                    if( ( n_b >= '0' && n_b <= '9'  ) || ( n_b >= 'A' && n_b <= 'F' ) ) 
                                         ;
                                     else if( n_b >= 'a' && n_b <= 'f') // prevod malych pismen na velke
                                         n_b -= ' ';
