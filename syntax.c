@@ -36,6 +36,16 @@ E_ERROR_TYPE check_syntax ( void )
     {
         evaluate_expr( token, E_SEMICL );
     }
+    
+    scanner_get_token( token );
+    if ( token->ttype == E_LPARENTHESES)
+    {
+        evaluate_expr( token, E_RPARENTHESES );
+    }
+    else 
+    {
+        evaluate_expr( token, E_SEMICL );
+    }
     free(token);
     //do_precedence();
     precedenceShutDown();

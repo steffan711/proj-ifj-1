@@ -13,10 +13,10 @@
 #include "expressions.h"
 
 /** inicializacne velkosti zasobnikov, ktorych pamat sa pri naplneni linearne zvacsuje */
-#define SIZEOF_ESTACK 8
-#define SIZEOF_PFXSTACK 8
+#define SIZEOF_ESTACK 1
+#define SIZEOF_PFXSTACK 1
 
-#define TESTY
+//#define TESTY
 
 #ifdef TESTY
 #include <string.h>
@@ -24,15 +24,14 @@
 
 /** struktura eStack zasobnik pre precedencnu analyzu (e - enum stack)*/
 static struct {
-	TOKEN_TYPE *data;
 	int top;
+    int size;
+    TOKEN_TYPE *data;
 	TOKEN_TYPE last_terminal;
-	int topterm;
-	int size;
-} eStack;
+} eStack = { .top = 0, .size = SIZEOF_ESTACK, .data = NULL, .last_terminal = E_LABRACK};
 
 /** struktura na uchovavanie ukazatelov pre semanticku analyzu (postfix - princip postfixu) */
-static struct {
+static struct {  
     T_token **postfix;
     int size;
     int max_size;
@@ -46,8 +45,6 @@ extern inline T_token * PFXStackTop ( void );
 extern inline void PFXdispose ( void );
 extern inline void PFXfree ( void );
 extern inline E_ERROR_TYPE estackInit ( void );
-extern inline void estackSet ( void );
-extern inline TOKEN_TYPE estackTop ( void );
 extern inline E_ERROR_TYPE estackPop ( void );
 extern inline E_ERROR_TYPE estackPush ( TOKEN_TYPE type );
 extern inline E_ERROR_TYPE estackChangeLT( void );
@@ -238,26 +235,8 @@ extern inline E_ERROR_TYPE estackInit ( void )
 	}
 
 	eStack.data[0] = E_LABRACK;
-	eStack.top = 0;
-	eStack.topterm = 0;
-	eStack.last_terminal = E_LABRACK;
-	eStack.size = SIZEOF_ESTACK;
     
 	return E_OK;
-}
-
-/**
- * Funkcia nastavi strukturu eStack na rovnake hodnoty ako pri inicializacii ale jej velkost ponecha bezo zmeny
- *
- * @param void
- * @return chybovy kod (uspesna resp. neuspesna alokacia)
- */
-extern inline void estackSet ( void )
-{
-    eStack.top = 0;
-	eStack.topterm = 0;
-	eStack.last_terminal = E_LABRACK;
-	eStack.size = SIZEOF_ESTACK;
 }
 
 /**
@@ -272,18 +251,6 @@ extern inline void estackFree ( void )
 }
 
 /**
- * Funkcia vracia prvy terminal z vrcholu zasobnika
- * invariant - skor ako by na vrchole nebol terminal doslo by k chybe mimo tejto funkcie
- * preto nema zmysel kontrolovat ci na vrchole nejaky je
- * @param void
- * @return ukazatel na strukturu T_token
- */
-extern inline TOKEN_TYPE estackTop ( void )
-{
-	return eStack.last_terminal;
-}
-
-/**
  * Funkcia vyhodnocuje vyraz na vrchole zasobnika eStack, meni jeho obsah, vyhlada posledny terminal na vrchole + vola semanticku funkciu eval 
  * @param void
  * @return chybovy kod semanticke aj syntakticke chyby (volanie semantickej funkcie eval)
@@ -294,10 +261,10 @@ extern inline E_ERROR_TYPE estackPop ( void )
 
     if ( ( help = eStack.data[eStack.top--] ) == E_TERM )
     {
-        if ( eStack.data[eStack.top--] == R_C )
+        if ( eStack.data[eStack.top] == R_C )
         {
             findterm( );
-            eStack.data[++eStack.top] = E_E;
+            eStack.data[eStack.top] = E_E;
             return E_OK;
         }
     }
@@ -307,10 +274,10 @@ extern inline E_ERROR_TYPE estackPop ( void )
         {
             if ( eStack.data[eStack.top--] == E_LPARENTHESES )
             {
-                if ( eStack.data[eStack.top--] == R_C )
+                if ( eStack.data[eStack.top] == R_C )
                 {
                     findterm( );
-                    eStack.data[++eStack.top] = E_E;
+                    eStack.data[eStack.top] = E_E;
                     return E_OK;
                 }
                 else
@@ -334,10 +301,10 @@ extern inline E_ERROR_TYPE estackPop ( void )
         {
             if ( eStack.data[eStack.top--] == E_E )
             {
-                if ( eStack.data[eStack.top--] == R_C )
+                if ( eStack.data[eStack.top] == R_C )
                 {
                     findterm( );
-                    eStack.data[++eStack.top] = E_E;
+                    eStack.data[eStack.top] = E_E;
                     //pri chybe je navratovou hodnotou predana semanticka chyba, vyuziva sa tu vyhodnocovanie parametrov zprava dolava (_cdecl)
                     return eval( PFXStackTop( ), PFXStackTopPop( ), help );
                 }
@@ -365,7 +332,7 @@ extern inline E_ERROR_TYPE estackPop ( void )
 }
 
 /**
- * Funkcia ulozi prvok do zasobnika a nastavi topterm 
+ * Funkcia ulozi prvok do zasobnika a nastavi last_terminal
  * @param TOKEN_TYPE
  * @return chybovy kod (uspesna resp. neuspesna alokacia)
  */
@@ -384,7 +351,6 @@ extern inline E_ERROR_TYPE estackPush ( TOKEN_TYPE type )
     
     eStack.data[eStack.top] = type;
 
-    eStack.topterm = eStack.top;
     eStack.last_terminal = type;
 
     return E_OK;
@@ -398,7 +364,7 @@ extern inline E_ERROR_TYPE estackPush ( TOKEN_TYPE type )
 extern inline E_ERROR_TYPE estackChangeLT ( void )
 {
     int i = eStack.top++;
-    if ( i == eStack.size )
+    if ( eStack.top == eStack.size )
     {
         eStack.size = eStack.size + SIZEOF_ESTACK;
         TOKEN_TYPE *help;
@@ -423,16 +389,13 @@ extern inline E_ERROR_TYPE estackChangeLT ( void )
 }
 
 /**
- * Funkcia vyhlada na zasobniku terminal najblizsie vrcholu
+ * Funkcia urci na zasobniku terminal najblizsie vrcholu
  * @param void
  * @return void
  */
 extern inline void findterm ( void )
 {
-    int i = eStack.top;
-    if ( eStack.data[i] == E_E ) i--;
-    eStack.last_terminal = eStack.data[i];
-    eStack.topterm = i;
+    eStack.last_terminal = eStack.data[eStack.top - 1];
 }
 
 /**
@@ -457,7 +420,6 @@ extern inline void copy_token ( T_token *t1, T_token *t2 )
 E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype )
 {
     E_ERROR_TYPE error_code;
-    estackSet( );
     
     TOKEN_TYPE actual_ttype;    //premenna pre uchovavanie aktualneho typu struktury token
     T_token * token;
@@ -518,7 +480,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
             case R_E:
                 if ( ( error_code = estackPop( ) ) != E_OK )
                 {
-                    PFXdispose( ); if ( actual_ttype != E_TERM ) free( token );
+                    PFXdispose( ); free( token );
                     return error_code;   //najskor neexistuje pravidlo v gramatike
                 }
                 break;
@@ -526,12 +488,12 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
             case R_C:
                 if ( estackChangeLT( ) != E_OK )
                 {
-                    PFXdispose( ); if ( actual_ttype != E_TERM ) free( token );
+                    PFXdispose( ); free( token );
                     return E_INTERPRET_ERROR;
                 }
                 if ( estackPush( actual_ttype ) != E_OK )
                 {
-                    PFXdispose( ); if ( actual_ttype != E_TERM ) free( token );
+                    PFXdispose( ); free( token );
                     return E_INTERPRET_ERROR;
                 }
                 
@@ -570,7 +532,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
             case R_P:
                 if ( estackPush( actual_ttype ) != E_OK )
                 {
-                    PFXdispose( ); if ( actual_ttype != E_TERM ) free( token );
+                    PFXdispose( ); free( token );
                     return E_INTERPRET_ERROR;
                 }
                 
@@ -605,11 +567,13 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                     }
                 }
                 break;
+                
             default:
-                PFXdispose( ); if ( actual_ttype != E_TERM ) free( token );
+                PFXdispose( ); free(token); 
                 return E_SYNTAX;  //chyba neexistuje pravidlo v tabulke
         }    
     } while ( ( eStack.last_terminal != E_LABRACK ) || ( actual_ttype != termination_ttype ) );
+    
     #ifdef TESTY
         printf("Ukoncil sa cyklus a na vstupe je: \x1B[31m%s\x1B[0m\n", enums[actual_ttype]);
         for (int i = 0; i <= eStack.top; i++) { printf("\x1B[32m------\x1B[0m"); }
@@ -619,11 +583,14 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
         for (int i = 0; i <= eStack.top; i++) { printf("\x1B[32m------\x1B[0m"); }
         printf("\n");
     #endif
+    //posledne volanie funkcie eval s s jedinou polozkou na vrchole zasobnika PFXStack, ktorou je vysledok vyhodnotenia vyrazu
     if ( ( error_code = eval( PFXStackTopPop( ), NULL, E_TERM ) ) != E_OK )
     {
         free( token );
         return error_code;
     }
+    
+    eStack.top = 0; //inicializacia pre dalsie volanie
     free( token );
     return E_OK;
 }
