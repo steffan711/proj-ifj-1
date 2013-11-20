@@ -50,6 +50,7 @@ extern inline E_ERROR_TYPE estackPush ( TOKEN_TYPE type );
 extern inline E_ERROR_TYPE estackChangeLT( void );
 extern inline void copy_token ( T_token *t1, T_token *t2 );
 extern inline void findterm( void );
+extern inline E_ERROR_TYPE function_analyze ( void );
 
 /** precedencna tabulka */
 /*
@@ -140,6 +141,50 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
     op1->data._int = counter;
     counter++;
     free(op2);
+    return E_OK;
+}
+
+E_ERROR_TYPE evalf( T_token **array, int counter )
+{
+    static int c = 0;
+    printf("\x1b[32mFUNCTION CALL NUMBER %d:\x1b[0m    ", counter);
+    printf("\x1b[34m%s( \x1b[0m", array[0]->data._string);
+    for (int i = 1; i < counter; i++)
+    {
+        switch (array[i]->ttype) { 
+        case E_FALSE: printf("\x1b[34mFALSE, \x1b[0m");  break; 
+        case E_TRUE: printf("\x1b[34mTRUE, \x1b[0m"); break; 
+        case E_NULL: printf("\x1b[34mNULL, \x1b[0m"); break;
+        case E_INT: printf("\x1b[34m%d, \x1b[0m", array[i]->data._int); break;
+        case E_DOUBLE: printf("\x1b[34m%e, \x1b[0m", array[i]->data._double); break;
+        case E_LITER: printf("\x1b[34m\"%s\", \x1b[0m", array[i]->data._string); break;
+        case E_E: printf("\x1b[34mL%d, \x1b[0m", array[i]->data._int); break;
+        default: break;
+        }
+        free(array[i]);
+    }
+    if (counter != 0)
+    {
+        switch (array[counter]->ttype) { 
+        case E_FALSE: printf("\x1b[34mFALSE )\n\x1b[0m");  break; 
+        case E_TRUE: printf("\x1b[34mTRUE )\n\x1b[0m"); break; 
+        case E_NULL: printf("\x1b[34mNULL )\n\x1b[0m"); break;
+        case E_INT: printf("\x1b[34m%d )\n\x1b[0m", array[counter]->data._int); break;
+        case E_DOUBLE: printf("\x1b[34m%e )\n\x1b[0m", array[counter]->data._double); break;
+        case E_LITER: printf("\x1b[34m\"%s\" )\n\x1b[0m", array[counter]->data._string); break;
+        case E_E: printf("\x1b[34mL%d )\n\x1b[0m", array[counter]->data._int); break;
+        default: break;
+        }
+        free(array[counter]);
+    }
+    else
+    {
+        printf("\x1b[34)\n\x1b[0m");
+    }
+    array[0]->ttype = E_E;
+    array[0]->data._int = c;
+    c++;
+    printf("%d\n", PFXStack.size);
     return E_OK;
 }
 
@@ -273,35 +318,62 @@ extern inline E_ERROR_TYPE estackPop ( void )
     }
     else if ( help == E_RPARENTHESES )
     {
-        if ( eStack.data[eStack.top--] == E_E )
+        if ( ( help = eStack.data[eStack.top--] ) == E_E )
         {
-            if ( eStack.data[eStack.top--] == E_LPARENTHESES )
+            if ( ( help = eStack.data[eStack.top--] ) == E_LPARENTHESES )
             {
-                if ( eStack.data[eStack.top] == R_C )
+                if ( ( help = eStack.data[eStack.top--] ) == R_C )
                 {
                     findterm( );
                     eStack.data[eStack.top] = E_E;
                     return E_OK;
                 }
-                else
+                else if ( help == E_IDENT && eStack.data[eStack.top] == R_C )   //doplnenie analyzy funkcie typu f(E)
                 {
-                    //doplnenie analyzy funkcie
+                    findterm( );
+                    eStack.data[eStack.top] = E_E;
+                    PFXStack.size -= 1;
+                    return evalf( &(PFXStack.postfix[PFXStack.size]), 1 );
+                }
+                else 
+                {
                     return E_SYNTAX;
                 }
             }
-            else
+            else if ( help == E_COMA )  //doplnenie analyzy funkcie f(E,...)
             {
-                //doplnenie analyzy funkcie
-                return E_SYNTAX;
+                return function_analyze( ); //v tele vola evalf aj nastavuje co je potrebne
             }
         }
         else
         {
-            //doplnenie analyzy funkcie
-            return E_SYNTAX;
+            if ( help == E_LPARENTHESES )   //doplnenie analyzy funkcie typu f()
+            {
+                if ( eStack.data[eStack.top--] == E_IDENT )
+                {
+                    if ( eStack.data[eStack.top] == R_C )
+                    {
+                        findterm( );
+                        eStack.data[eStack.top] = E_E;
+                        return evalf( &(PFXStack.postfix[PFXStack.size]), 0 );
+                    }
+                    else
+                    {
+                        return E_SYNTAX;
+                    }
+                }
+                else 
+                {
+                    return E_SYNTAX;
+                }
+            }
+            else 
+            {
+                return E_SYNTAX;
+            }
         }
     }
-    else if ( help == E_E )
+    else if ( help == E_E ) /* vyhodnocuje sa diadicka operacia */
     {
         if ( ( help = eStack.data[eStack.top--] ) < E_LPARENTHESES )
         {
@@ -419,6 +491,48 @@ extern inline void copy_token ( T_token *t1, T_token *t2 )
 }
 
 /**
+ * Funkcia spocita parametre volania funkcie a zavola evalf pre vyhodnotenie vyrazu
+ * @param void
+ * @return E_ERROR_TYPE (syntakticke chyby)
+ */
+extern inline E_ERROR_TYPE function_analyze ( void )
+{
+    int counter = 2;    // v cykle kontrolujem az druhy parameter
+    TOKEN_TYPE help;
+    while ( 1 )
+    {
+        if ( eStack.data[eStack.top--] == E_E )
+        {
+            if ( ( help = eStack.data[eStack.top--] ) == E_COMA )
+            {
+                counter++;
+                continue;
+            }
+            else if ( help == E_LPARENTHESES ) //rovno nastavi zasobnik na tie spravne hodnoty
+            {
+                if ( eStack.data[eStack.top--] == E_IDENT)
+                {
+                    eStack.data[eStack.top] = E_E;
+                    findterm( );
+                    PFXStack.size -= counter;
+                    return evalf( &(PFXStack.postfix[PFXStack.size]), counter );
+                }
+                else
+                {
+                    return E_SYNTAX;
+                }
+            }
+        }
+        else 
+        {
+            return E_SYNTAX;
+        }
+    }
+    
+    return E_SYNTAX; //kvoli kompilatoru
+}
+
+/**
  * Hlavna funkcia, ktora riadi vyhodnocovanie vyrazov
  * @param void
  * @return E_ERROR_TYPE (lexikalne, syntakticke a semanticke chyby + chyba alokacie)
@@ -468,6 +582,20 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
             }
             free( token );
             return E_SYNTAX; //chybny vstupny token
+        }
+    }
+    else if ( actual_ttype == E_IDENT )
+    {
+        if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
+        {
+            free( token );
+            return E_INTERPRET_ERROR;
+        }
+        //ak som nasiel nejaku funkciu potom sa musi vyhradit nove miesto pre dalsi
+        if ( ( token = malloc( sizeof( T_token ) ) ) == NULL )
+        {
+            PFXdispose();
+            return E_INTERPRET_ERROR;
         }
     }
     
@@ -533,6 +661,20 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                         return E_SYNTAX; //chybny vstupny token
                     }
                 }
+                else if ( actual_ttype == E_IDENT )
+                {
+                    if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
+                    {
+                        PFXdispose( ); free( token );
+                        return E_INTERPRET_ERROR;
+                    }
+                    //ak som nasiel nejaku funkciu potom sa musi vyhradit nove miesto pre dalsi
+                    if ( ( token = malloc( sizeof( T_token ) ) ) == NULL )
+                    {
+                        PFXdispose( );
+                        return E_INTERPRET_ERROR;
+                    }
+                }
                 break;
 
             case R_P:
@@ -570,6 +712,20 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                         }
                         PFXdispose( ); free( token );
                         return E_SYNTAX; //chybny vstupny token
+                    }
+                }
+                else if ( actual_ttype == E_IDENT )
+                {
+                    if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
+                    {
+                        PFXdispose( ); free( token );
+                        return E_INTERPRET_ERROR;
+                    }
+                    //ak som nasiel nejaku funkciu potom sa musi vyhradit nove miesto pre dalsi
+                    if ( ( token = malloc( sizeof( T_token ) ) ) == NULL )
+                    {
+                        PFXdispose( );
+                        return E_INTERPRET_ERROR;
                     }
                 }
                 break;
