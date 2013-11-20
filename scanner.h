@@ -52,7 +52,9 @@ typedef enum
         E_ELSE,
         E_RETURN,
         // ----
-    E_EOF,          // padla
+    E_LOCAL,
+    E_EOF, // padla
+    
 } TOKEN_TYPE;
 
 /** Stavy konecnej masinky **/
