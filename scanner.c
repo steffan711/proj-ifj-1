@@ -269,7 +269,7 @@ void scanner_get_token( T_token* token )
                     set_token( token, E_VAR, lex_length, current_pos-lex_length);
                     return;
                 }
-                case T_INT: 
+                case T_INT: // cislo
                 {    
                     while( isdigit( znak ) )
                     {
