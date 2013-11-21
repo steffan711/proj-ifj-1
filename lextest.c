@@ -27,18 +27,19 @@ int main( int argc, char *argv[] )
     }
 
     E_ERROR_TYPE ret_val;
-    char *handle_subor;    /**< abstrakcia zdrojoveho handle_suboru */
-
-    ret_val = mmap_file( argv[1], &handle_subor );
+    char *handle_subor;     /**< abstrakcia zdrojoveho handle_suboru */
+    size_t file_size;       /**< velkost suboru */
+    
+    ret_val = mmap_file( argv[1], &handle_subor, &file_size );
 
     if ( ret_val != E_OK )
         return E_INTERPRET_ERROR;
     
     char *subor = handle_subor;
     
-    if ( check_file_header( &subor ) != E_OK ) // kontrola '<?php' na zaciatku handle_suboru
+    if ( check_file_header( &subor ) != E_OK ) // kontrola '<?php ' na zaciatku handle_suboru
     {
-        fprintf( stderr, "Invalid source file. Exiting ...\n" );
+        fprintf( stderr, "Error: Invalid source file.\n" );
         free(handle_subor);
         return E_SYNTAX;
     }
@@ -47,7 +48,7 @@ int main( int argc, char *argv[] )
     T_token token;
     token.ttype = E_INVLD;
     
-    scanner_init(subor);
+    scanner_init( subor, file_size - 6); // scanner dostava subor o 6 znakov mensi koli '<?php '
         
         
     printf("---------------------------");

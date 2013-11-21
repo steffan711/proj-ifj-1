@@ -19,6 +19,7 @@
  char*          current_pos;  // aktualna pozicia scannera v subore
  unsigned       scanner_line;
  const char*    file_origin; // zaciatok suboru v pamati
+ size_t size;     // skutocna velkost suboru
 
 /**
  * Funkcia realizuje prevod hexadecimalneho cisla na integer
@@ -42,11 +43,12 @@ static inline int hex2int( char a, char b )
  * @brief inicializuje scanner pred jeho prvym pouzitim
  * @param ukazatel na subor
 */
-extern inline void scanner_init( char *file_start )
+extern inline void scanner_init( char *file_start, size_t file_size )
 {
     current_pos = file_start;
     scanner_line = 1;
     file_origin = file_start;
+    size = file_size;
 }
 
 
@@ -172,9 +174,13 @@ void scanner_get_token( T_token* token )
                     case ',':
                                     set_token( token, E_COMA, lex_length, NULL);
                                     return;	                                      
-                    case EOF:       // TODO: EOF if(current_pos - file_size = 0)
-                                    set_token( token, E_EOF, lex_length, NULL);
-                                    return;
+                    case EOF:       if( ( (current_pos - 1) - (file_origin + size) ) == 0 ) // end of file check
+                                    {
+                                       set_token( token, E_EOF, lex_length, NULL); 
+                                       return;
+                                    }
+                                    else
+                                        break;
                     default:
                                     set_token( token, E_INVLD, lex_length, NULL);
                                     return;

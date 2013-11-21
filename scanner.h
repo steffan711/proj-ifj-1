@@ -93,17 +93,9 @@ typedef enum
     number_divider,
 } divider;          // oznacenie mnoziny znakov ktora moze nasledovat za nejakym znakom
 
-/** Bezodny IKEA buffer - R.I.P
-typedef struct _tStringBuffer	
-{
-    unsigned allocated_size;
-    unsigned size;  // aktualny pocet znakov v retaci, ptr[size] = '\0'
-    char *ptr;      // ukazatel na retazec
-} tStringBuffer; **/
-
 
 /** Funkcie **/
-void scanner_init( char *file_start );
+void scanner_init( char *file_start, size_t file_size );
 void scanner_get_token( T_token* token );
 void print_token( T_token* token );
 
