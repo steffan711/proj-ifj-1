@@ -41,9 +41,8 @@ static inline int hex2int( char a, char b )
 /**
  * @brief inicializuje scanner pred jeho prvym pouzitim
  * @param ukazatel na subor
- * @return Uspesnost
 */
-void scanner_init( char *file_start )
+extern inline void scanner_init( char *file_start )
 {
     current_pos = file_start;
     scanner_line = 1;

@@ -59,5 +59,5 @@ int main( int argc, char *argv[] )
     printf("---------------------------\n");
     
     free( handle_subor );
-    return EXIT_SUCCES;
+    return EXIT_SUCCESS;
 }
