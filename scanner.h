@@ -87,12 +87,6 @@ typedef struct token
     } data;
 } T_token;
 
-typedef enum
-{
-    operator_divider,
-    number_divider,
-} divider;          // oznacenie mnoziny znakov ktora moze nasledovat za nejakym znakom
-
 
 /** Funkcie **/
 void scanner_init( char *file_start, size_t file_size );
