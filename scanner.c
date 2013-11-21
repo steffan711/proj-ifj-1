@@ -16,10 +16,10 @@
 
 
  /** Globalne premenne **/
- char*          current_pos;  // aktualna pozicia scannera v subore
- unsigned       scanner_line;
- const char*    file_origin; // zaciatok suboru v pamati
- size_t size;     // skutocna velkost suboru
+ char*          current_pos;    // aktualna pozicia scannera v subore
+ unsigned       scanner_line;   // aktualne spracovavany riadok
+ const char*    file_origin;    // zaciatok suboru v pamati
+ size_t         size;           // skutocna velkost suboru
 
 /**
  * Funkcia realizuje prevod hexadecimalneho cisla na integer
@@ -175,14 +175,11 @@ void scanner_get_token( T_token* token )
                                     set_token( token, E_COMA, lex_length, NULL);
                                     return;	                                      
                     case EOF:       if( ( (current_pos - 1) - (file_origin + size) ) == 0 ) // end of file check
-                                    {
                                        set_token( token, E_EOF, lex_length, NULL); 
-                                       return;
-                                    }
                                     else
-                                        break;
-                    default:
-                                    set_token( token, E_INVLD, lex_length, NULL);
+                                        set_token( token, E_INVLD, lex_length, NULL);
+                                    return;
+                    default:        set_token( token, E_INVLD, lex_length, NULL);
                                     return;
                 } // switch znak
             }
@@ -199,60 +196,35 @@ void scanner_get_token( T_token* token )
                         lex_length++;
                     }
                     ungetc( current_pos );  
+                    set_token( token, E_IDENT, lex_length, current_pos-lex_length);
                     
-                    /** Porovnanie s klucovymi slovami**/
+                    /** Porovnanie s klucovymi slovami **/
                     switch(*(current_pos - lex_length)) // prvy znak identifikatoru
                     {
                         case 'e':   if ( sstrcmp( current_pos - lex_length, "else", lex_length, 4 ) == 0 ) 
-                                    {
                                         set_token( token, E_ELSE, 0, NULL);
-                                        return;
-                                    }
-                                    break;
+                                    return;
                         case 'n':   if ( sstrcmp( current_pos - lex_length, "null", lex_length, 4 ) == 0 )
-                                    {
                                         set_token( token, E_NULL, 0, NULL);
-                                        return;
-                                    }
-                                    break;
+                                    return;
                         case 't':   if ( sstrcmp( current_pos - lex_length, "true", lex_length, 4 ) == 0 )
-                                    {
                                         set_token( token, E_TRUE, 0, NULL);
-                                        return;
-                                    }
-                                    break;
+                                    return;
                         case 'i':   if ( sstrcmp( current_pos - lex_length, "if", lex_length, 2 ) == 0 )
-                                    {
                                         set_token( token, E_IF, 0, NULL);
-                                        return;  
-                                    }
-                                    break;
+                                    return;  
                         case 'r':   if ( sstrcmp( current_pos - lex_length, "return", lex_length, 6 ) == 0 )
-                                    {
                                         set_token( token, E_RETURN, 0, NULL);
-                                        return;
-                                    }
-                                    break;
+                                    return;
                         case 'w':   if ( sstrcmp( current_pos - lex_length, "while", lex_length, 5 ) == 0 )
-                                    {
                                         set_token( token, E_WHILE, 0, NULL);
-                                        return;
-                                    }
-                                    break;
+                                    return;
                         case 'f':   if ( sstrcmp( current_pos - lex_length, "false", lex_length, 5 ) == 0 )
-                                    {
                                         set_token( token, E_FALSE, 0, NULL);
-                                        return;
-                                    }
                                     else if ( sstrcmp( current_pos - lex_length, "function", lex_length, 8 ) == 0 )
-                                    {
                                         set_token( token, E_FUNCTION, 0, NULL);
-                                        return;
-                                    }                    
-                        default:    break;
+                        default:    return;
                     }
-                    set_token( token, E_IDENT, lex_length, current_pos-lex_length);
-                    return;
                 }
                 case T_VAR: // premenna
                 {
