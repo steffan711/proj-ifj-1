@@ -444,6 +444,15 @@ void scanner_get_token( T_token* token )
                         znak = getc( current_pos );
                     }
                     
+                    if( isdigit(znak) )
+                        lex_length++;
+                        
+                    else // exponent bez akehokolvek cisla
+                    {        
+                        set_token( token, E_INVLD, lex_length, NULL ); 
+                        return;
+                    }
+                    
                     do // cisla exponentu :
                     {
                         if( isdigit( znak ) )
