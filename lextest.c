@@ -32,7 +32,7 @@ int main( int argc, char *argv[] )
     ret_val = mmap_file( argv[1], &handle_subor );
 
     if ( ret_val != E_OK )
-        return 2;
+        return E_INTERPRET_ERROR;
     
     char *subor = handle_subor;
     
@@ -40,7 +40,7 @@ int main( int argc, char *argv[] )
     {
         fprintf( stderr, "Invalid source file. Exiting ...\n" );
         free(handle_subor);
-        return E_OTHER;
+        return E_SYNTAX;
     }
     
     
@@ -59,5 +59,5 @@ int main( int argc, char *argv[] )
     printf("---------------------------\n");
     
     free( handle_subor );
-    return 0;
+    return EXIT_SUCCES;
 }
