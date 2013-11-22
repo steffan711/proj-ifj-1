@@ -68,7 +68,7 @@ test-built-in.o: test-built-in.c types.h
 lextest : lextest.o file_io.o scanner.o debug.o
 	$(CC) $(CFLAGS) -o $@ $^
 
-gentest : gentest.o file_io.o scanner.o syntax.o expr.o generator.o
+gentest : gentest.o file_io.o scanner.o generator.o
 	$(CC) $(CFLAGS) -o $@ $^
 	
 test-built-in: built-in.o test-built-in.o ial.o
