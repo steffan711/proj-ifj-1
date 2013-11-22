@@ -738,7 +738,6 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 break;
                 
             default:
-                printf("bol som tu \n");
                 PFXdispose( ); free(token); 
                 return E_SYNTAX;  //chyba neexistuje pravidlo v tabulke
         }    
