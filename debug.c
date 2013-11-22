@@ -7,7 +7,7 @@
 const char const *TOKEN_NAME[] = 
 {
 "E_CONCAT",
-"E_NOT_EQ"
+"E_NOT_EQ",
 "E_TRIPLEEQ",
 "E_PLUS",
 "E_MULT",
