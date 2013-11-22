@@ -47,7 +47,6 @@ E_ERROR_TYPE check_syntax ( void )
         // evaluate_expr( token, E_SEMICL );
     // }
     free(token);
-    //do_precedence();
     precedenceShutDown();
     return E_OK;
 }

@@ -16,7 +16,7 @@
 #define SIZEOF_ESTACK 1
 #define SIZEOF_PFXSTACK 1
 
-#define TESTY
+//#define TESTY
 
 #ifdef TESTY
 #include <string.h>
@@ -76,7 +76,7 @@ const TOKEN_TYPE prec_table [][18] = {
 /*  f  */  {R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_P,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N},
 /*  ,  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_P,  R_C,  R_P,  R_C,  R_N,  R_N},
 /* TERM*/  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_N,  R_E,  R_N,  R_E,  R_N,  R_E,  R_E},
-/*  {  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_N,  R_N,  R_N,  R_C,  R_N,  R_N},
+/*  {  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_N,  R_C,  R_N,  R_C,  R_N,  R_N},
 };
 
 const char *enums[] = { //iba na testovacie ucely
@@ -147,18 +147,23 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
 E_ERROR_TYPE evalf( T_token **array, int counter )
 {
     static int c = 0;
-    printf("\x1b[32mFUNCTION CALL NUMBER %d:\x1b[0m    ", counter);
-    printf("\x1b[34m%s( \x1b[0m", array[0]->data._string);
+    printf("\x1b[35mFUNCTION CALL NUMBER %d:\x1b[0m    \x1b[33m", c);
+    for (unsigned i = 0; i < array[0]->length; putchar(array[0]->data._string[i]), i++);
+    printf("(\x1b[0m");
+    if (counter != 0) printf("\x1b[33m \x1b[0m");
     for (int i = 1; i < counter; i++)
     {
         switch (array[i]->ttype) { 
-        case E_FALSE: printf("\x1b[34mFALSE, \x1b[0m");  break; 
-        case E_TRUE: printf("\x1b[34mTRUE, \x1b[0m"); break; 
-        case E_NULL: printf("\x1b[34mNULL, \x1b[0m"); break;
-        case E_INT: printf("\x1b[34m%d, \x1b[0m", array[i]->data._int); break;
-        case E_DOUBLE: printf("\x1b[34m%e, \x1b[0m", array[i]->data._double); break;
-        case E_LITER: printf("\x1b[34m\"%s\", \x1b[0m", array[i]->data._string); break;
-        case E_E: printf("\x1b[34mL%d, \x1b[0m", array[i]->data._int); break;
+        case E_FALSE: printf("\x1b[33mFALSE, \x1b[0m");  break; 
+        case E_TRUE: printf("\x1b[33mTRUE, \x1b[0m"); break; 
+        case E_NULL: printf("\x1b[33mNULL, \x1b[0m"); break;
+        case E_INT: printf("\x1b[33m%d, \x1b[0m", array[i]->data._int); break;
+        case E_DOUBLE: printf("\x1b[33m%e, \x1b[0m", array[i]->data._double); break;
+        case E_LITER: printf("\x1b[33m\"%s\", \x1b[0m", array[i]->data._string); break;
+        case E_E: printf("\x1b[33mL%d, \x1b[0m", array[i]->data._int); break;
+        case E_VAR: printf("\x1b[33m"); 
+            for (unsigned j = 0; j < array[i]->length; putchar(array[i]->data._string[j]), j++); 
+            printf(", \x1b[0m");
         default: break;
         }
         free(array[i]);
@@ -166,25 +171,27 @@ E_ERROR_TYPE evalf( T_token **array, int counter )
     if (counter != 0)
     {
         switch (array[counter]->ttype) { 
-        case E_FALSE: printf("\x1b[34mFALSE )\n\x1b[0m");  break; 
-        case E_TRUE: printf("\x1b[34mTRUE )\n\x1b[0m"); break; 
-        case E_NULL: printf("\x1b[34mNULL )\n\x1b[0m"); break;
-        case E_INT: printf("\x1b[34m%d )\n\x1b[0m", array[counter]->data._int); break;
-        case E_DOUBLE: printf("\x1b[34m%e )\n\x1b[0m", array[counter]->data._double); break;
-        case E_LITER: printf("\x1b[34m\"%s\" )\n\x1b[0m", array[counter]->data._string); break;
-        case E_E: printf("\x1b[34mL%d )\n\x1b[0m", array[counter]->data._int); break;
+        case E_FALSE: printf("\x1b[33mFALSE )\n\x1b[0m");  break; 
+        case E_TRUE: printf("\x1b[33mTRUE )\n\x1b[0m"); break; 
+        case E_NULL: printf("\x1b[33mNULL )\n\x1b[0m"); break;
+        case E_INT: printf("\x1b[33m%d )\n\x1b[0m", array[counter]->data._int); break;
+        case E_DOUBLE: printf("\x1b[33m%e )\n\x1b[0m", array[counter]->data._double); break;
+        case E_LITER: printf("\x1b[33m\"%s\" )\n\x1b[0m", array[counter]->data._string); break;
+        case E_E: printf("\x1b[33mL%d )\n\x1b[0m", array[counter]->data._int); break;
+        case E_VAR: printf("\x1b[33m"); 
+            for (unsigned j = 0; j < array[counter]->length; putchar(array[counter]->data._string[j]), j++); 
+            printf(" )\n\x1b[0m");
         default: break;
         }
         free(array[counter]);
     }
     else
     {
-        printf("\x1b[34)\n\x1b[0m");
+        printf("\x1b[33m)\n\x1b[0m");
     }
     array[0]->ttype = E_E;
     array[0]->data._int = c;
     c++;
-    printf("%d\n", PFXStack.size);
     return E_OK;
 }
 
@@ -731,6 +738,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 break;
                 
             default:
+                printf("bol som tu \n");
                 PFXdispose( ); free(token); 
                 return E_SYNTAX;  //chyba neexistuje pravidlo v tabulke
         }    
