@@ -4,9 +4,684 @@
 
 #include "types.h"
 #include "generator.h"
+#include "scanner.h"
+#include "debug.h"
 
 const int FLEXIBLE_ARRAY_MEMBER = 32;
 FTable FT;
+STable *STableLocal;
+STable *STableGlobal;
+STable *SwitchSTable;
+PtrStack *ptrstack;
+MapTable *Localmap;
+MapTable *Globalmap;
+MapTable *SwitchMap; // vyhybka
+enum gen_state State;
+Instruction *GlobalTape; 
+Instruction *LocalTape;
+Instruction *SwitchTape; // vyhybka
+FTableData *actualfunction;
+FTableData *callfunction;
+STableData *assignvar;
+
+/* DEBUG */
+#define DEBUG
+
+#ifdef DEBUG 
+    #define PRINTD(...) \
+        do { \
+            fprintf ( stderr, __VA_ARGS__ ); \
+        } \
+        while(0)
+#else
+    #define PRINTD(...) \
+        do { \
+        ; \
+        } \
+        while(0)
+#endif
+
+/*  END DEBUG */
+
+E_ERROR_TYPE GeneratorInit()
+{
+    /* Inicializacia zasobnikov a pomocnych struktur */
+    if ( PtrStackInit( &ptrstack ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( MapTableInit( &Localmap ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( MapTableInit( &Globalmap ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    
+    /* Vytvorenie tabuliek symbolov */
+    if( (STableGlobal = malloc(sizeof(STable))) == NULL )
+        return E_INTERPRET_ERROR;
+    BTinit(STableGlobal);
+    
+    if( (STableLocal = malloc(sizeof(STable))) == NULL )
+        return E_INTERPRET_ERROR;
+    BTinit(STableLocal);
+    
+    /* hlavna instrukcna paska*/
+    FT.tape = malloc(sizeof(Instruction));
+    if (FT.tape == NULL)
+    {
+        return E_INTERPRET_ERROR;
+    }
+    
+    
+    FT.tape->next = NULL;
+    FT.tape->opcode = START;
+    FT.tape->attr.size = 0;
+    
+    /* nastavenia vyhybky */
+    GlobalTape = FT.tape;
+    SwitchTape = GlobalTape;
+    SwitchMap = Globalmap; // najprv ukazuje na globalny priestor
+    SwitchSTable = STableGlobal;
+    State = S_DEFAULT;
+    
+    return E_OK;
+}
+
+void GeneratorErrorCleanup()
+{
+    if(ptrstack)
+    {
+        free(ptrstack);
+        ptrstack = NULL;
+    }
+    if(Localmap)
+    {
+        free(Localmap);
+        Localmap = NULL;
+    }
+    if(Globalmap)
+    {
+        free(Globalmap);
+        Globalmap = NULL;
+    }
+    SwitchMap = NULL;
+    if(STableGlobal)
+    {
+        DeleteBT(STableGlobal);
+        free(STableGlobal);
+        STableGlobal = NULL;
+    }
+    if(STableLocal)
+    {
+        DeleteBT(STableLocal);
+        free(STableLocal);
+        STableLocal = NULL;
+    }
+    SwitchSTable = NULL;
+    DeleteFT();
+}
+
+double toDouble( T_token *token )
+{
+    switch(token->ttype)
+    {
+        case E_INT:
+            return (double)token->data._int;
+        case E_DOUBLE:
+            return token->data._double;
+        case E_NULL:
+        case E_FALSE:
+            return 0.0;
+        case E_TRUE:
+            return 1.0;
+        case E_LITER:
+            /*return doubleval(token);*/
+        default:
+            return 0.0;
+    }
+    return 0.0;
+    
+}
+
+void translate_token( T_token *token, T_DVAR *out )
+{
+    switch( token->ttype )
+    {
+        case E_LOCAL:
+            out->type = VAR_LOCAL;
+            out->data.offset = token->length;
+            break;
+        case E_INT:
+            out->type = VAR_INT;
+            out->data._int = token->data._int;
+            break;
+        case E_DOUBLE:
+            out->type = VAR_DOUBLE;
+            out->data._int = token->data._double;
+            break;
+        case E_LITER:
+            out->type = VAR_CONSTSTRING;
+            out->data._string = token->data._string;
+            out->size = token->length;
+            break;
+        case E_FALSE:
+            out->type = VAR_BOOL;
+            out->data._bool = false;
+            break;
+        case E_TRUE:
+            out->type = VAR_BOOL;
+            out->data._bool = true;
+            break;
+        case E_NULL:
+            out->type = VAR_NULL;
+            out->data._bool = true;
+            break;
+        default:
+            PRINTD("ERROR translate_token() bad token type\n");
+            break;
+    }
+}
+
+E_ERROR_TYPE perform_eval_term(T_token *op)
+{
+    /* TODO */
+    PRINTD("perform_eval_term()\n");
+    // zistim ci sa da optimalizovat
+    if ( op->ttype == E_LOCAL && 
+         SwitchTape->opcode >= CONCAT && SwitchTape->opcode <= GREATEREQ && 
+         SwitchTape->attr.tac.dest == op->length)
+        {
+            PRINTD("predosla instrukcia bola 3adresna, typ %s\n", OPCODE_NAME[SwitchTape->opcode]);
+            SwitchTape->attr.tac.dest = assignvar->offset;
+            free(op);
+            return E_OK;
+        }
+        PRINTD("Generujem instrukciu mov\n");
+        if( ( SwitchTape->next = malloc( sizeof(Instruction) ) ) == NULL )
+        {
+            return E_INTERPRET_ERROR;
+        }
+        SwitchTape = SwitchTape->next;
+        
+        SwitchTape->next = NULL;
+        SwitchTape->opcode = MOV;
+        SwitchTape->attr.tac.dest = assignvar->offset;
+        
+        
+        switch( op->ttype )
+        {
+            case E_VAR:
+            {
+                E_ERROR_TYPE retval;
+                STableData *op_ptr;
+                if( (retval = BTfind( SwitchSTable, op->data._string, op->length, &op_ptr ) ) != E_OK )
+                {
+                    free(op);
+                    return retval;
+                }                
+                SwitchTape->attr.tac.op1.type = VAR_LOCAL;
+                SwitchTape->attr.tac.op1.data.offset = op_ptr->offset; // offset je v _int
+                break;
+            }
+            case E_INT:
+                SwitchTape->attr.tac.op1.type = VAR_INT; 
+                SwitchTape->attr.tac.op1.data._int = op->data._int;
+                break;
+            case E_DOUBLE:
+                SwitchTape->attr.tac.op1.type = VAR_DOUBLE; 
+                SwitchTape->attr.tac.op1.data._double = op->data._double;
+                break;
+            case E_LITER:
+                SwitchTape->attr.tac.op1.type = VAR_CONSTSTRING; 
+                SwitchTape->attr.tac.op1.data._string = op->data._string;
+                break;
+            case E_LOCAL:
+                SwitchTape->attr.tac.op1.type = VAR_LOCAL; 
+                SwitchTape->attr.tac.op1.data.offset = op->data._int;
+                break;
+            case E_TRUE:
+                SwitchTape->attr.tac.op1.type = VAR_BOOL; 
+                SwitchTape->attr.tac.op1.data._bool = true; 
+            case E_FALSE:
+                SwitchTape->attr.tac.op1.type = VAR_BOOL; 
+                SwitchTape->attr.tac.op1.data._bool = false; 
+            default :
+                PRINTD("eval() --> zly parameter pre TERM operaciu ");
+                free(op);
+                return E_OTHER;
+                break;
+        };
+        free(op);
+        SwitchTape->attr.tac.op2.type = VAR_NO_VAR;
+        return E_OK;
+}
+
+
+E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
+{
+    static unsigned int actual_usage = 0; // pocet pouzitych pomocnych premennych v jednom vyraze
+    
+    if ( operation == E_TERM )
+    {
+        return perform_eval_term(op1);
+    }
+    
+    if ( ( operation == E_CONCAT ) || 
+         ( ( op1->ttype == E_VAR || op1->ttype == E_LOCAL ) &&
+         ( op2->ttype == E_VAR || op2->ttype == E_LOCAL ) ) )
+    {
+        /* overit platnost premennych */
+        STableData *op_ptr1 = NULL;
+        STableData *op_ptr2 = NULL;
+        if( op1->ttype == E_VAR )
+        {
+            int retval = BTfind(SwitchSTable, op1->data._string, op1->length, &op_ptr1);
+            if( retval != E_OK )
+            {
+                free(op2);
+                return retval;
+            }
+        }
+        if( op2->ttype == E_VAR )
+        {
+            int retval = BTfind(SwitchSTable, op2->data._string, op2->length, &op_ptr2);
+            if( retval != E_OK )
+            {
+                free(op2);
+                return retval;
+            }
+        }
+        
+        // nova instrukcia
+        Instruction *ptr;
+        if ( ( ptr = malloc( sizeof( Instruction ) ) ) == NULL )
+        {
+            free(op2);
+            return E_INTERPRET_ERROR;
+        }
+        
+        ptr->next = NULL;
+        SwitchTape->next = ptr;
+        SwitchTape = ptr;
+        
+        unsigned int dest;
+        /* zvolenie destination - nova destination iba ked su oba operandy VAR */
+        if ( op_ptr1 != NULL || op_ptr2 != NULL )
+        {
+            if ( actual_usage >= SwitchMap->used_space ) // nova premenna
+            {
+                if ( MapTableCheck( &SwitchMap ) != E_OK )
+                {
+                    free(op2);
+                    return E_INTERPRET_ERROR;
+                }
+                    
+                PRINTD("actual_usage = %d, counter %d, maptable %d/%d\n", 
+                        actual_usage, SwitchSTable->counter,
+                        SwitchMap->used_space, SwitchMap->size);   
+                
+                dest = SwitchSTable->counter++;
+                SwitchMap->map[actual_usage++] = SwitchSTable->counter;
+                /* namapovana nova expr. premenna */
+                SwitchMap->used_space++;
+                PRINTD("actual_usage = %d, counter %d, maptable %d/%d\n", 
+                        actual_usage, SwitchSTable->counter,
+                        SwitchMap->used_space, SwitchMap->size);
+            }
+            else // vyuzije sa existujuca premenna
+            {
+                dest = SwitchMap->map[actual_usage++];
+            }  
+        }
+        else
+        {
+            if ( op1->ttype == E_LOCAL )
+                dest = op1->data._int;
+            else
+                dest = op2->data._int;
+        }
+        SwitchTape->attr.tac.dest = dest;
+        /* operand 1 */
+        if ( op_ptr1 == NULL )
+        {
+            translate_token(op1, &(SwitchTape->attr.tac.op1) );
+        }
+        else
+        {
+            SwitchTape->attr.tac.op1.type = VAR_LOCAL;
+            SwitchTape->attr.tac.op1.data.offset = op_ptr1->offset;
+        }
+        /* operand 2 */
+        if ( op_ptr2 == NULL )
+        {
+            translate_token(op2, &(SwitchTape->attr.tac.op2) );
+        }
+        else
+        {
+            SwitchTape->attr.tac.op2.type = VAR_LOCAL;
+            SwitchTape->attr.tac.op2.data.offset = op_ptr2->offset;
+        }
+        
+        op1->ttype = E_LOCAL;
+        op1->length = dest;
+        
+        PRINTD("OPERATION = %s\n", TOKEN_NAME[operation]);
+        switch(operation)
+        {
+            case E_CONCAT:
+                SwitchTape->opcode = CONCAT;
+                break;
+            case E_TRIPLEEQ:
+                SwitchTape->opcode = EQUAL;
+                break;
+            case E_NOT_EQ:
+                SwitchTape->opcode = NONEQUAL;
+                break;
+            case E_PLUS:
+                SwitchTape->opcode = PLUS;
+                break;
+            case E_MULT:
+                SwitchTape->opcode = MUL;
+                break;
+            case E_MINUS:
+                SwitchTape->opcode = MINUS;
+                break;
+            case E_DIV:
+                SwitchTape->opcode = DIV;
+                break;
+            case E_LESS:
+                SwitchTape->opcode = LESS;
+                break;
+            case E_GREATER:
+                SwitchTape->opcode = GREATER;
+                break;
+            case E_LESSEQ:
+                SwitchTape->opcode = LESSEQ;
+                break;
+            case E_GREATEREQ:
+                SwitchTape->opcode = GREATEREQ;
+                break;
+            default:
+                PRINTD("eval() --> invalid operation %s\n", TOKEN_NAME[operation]);
+                break;
+        }
+        free(op2);
+        return E_OK;
+    }
+    
+    switch(operation)
+    {
+        case E_PLUS:
+            {
+                if ( op1->ttype == E_DOUBLE || op2->ttype == E_DOUBLE )
+                {
+                    op1->data._double = toDouble(op1) + toDouble(op2);
+                    op1->ttype = E_DOUBLE;
+                }
+                else if ( op1->ttype == E_INT && op2->ttype == E_INT )
+                {
+                    op1->data._int += op2->data._int;
+                }
+                else
+                {
+                   free(op2);
+                   return E_INCOMPATIBLE; 
+                }
+                free(op2);
+                break;   
+            }
+        case E_MINUS:
+            {
+                if ( op1->ttype == E_DOUBLE || op2->ttype == E_DOUBLE )
+                {
+                    op1->data._double = toDouble(op1) - toDouble(op2);
+                    op1->ttype = E_DOUBLE;
+                }
+                else if ( op1->ttype == E_INT && op2->ttype == E_INT )
+                {
+                    op1->data._int -= op2->data._int;
+                }
+                else
+                {
+                   free(op2);
+                   return E_INCOMPATIBLE; 
+                }
+                free(op2);
+                break;   
+            }
+        case E_MULT:
+            {
+                if ( op1->ttype == E_DOUBLE || op2->ttype == E_DOUBLE )
+                {
+                    op1->data._double = toDouble(op1) * toDouble(op2);
+                    op1->ttype = E_DOUBLE;
+                }
+                else if ( op1->ttype == E_INT && op2->ttype == E_INT )
+                {
+                    op1->data._int *= op2->data._int;
+                }
+                else
+                {
+                    free(op2);
+                    return E_INCOMPATIBLE; 
+                }
+                free(op2);
+                break;   
+            }
+        case E_DIV:
+            {
+                if ( (op1->ttype == E_DOUBLE || op1->ttype == E_INT ) &&
+                     (op2->ttype == E_DOUBLE || op2->ttype == E_INT )  )
+                {
+                    op1->data._double = toDouble(op1) / toDouble(op2);
+                    op1->ttype = E_DOUBLE;
+                }
+                else
+                {
+                    free(op2);
+                    return E_INCOMPATIBLE; 
+                }
+                free(op2);
+                break;
+            }
+        case E_LESS:
+            {
+                if ( op1->ttype == op2->ttype )
+                {
+                    bool val = false;
+                    
+                    switch( op1->ttype )
+                    {
+                        case E_INT:
+                            val = ( op1->data._int ) < ( op2->data._int );
+                            break; //handbrake;
+                        case E_DOUBLE:
+                            val = (op1->data._double) < ( op2->data._double );
+                            break;
+                        case E_LITER:
+                            val = true; // TODO
+                            break;
+                        default:
+                            break;
+                    }
+                    if( val )
+                        op1->ttype = E_TRUE;
+                    else
+                        op1->ttype = E_FALSE;
+                }
+                else
+                {
+                    free(op2);
+                    return E_INCOMPATIBLE; 
+                }
+                free(op2);
+                break;
+                
+            }
+        case E_GREATER:
+            {
+                if ( op1->ttype == op2->ttype )
+                {
+                    bool val = false;
+                    
+                    switch( op1->ttype )
+                    {
+                        case E_INT:
+                            val = ( op1->data._int ) > ( op2->data._int );
+                            break; //handbrake;
+                        case E_DOUBLE:
+                            val = (op1->data._double) > ( op2->data._double );
+                            break;
+                        case E_LITER:
+                            val = true; // TODO
+                            break;
+                        default:
+                            break;
+                    }
+                    if( val )
+                        op1->ttype = E_TRUE;
+                    else
+                        op1->ttype = E_FALSE;
+                }
+                else
+                {
+                    free(op2);
+                    return E_INCOMPATIBLE; 
+                }
+                free(op2);
+                break;
+                
+            }
+        case E_LESSEQ:
+            {
+                if ( op1->ttype == op2->ttype )
+
+                {
+                    bool val = true;
+                    
+                    switch( op1->ttype )
+                    {
+                        case E_INT:
+                            val = ( op1->data._int ) <= ( op2->data._int );
+                            break; //handbrake;
+                        case E_DOUBLE:
+                            val = (op1->data._double) <= ( op2->data._double );
+                            break;
+                        case E_LITER:
+                            val = true; // TODO
+                            break;
+                        default:
+                            break;
+                    }
+                    if( val )
+                        op1->ttype = E_TRUE;
+                    else
+                        op1->ttype = E_FALSE;
+
+
+                }
+                else
+                {
+                    free(op2);
+                    return E_INCOMPATIBLE; 
+                }
+                free(op2);
+                break;
+                
+            }
+        case E_GREATEREQ:
+            {
+                if ( op1->ttype == op2->ttype )
+                {
+                    bool val = true;
+                    
+                    switch( op1->ttype )
+                    {
+                        case E_INT:
+                            val = ( op1->data._int ) >= ( op2->data._int );
+                            break; //handbrake;
+                        case E_DOUBLE:
+                            val = (op1->data._double) >= ( op2->data._double );
+                            break;
+                        case E_LITER:
+                            val = true; // TODO
+                            break;
+                        default:
+                            break;
+                    }
+                    if( val )
+                        op1->ttype = E_TRUE;
+                    else
+                        op1->ttype = E_FALSE;
+                }
+                else
+                {
+                    free(op2);
+                    return E_INCOMPATIBLE; 
+                }
+                free(op2);
+                break;
+                
+            }
+        case E_TRIPLEEQ:
+        case E_NOT_EQ:
+            {
+                bool val = false;
+                if ( op1->ttype == op2->ttype )
+                {
+                    val = true;
+                    switch(op1->ttype)
+                    {
+                        case E_INT:
+                            if (op1->data._int != op2->data._int)
+                                val = false;
+                            break;
+                        case E_DOUBLE:
+                            if ( op1->data._double != op2->data._double)
+                                val = false;
+                            break;
+                        case E_LITER:
+                            if ( sstrcmp( op1->data._string, op2->data._string, op1->length, op2->length ) != 0 )
+                                val = false;
+                            break;
+                        default:
+                            break;
+                    }
+                    
+                }
+                else
+                if (operation == E_NOT_EQ)
+                    val = !val;
+                if( val )
+                    op1->ttype = E_TRUE;
+                else
+                    op1->ttype = E_FALSE;
+                free(op2);
+                break;
+            }            
+
+        default:
+            fprintf(stderr, "Invalid operation in EVAL(), operation = %d \n", operation);
+    }
+    return E_OK;
+}
+
+E_ERROR_TYPE assing(T_token *op1)
+/* nastavuje globalnu premennu */
+{
+    PRINTD("assigning, name %.3s\n", op1->data._string);
+    if ( BTlookup(SwitchSTable , op1->data._string, op1->length, &assignvar ) != E_OK )
+        return E_INTERPRET_ERROR;
+    PRINTD("name %.3s got id %d\n", op1->data._string, assignvar->offset);
+        
+    return E_OK;
+}
+
+
+
 
 
 /* TABULKA FUNKCII */
@@ -419,7 +1094,14 @@ E_ERROR_TYPE PtrStackInit(PtrStack **ptr)
     return E_OK;
 }
 
-
+/**
+ *  \brief Skontroluje, ci je v zasobniku este miesto
+ *  
+ *  \param [in/out] ukazovatel na zasobnik 
+ *  \return E_OK, v priprade chyby vrati E_INTERPRET_ERROR
+ *  
+ *  \details realokuje povodne miesto a nastavi novy pointer na zasobnik
+ */
 E_ERROR_TYPE PtrStackCheck(PtrStack **ptr)
 {
     if((*ptr)->size < (*ptr)->top)
@@ -438,6 +1120,14 @@ E_ERROR_TYPE PtrStackCheck(PtrStack **ptr)
     return E_OK;  
 }
 
+/**
+ *  \brief Inicializuje mapovaciu tabulku
+ *  
+ *  \param [in/out] nastavi pointer na tabulku
+ *  \return E_OK, v priprade chyby vrati E_INTERPRET_ERROR
+ *  
+ *  \details mallocuje novu tabulku
+ */
 E_ERROR_TYPE MapTableInit(MapTable **ptr)
 {
     *ptr = malloc(sizeof( MapTable )+
@@ -449,7 +1139,14 @@ E_ERROR_TYPE MapTableInit(MapTable **ptr)
     (*ptr)->used_space = 0;
     return E_OK;
 }
-
+/**
+ *  \brief skontroluje ci netreba zvacsit mapovaciu tabulku
+ *  
+ *  \param [in/out] nastavi pointer na novu tabulku
+ *  \return E_OK, v priprade chyby vrati E_INTERPRET_ERROR
+ *  
+ *  \details reallocuje tabulku na dvojnasobnu velkost
+ */
 E_ERROR_TYPE MapTableCheck(MapTable **ptr)
 {
     if((*ptr)->size < (*ptr)->used_space)

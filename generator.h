@@ -10,12 +10,8 @@
 
 
 #include <stdbool.h>
-
+#include "scanner.h"
 #include "types.h"
-
-
-
-extern const int FLEXIBLE_ARRAY_MEMBER; // velkost zasobnika
 
 /* ********************************** */
 /* ******** Tabulka symbolov ******** */
@@ -133,8 +129,43 @@ typedef struct metadata_function FTableData;
 /* ************ Instrukcia ********** */
 /* ********************************** */
 
+enum vartype { VAR_UNDEF, VAR_INT, VAR_BOOL, VAR_DOUBLE, VAR_STRING, VAR_NULL, VAR_CONSTSTRING, VAR_LOCAL, VAR_NO_VAR };
+
+typedef struct variable
+{
+    enum vartype type;
+    union
+    {
+        int _int;
+        char* _string;
+        bool _bool;
+        double _double;
+        unsigned int offset;
+    } data;
+    unsigned int size;
+} T_DVAR;
+
+enum opcodes { START, CREATE, CALL, CALL_BUILTIN, MOV, MOVRET, RET, PUSH, COND, JMP,
+              CONCAT, EQUAL, NONEQUAL, PLUS, MINUS, DIV, MUL, LESS, GREATER, LESSEQ, GREATEREQ };
+
 struct instruction {
-    int dummy;
+    enum opcodes opcode;
+    union
+    {
+        unsigned int size;
+        enum builtin_functions builtin;
+        struct
+        {
+            struct instruction *jmp;
+            T_DVAR op1;
+        } jump;
+        struct 
+        {
+            unsigned int dest;
+            T_DVAR op1;
+            T_DVAR op2;
+        } tac; // Three Adress Code
+    } attr;
     struct instruction *next;
 };
 
@@ -144,6 +175,7 @@ struct instruction_list {
 };
 
 typedef struct instruction Instruction;
+typedef enum opcodes Opcode;
 typedef struct instruction_list InstructionList;
 
 /* ************ Instrukcia ********** */
@@ -161,8 +193,8 @@ typedef struct instruction_list InstructionList;
  *  map - flexibilne pole
  */
 struct map_table {
-    int size;
-    int used_space;
+    unsigned int size;
+    unsigned int used_space;
     int map[];
 };
 
@@ -185,8 +217,30 @@ typedef struct ptr_stack PtrStack;
 /* ********        END       ******** */
 /* ********************************** */
 
+/* Nastavovanie stavu generatora */
+enum gen_state { S_DEFAULT = 0, S_IF_BEGIN, S_IF_ELSE, S_IF_END,
+                 S_WHILE_BEGIN, S_WHILE_END, S_FUNCTION_END,
+                 S_FILE_END };
 
-extern FTable FT;
+/* Definicie globalnych premennych */
+extern const int FLEXIBLE_ARRAY_MEMBER; // pociatocna velkost zasobnika
+extern FTable FT;                       // tabulka funkcii
+extern STable *STableLocal;             // lokalna tabulka symbolov
+extern STable *STableGlobal;            // globalna tabulka symbolov
+extern STable *SwitchSTable;            // vyhybka pre tabulku symbolov
+extern PtrStack *ptrstack;              // zasobnik pointrov, kvoli opravam na paske
+extern MapTable *Localmap;              // lokalne mapovanie premennych
+extern MapTable *Globalmap;             // mapovanie premennych pre hlavne telo programu
+extern MapTable *SwitchMap;             // vyhybka na mapovanie
+extern Instruction *GlobalTape;         // ukazovatel na poslednu instrukciu hlavneho programu
+extern Instruction *LocalTape;          // ukazovatel na poslednu instrukciu funkcie
+extern Instruction *SwitchTape;         // vyhybka ukazovatela
+extern enum gen_state State;            // uchovava stav generatora, ine chovanie niektorych funkcii
+extern FTableData *actualfunction;      // aktualna funkcia
+extern FTableData *callfunction;        // docasne uchovanie volanej funkcie
+extern STableData *assignvar;           // docasne uchovanie premennej do ktorej sa priraduje
+
+E_ERROR_TYPE GeneratorInit();
 
 E_ERROR_TYPE AddBuiltinFunction( char *name,
                                  unsigned int size,
@@ -196,22 +250,33 @@ E_ERROR_TYPE AddBuiltinFunction( char *name,
                                 );
                                 
 E_ERROR_TYPE LookupFunction(char *name, unsigned int size,  FTableData **ptr_out);
+
 void DeleteFT(void);    
+
 void BTinit( STable  *tree );
+
 E_ERROR_TYPE BTfind( STable *tree,
                      char *name,
                      int name_size,
                      STableData** ptr_out
                     );
+                    
 E_ERROR_TYPE BTlookup( STable *tree,
                        char *name,
                        int name_size,
                        STableData **ptr_out  
                       );
+                      
 void DeleteBT( STable *tree );
+
 E_ERROR_TYPE PtrStackInit(PtrStack **ptr);
 E_ERROR_TYPE PtrStackCheck(PtrStack **ptr);
 E_ERROR_TYPE MapTableInit(MapTable **ptr);
 E_ERROR_TYPE MapTableCheck(MapTable **ptr);
+
+void GeneratorErrorCleanup(void);
+
+E_ERROR_TYPE assing(T_token *op1);
+E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation);
 
 #endif
