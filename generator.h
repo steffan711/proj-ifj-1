@@ -275,6 +275,7 @@ E_ERROR_TYPE MapTableInit(MapTable **ptr);
 E_ERROR_TYPE MapTableCheck(MapTable **ptr);
 
 void GeneratorErrorCleanup(void);
+void PrintTape( Instruction *ptr );
 
 E_ERROR_TYPE assing(T_token *op1);
 E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation);

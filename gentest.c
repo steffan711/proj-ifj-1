@@ -81,6 +81,7 @@ int main(void)
     retval = eval(ptr1, NULL, E_TERM);
     if( retval != 0 )
         printf(" retval = %d\n", retval);
+    PrintTape( FT.tape );    
     /*printf("-------------\n");
     AddBuiltinFunction("sracka", 6, 6, 0, F_DUMMY);
     printf("-------------\n");

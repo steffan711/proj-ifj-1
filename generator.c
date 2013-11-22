@@ -43,6 +43,80 @@ STableData *assignvar;
 
 /*  END DEBUG */
 
+void print_DVAR(T_DVAR *ptr)
+{
+    switch(ptr->type)
+    {
+        case VAR_UNDEF:
+            printf("VAR_UNDEF\n");
+            break;
+        case VAR_INT:
+            printf("VAR_INT: %d\n", ptr->data._int);
+            break;
+        case VAR_BOOL:
+            printf("VAR_BOOL: %d\n", ptr->data._bool);
+            break;
+        case VAR_DOUBLE:
+            printf("VAR_DOUBLE: %f\n", ptr->data._double);
+            break;
+        case VAR_STRING:
+            printf("VAR_STRING size [%d]: '", ptr->size);
+            for(unsigned int i = 0; i < ptr->size; i++ )
+            {
+                putchar(ptr->data._string[i]);
+            }
+            printf("'\n");
+            break;
+        case VAR_CONSTSTRING:
+            printf("VAR_CONSTSTRING size [%d]: '", ptr->size);
+            for(unsigned int i = 0; i < ptr->size; i++ )
+            {
+                putchar(ptr->data._string[i]);
+            }
+            printf("'\n");
+            break;
+        case VAR_LOCAL:
+            printf("VAR_LOCAL: %u\n", ptr->data.offset);
+            break;
+        default:
+            printf("UNKNOWN VAR -->FIX ME\n");
+            break;
+    }
+}
+
+void PrintTape( Instruction *ptr )
+{
+    while( ptr != NULL )
+    {
+        printf("----------------\n");
+        printf("Opcode: %s\n", OPCODE_NAME[ptr->opcode]);
+        switch( ptr->opcode )
+        {
+            case START:
+            case CREATE:
+                printf("Size: %u\n", ptr->attr.size);
+                break;
+            case CALL:
+                printf("Call ptr: %p\n", (void*)ptr->attr.jump.jmp);
+                 break;
+            case CALL_BUILTIN:
+                printf("Call index: %u\n", ptr->attr.builtin);
+                 break;
+            case JMP:
+                printf("Jump ptr: %p\n", (void*)ptr->attr.jump.jmp);
+                 break;
+            default:
+                printf("Dest: [%u]\n", ptr->attr.tac.dest);
+                printf("OP1: ");
+                print_DVAR( &( ptr->attr.tac.op1 ) );
+                printf("OP2: ");
+                print_DVAR( &( ptr->attr.tac.op2 ) );
+        }
+    ptr = ptr->next;
+    }
+    printf("** TAPE END **\n");
+}
+
 E_ERROR_TYPE GeneratorInit()
 {
     /* Inicializacia zasobnikov a pomocnych struktur */
@@ -189,74 +263,75 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
 {
     /* TODO */
     PRINTD("perform_eval_term()\n");
+    
     // zistim ci sa da optimalizovat
     if ( op->ttype == E_LOCAL && 
          SwitchTape->opcode >= CONCAT && SwitchTape->opcode <= GREATEREQ && 
          SwitchTape->attr.tac.dest == op->length)
-        {
-            PRINTD("predosla instrukcia bola 3adresna, typ %s\n", OPCODE_NAME[SwitchTape->opcode]);
-            SwitchTape->attr.tac.dest = assignvar->offset;
-            free(op);
-            return E_OK;
-        }
-        PRINTD("Generujem instrukciu mov\n");
-        if( ( SwitchTape->next = malloc( sizeof(Instruction) ) ) == NULL )
-        {
-            return E_INTERPRET_ERROR;
-        }
-        SwitchTape = SwitchTape->next;
-        
-        SwitchTape->next = NULL;
-        SwitchTape->opcode = MOV;
+    {
+        PRINTD("predosla instrukcia bola 3adresna, typ %s\n", OPCODE_NAME[SwitchTape->opcode]);
         SwitchTape->attr.tac.dest = assignvar->offset;
-        
-        
-        switch( op->ttype )
-        {
-            case E_VAR:
-            {
-                E_ERROR_TYPE retval;
-                STableData *op_ptr;
-                if( (retval = BTfind( SwitchSTable, op->data._string, op->length, &op_ptr ) ) != E_OK )
-                {
-                    free(op);
-                    return retval;
-                }                
-                SwitchTape->attr.tac.op1.type = VAR_LOCAL;
-                SwitchTape->attr.tac.op1.data.offset = op_ptr->offset; // offset je v _int
-                break;
-            }
-            case E_INT:
-                SwitchTape->attr.tac.op1.type = VAR_INT; 
-                SwitchTape->attr.tac.op1.data._int = op->data._int;
-                break;
-            case E_DOUBLE:
-                SwitchTape->attr.tac.op1.type = VAR_DOUBLE; 
-                SwitchTape->attr.tac.op1.data._double = op->data._double;
-                break;
-            case E_LITER:
-                SwitchTape->attr.tac.op1.type = VAR_CONSTSTRING; 
-                SwitchTape->attr.tac.op1.data._string = op->data._string;
-                break;
-            case E_LOCAL:
-                SwitchTape->attr.tac.op1.type = VAR_LOCAL; 
-                SwitchTape->attr.tac.op1.data.offset = op->data._int;
-                break;
-            case E_TRUE:
-                SwitchTape->attr.tac.op1.type = VAR_BOOL; 
-                SwitchTape->attr.tac.op1.data._bool = true; 
-            case E_FALSE:
-                SwitchTape->attr.tac.op1.type = VAR_BOOL; 
-                SwitchTape->attr.tac.op1.data._bool = false; 
-            default :
-                PRINTD("eval() --> zly parameter pre TERM operaciu ");
-                free(op);
-                return E_OTHER;
-                break;
-        };
         free(op);
-        SwitchTape->attr.tac.op2.type = VAR_NO_VAR;
         return E_OK;
+    }
+    PRINTD("Generujem instrukciu mov\n");
+    if( ( SwitchTape->next = malloc( sizeof(Instruction) ) ) == NULL )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    SwitchTape = SwitchTape->next;
+    
+    SwitchTape->next = NULL;
+    SwitchTape->opcode = MOV;
+    SwitchTape->attr.tac.dest = assignvar->offset;
+    SwitchTape->attr.tac.op2.type = VAR_NO_VAR; 
+    
+    switch( op->ttype )
+    {
+        case E_VAR:
+        {
+            E_ERROR_TYPE retval;
+            STableData *op_ptr;
+            if( (retval = BTfind( SwitchSTable, op->data._string, op->length, &op_ptr ) ) != E_OK )
+            {
+                free(op);
+                return retval;
+            }                
+            SwitchTape->attr.tac.op1.type = VAR_LOCAL;
+            SwitchTape->attr.tac.op1.data.offset = op_ptr->offset; // offset je v _int
+            break;
+        }
+        case E_INT:
+            SwitchTape->attr.tac.op1.type = VAR_INT; 
+            SwitchTape->attr.tac.op1.data._int = op->data._int;
+            break;
+        case E_DOUBLE:
+            SwitchTape->attr.tac.op1.type = VAR_DOUBLE; 
+            SwitchTape->attr.tac.op1.data._double = op->data._double;
+            break;
+        case E_LITER:
+            SwitchTape->attr.tac.op1.type = VAR_CONSTSTRING; 
+            SwitchTape->attr.tac.op1.data._string = op->data._string;
+            break;
+        case E_LOCAL:
+            SwitchTape->attr.tac.op1.type = VAR_LOCAL; 
+            SwitchTape->attr.tac.op1.data.offset = op->data._int;
+            break;
+        case E_TRUE:
+            SwitchTape->attr.tac.op1.type = VAR_BOOL; 
+            SwitchTape->attr.tac.op1.data._bool = true; 
+        case E_FALSE:
+            SwitchTape->attr.tac.op1.type = VAR_BOOL; 
+            SwitchTape->attr.tac.op1.data._bool = false; 
+        default :
+            PRINTD("eval() --> zly parameter pre TERM operaciu ");
+            free(op);
+            return E_OTHER;
+            break;
+    };
+    free(op);
+    SwitchTape->attr.tac.op2.type = VAR_NO_VAR;
+    return E_OK;
 }
 
 
@@ -266,6 +341,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
     
     if ( operation == E_TERM )
     {
+        actual_usage = 0;
         return perform_eval_term(op1);
     }
     
