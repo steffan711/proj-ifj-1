@@ -3,11 +3,56 @@
 #include <stdio.h> // printf
 #include "scanner.h"
 
+
+const char const *TOKEN_NAME[] = 
+{
+"E_CONCAT",
+"E_NOT_EQ"
+"E_TRIPLEEQ",
+"E_PLUS",
+"E_MULT",
+"E_MINUS",
+"E_DIV",
+"E_LESS",
+"E_GREATER",
+"E_LESSEQ",
+"E_GREATEREQ",
+"E_LPARENTHESES",
+"E_RPARENTHESES",
+"E_IDENT",
+"E_COMA",
+"E_TERM",
+"E_LABRACK",
+"E_SEMICL",
+"E_VAR",
+"E_INT",
+"E_DOUBLE",
+"E_LITER",
+"R_E",
+"R_C",
+"R_N",
+"R_P",
+"E_E",
+"E_EQ",
+"E_RABRACK",
+"E_INVLD",
+"E_WHILE",
+"E_FUNCTION",
+"E_FALSE",
+"E_NULL",
+"E_TRUE",
+"E_IF",
+"E_ELSE",
+"E_RETURN",
+"E_LOCAL",
+"E_EOF"
+};
+
 /**
  * Vypise strukturu token na stdout
  * @param token
  */
-extern void print_token( T_token* token )
+void print_token( T_token* token )
 {
     
     printf( "\nToken -> length: %u", token->length);

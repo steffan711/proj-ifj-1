@@ -9,7 +9,8 @@
 #define DEBUG_H
 /** Hlavicky funkcii **/
 
-extern void print_token( T_token* token );
+extern const char const *TOKEN_NAME[];
+void print_token( T_token* token );
 
 
 

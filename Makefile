@@ -56,10 +56,10 @@ clear_screen:
 
 tests: clear_screen test-built-in lextest gentest
 
-lextest.o : lextest.c types.h file_io.h
+lextest.o : lextest.c types.h file_io.h debug.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-gentest.o : gentest.c types.h generator.h
+gentest.o : gentest.c types.h generator.h debug.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 test-built-in.o: test-built-in.c types.h
@@ -68,7 +68,7 @@ test-built-in.o: test-built-in.c types.h
 lextest : lextest.o file_io.o scanner.o debug.o
 	$(CC) $(CFLAGS) -o $@ $^
 
-gentest : gentest.o file_io.o scanner.o generator.o
+gentest : gentest.o file_io.o scanner.o generator.o debug.o
 	$(CC) $(CFLAGS) -o $@ $^
 	
 test-built-in: built-in.o test-built-in.o ial.o
