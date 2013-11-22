@@ -6,46 +6,51 @@
 
 const char const *TOKEN_NAME[] = 
 {
-"E_CONCAT",
-"E_NOT_EQ",
-"E_TRIPLEEQ",
-"E_PLUS",
-"E_MULT",
-"E_MINUS",
-"E_DIV",
-"E_LESS",
-"E_GREATER",
-"E_LESSEQ",
-"E_GREATEREQ",
-"E_LPARENTHESES",
-"E_RPARENTHESES",
-"E_IDENT",
-"E_COMA",
-"E_TERM",
-"E_LABRACK",
-"E_SEMICL",
-"E_VAR",
-"E_INT",
-"E_DOUBLE",
-"E_LITER",
-"R_E",
-"R_C",
-"R_N",
-"R_P",
-"E_E",
-"E_EQ",
-"E_RABRACK",
-"E_INVLD",
-"E_WHILE",
-"E_FUNCTION",
-"E_FALSE",
-"E_NULL",
-"E_TRUE",
-"E_IF",
-"E_ELSE",
-"E_RETURN",
-"E_LOCAL",
-"E_EOF"
+    "E_CONCAT",
+    "E_NOT_EQ",
+    "E_TRIPLEEQ",
+    "E_PLUS",
+    "E_MULT",
+    "E_MINUS",
+    "E_DIV",
+    "E_LESS",
+    "E_GREATER",
+    "E_LESSEQ",
+    "E_GREATEREQ",
+    "E_LPARENTHESES",
+    "E_RPARENTHESES",
+    "E_IDENT",
+    "E_COMA",
+    "E_TERM",
+    "E_LABRACK",
+    "E_SEMICL",
+    "E_VAR",
+    "E_INT",
+    "E_DOUBLE",
+    "E_LITER",
+    "R_E",
+    "R_C",
+    "R_N",
+    "R_P",
+    "E_E",
+    "E_EQ",
+    "E_RABRACK",
+    "E_INVLD",
+    "E_WHILE",
+    "E_FUNCTION",
+    "E_FALSE",
+    "E_NULL",
+    "E_TRUE",
+    "E_IF",
+    "E_ELSE",
+    "E_RETURN",
+    "E_LOCAL",
+    "E_EOF"
+};
+
+const char const *OPCODE_NAME[] = 
+{
+"START", "CREATE", "CALL", "CALL_BUILTIN", "MOV", "MOVRET", "RET", "PUSH", "COND", "JMP", "CONCAT", "EQUAL", "NONEQUAL", "PLUS","MINUS", "DIV", "LESS", "GREATER", "LESSEQ", "GREATEREQ" 
 };
 
 /**
@@ -91,6 +96,7 @@ void print_token( T_token* token )
         case E_TRUE:        printf( "\nToken -> ttype: E_true\n" );         break;
         case E_VAR:         printf( "\nToken -> ttype: E_VAR\n" );          break;
         case E_WHILE:       printf( "\nToken -> ttype: E_WHILE\n" );        break;
+        case E_LOCAL:       printf( "\nToken -> ttype: E_LOCAL\n" );        break;
         default:                                                            break;
     
     } // switch
@@ -102,6 +108,9 @@ void print_token( T_token* token )
         
     else if( token->ttype == E_DOUBLE )
         printf( "%e", token->data._double );
+        
+     else if( token->ttype == E_LOCAL )
+        printf( "LOCALVAR!!" );
 
     else if( token->data._string )
         for( unsigned i = 0; i < token->length; i++)

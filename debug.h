@@ -10,6 +10,7 @@
 /** Hlavicky funkcii **/
 
 extern const char const *TOKEN_NAME[];
+extern const char const *OPCODE_NAME[];
 void print_token( T_token* token );
 
 
