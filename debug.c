@@ -50,7 +50,7 @@ const char const *TOKEN_NAME[] =
 
 const char const *OPCODE_NAME[] = 
 {
-"START", "CREATE", "CALL", "CALL_BUILTIN", "MOV", "MOVRET", "RET", "PUSH", "COND", "JMP", "CONCAT", "EQUAL", "NONEQUAL", "PLUS","MINUS", "DIV", "LESS", "GREATER", "LESSEQ", "GREATEREQ" 
+"CLEAR", "DUMMY", "START", "CREATE", "CALL", "CALL_BUILTIN", "MOV", "RET", "PUSH", "COND", "JMP", "MOVRET", "CONCAT", "EQUAL", "NONEQUAL", "PLUS","MINUS", "DIV", "LESS", "GREATER", "LESSEQ", "GREATEREQ" 
 };
 
 /**
