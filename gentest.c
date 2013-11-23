@@ -29,6 +29,7 @@ int main(void)
     
     T_token *ptr1 = calloc( 1, sizeof( T_token ) );
     T_token *ptr2 = calloc( 1, sizeof( T_token ) );
+    T_token *ptr3;
     
     T_token assign = { .ttype = T_VAR, .line = 0, .length = 3, .data._string = "ABC" };
     //$ABC = 10*5;
@@ -48,7 +49,6 @@ int main(void)
     retval = eval( ptr1, NULL, E_TERM );
     if( retval != 0 )
         printf(" retval = %d\n", retval); 
-    printf("vsetko je ok\n");
     // $DEF = 5.5;
     ptr1 = calloc( 1, sizeof( T_token ) );
     assign.data._string = "DEF";
@@ -81,7 +81,50 @@ int main(void)
     retval = eval(ptr1, NULL, E_TERM);
     if( retval != 0 )
         printf(" retval = %d\n", retval);
-    PrintTape( FT.tape );    
+    printf("vsetko je ok\n");
+      ////////////////////////////////////////////  
+    /*ptr1 = calloc( 1, sizeof( T_token ) );
+    ptr2 = calloc( 1, sizeof( T_token ) );
+    
+    ptr3 = calloc( 1, sizeof( T_token ) );
+    
+        ptr1->ttype = E_INT;
+    ptr1->data._int = 10;
+    
+    ptr2->ttype = E_INT;
+    ptr2->data._int = 5;
+    ptr3->ttype = E_IDENT;
+    //ptr2->data._string = "ABC";
+    //ptr1->data._string = "DEF";
+    ptr3->data._string = "nut";
+    ptr2->length = 3;
+    ptr1->length = 3;
+    ptr3->length = 3;
+    
+    assing( &assign );
+    T_token *pole[] = { ptr3, ptr1, ptr2 };
+    retval = evalf(pole, 3);
+    if( retval != 0 )
+        printf(" retval = %d\n", retval);
+    
+    retval = eval(ptr3, NULL, E_TERM);
+    if( retval != 0 )
+        printf(" retval = %d\n", retval);*/
+    /* skuska ifu */
+    
+    setstate(S_WHILE_BEGIN);
+    ptr3 = calloc( 1, sizeof( T_token ) );
+    ptr3->ttype = E_VAR;
+    ptr3->length = 3;
+    ptr3->data._string = "DEF";
+    retval = eval(ptr3, NULL, E_TERM);
+    if( retval != 0 )
+        printf(" retval = %d\n", retval);
+        
+    setstate(S_WHILE_END);
+    //setstate(S_IF_END);
+    setstate(S_FILE_END);
+    PrintTape( FT.tape );  
     /*printf("-------------\n");
     AddBuiltinFunction("sracka", 6, 6, 0, F_DUMMY);
     printf("-------------\n");

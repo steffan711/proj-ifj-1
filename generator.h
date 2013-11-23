@@ -109,11 +109,13 @@ struct f_item {
  *  unknown_count - pocet nedefinovanych funkcii
  *  *btreeroot - koren binarneho stromu
  *  *tape - instrukcna paska hlavneho programu
+ *  *last_instr - ukazovatel na poslednu instrukciu
  */
 struct function_tree_handle {
     int unknown_count;
     struct f_item *btreeroot;       // koren
     struct instruction *tape;       // ukazovatel na hlavnu pasku
+    struct instruction *last_instr; // ukazovatel na poslednu instrukciu
 };
 
 typedef struct function_tree_handle FTable;
@@ -145,8 +147,8 @@ typedef struct variable
     unsigned int size;
 } T_DVAR;
 
-enum opcodes { START, CREATE, CALL, CALL_BUILTIN, MOV, MOVRET, RET, PUSH, COND, JMP,
-              CONCAT, EQUAL, NONEQUAL, PLUS, MINUS, DIV, MUL, LESS, GREATER, LESSEQ, GREATEREQ };
+enum opcodes { CLEAR, DUMMY, START, CREATE, CALL, CALL_BUILTIN, MOV, RET, PUSH, COND, JMP,
+              MOVRET, CONCAT, EQUAL, NONEQUAL, PLUS, MINUS, DIV, MUL, LESS, GREATER, LESSEQ, GREATEREQ };
 
 struct instruction {
     enum opcodes opcode;
@@ -219,8 +221,7 @@ typedef struct ptr_stack PtrStack;
 
 /* Nastavovanie stavu generatora */
 enum gen_state { S_DEFAULT = 0, S_IF_BEGIN, S_IF_ELSE, S_IF_END,
-                 S_WHILE_BEGIN, S_WHILE_END, S_FUNCTION_END,
-                 S_FILE_END };
+                 S_WHILE_BEGIN, S_WHILE_END, S_FUNCTION_END, S_FILE_END };
 
 /* Definicie globalnych premennych */
 extern const int FLEXIBLE_ARRAY_MEMBER; // pociatocna velkost zasobnika
@@ -277,7 +278,9 @@ E_ERROR_TYPE MapTableCheck(MapTable **ptr);
 void GeneratorErrorCleanup(void);
 void PrintTape( Instruction *ptr );
 
+E_ERROR_TYPE setstate(enum gen_state state);
 E_ERROR_TYPE assing(T_token *op1);
 E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation);
+E_ERROR_TYPE evalf(T_token *array[], unsigned int size);
 
 #endif

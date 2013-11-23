@@ -24,6 +24,8 @@ FTableData *actualfunction;
 FTableData *callfunction;
 STableData *assignvar;
 
+unsigned int actual_usage = 0; // pocet pouzitych pomocnych premennych v jednom vyraze
+
 /* DEBUG */
 #define DEBUG
 
@@ -78,6 +80,9 @@ void print_DVAR(T_DVAR *ptr)
         case VAR_LOCAL:
             printf("VAR_LOCAL: %u\n", ptr->data.offset);
             break;
+        case VAR_NULL:
+            printf("VAR_NULL\n");
+            break;
         default:
             printf("UNKNOWN VAR -->FIX ME\n");
             break;
@@ -89,9 +94,12 @@ void PrintTape( Instruction *ptr )
     while( ptr != NULL )
     {
         printf("----------------\n");
+        printf("ADRESA %p\n", (void*)ptr);
         printf("Opcode: %s\n", OPCODE_NAME[ptr->opcode]);
         switch( ptr->opcode )
         {
+            case CLEAR:
+                break;
             case START:
             case CREATE:
                 printf("Size: %u\n", ptr->attr.size);
@@ -105,6 +113,25 @@ void PrintTape( Instruction *ptr )
             case JMP:
                 printf("Jump ptr: %p\n", (void*)ptr->attr.jump.jmp);
                  break;
+            case PUSH:
+                printf("Dest: [%u]\n", ptr->attr.tac.dest);
+                printf("OP1: ");
+                print_DVAR( &( ptr->attr.tac.op1 ) );
+                break;
+            case MOVRET:
+                printf("Dest: [%u]\n", ptr->attr.tac.dest);
+                break;
+            case COND:
+                printf("Jump to: [%p]\n", (void*)ptr->attr.jump.jmp );
+                printf("OP1: ");
+                print_DVAR( &( ptr->attr.jump.op1 ) );
+                break;
+            case RET:
+                printf("OP1: ");
+                print_DVAR( &( ptr->attr.jump.op1 ) );
+                break;
+            case DUMMY:
+                break;
             default:
                 printf("Dest: [%u]\n", ptr->attr.tac.dest);
                 printf("OP1: ");
@@ -148,7 +175,6 @@ E_ERROR_TYPE GeneratorInit()
     {
         return E_INTERPRET_ERROR;
     }
-    
     
     FT.tape->next = NULL;
     FT.tape->opcode = START;
@@ -234,7 +260,7 @@ void translate_token( T_token *token, T_DVAR *out )
             break;
         case E_DOUBLE:
             out->type = VAR_DOUBLE;
-            out->data._int = token->data._double;
+            out->data._double = token->data._double;
             break;
         case E_LITER:
             out->type = VAR_CONSTSTRING;
@@ -254,37 +280,162 @@ void translate_token( T_token *token, T_DVAR *out )
             out->data._bool = true;
             break;
         default:
-            PRINTD("ERROR translate_token() bad token type\n");
+            PRINTD("ERROR translate_token() bad token type %s\n", TOKEN_NAME[token->ttype]);
             break;
     }
 }
+
+E_ERROR_TYPE AddInstruction(  )
+{
+    if ( SwitchTape->opcode != DUMMY )
+    {
+        if( ( SwitchTape->next = malloc( sizeof(Instruction) ) ) == NULL )
+        {
+            return E_INTERPRET_ERROR;
+        }
+        SwitchTape = SwitchTape->next;
+        SwitchTape->next = NULL;
+    }
+    return E_OK;
+}
+
+E_ERROR_TYPE setstate(enum gen_state state)
+{
+    switch( state )
+    {
+        case S_DEFAULT:
+            state = S_DEFAULT;
+            return E_OK;
+            break;
+        case S_IF_BEGIN: // spracuje sa az v eval terme
+            State = state;
+            return E_OK;
+        case S_IF_ELSE: // vygenrovat skok a prepojit cond na dummy instrukciu
+            if ( AddInstruction() != E_OK )
+                return E_INTERPRET_ERROR;
+            SwitchTape->opcode = JMP;
+            SwitchTape->attr.jump.jmp = NULL;
+            SwitchTape->next = NULL;
+            /* mam jump, treba pamatat jump*/
+            if( PtrStackCheck(&ptrstack) != E_OK )
+            {
+                return E_INTERPRET_ERROR;
+            }
+            ptrstack->stack[ptrstack->top++] = SwitchTape;
+            PRINTD("Pointer pridany na zasobnik\n");
+            /* pridat dummy*/
+            if ( AddInstruction() != E_OK )
+                return E_INTERPRET_ERROR;
+            SwitchTape->opcode = DUMMY;
+            SwitchTape->next = NULL;
+            /* prelinkujem to co viem*/
+            /* nastavim false vetvu*/
+            ptrstack->stack[ ptrstack->top -2 ]->attr.jump.jmp = SwitchTape;
+            State = S_DEFAULT;
+            return E_OK;
+        case S_IF_END: // koniec false vetvy -> treba vygerenovat dummy a napojit to na jmp z true vetvy
+            if ( AddInstruction() != E_OK )
+                return E_INTERPRET_ERROR;
+            SwitchTape->opcode = DUMMY;
+            SwitchTape->next = NULL;
+            /* napojim skok na dummy instrukciu*/
+            ptrstack->stack[ ptrstack->top -1 ]->attr.jump.jmp = SwitchTape;
+            ptrstack->top -= 2; //nepotrebujem posledne 2 pointre
+            State = S_DEFAULT;
+            return E_OK;
+        case S_WHILE_BEGIN: // zapamatat prvu instrukciu - pridam dummy, nemenim stav
+                // v evale vygenerujem cond
+            if ( AddInstruction() != E_OK )
+                return E_INTERPRET_ERROR;
+            SwitchTape->opcode = DUMMY;
+            SwitchTape->next = NULL;
+            /* musim si ju zapamatat */
+            if( PtrStackCheck(&ptrstack) != E_OK )
+            {
+                return E_INTERPRET_ERROR;
+            }
+            ptrstack->stack[ptrstack->top++] = SwitchTape;
+            PRINTD("Pointer pridany na zasobnik\n");
+            State = S_WHILE_BEGIN;
+            return E_OK;
+        case S_WHILE_END: // prelinkujem while, pridam jmp
+            if ( AddInstruction() != E_OK )
+                return E_INTERPRET_ERROR;
+            /* pridam jmp na konci while a napojim na zaciatok vyrazu */
+            SwitchTape->opcode = JMP;
+            SwitchTape->attr.jump.jmp = ptrstack->stack[ ptrstack->top -2 ];
+            SwitchTape->next = NULL;
+            /* pridam dummy a nastavim na nu cond jump */
+            if ( AddInstruction() != E_OK )
+                return E_INTERPRET_ERROR;
+            SwitchTape->opcode = DUMMY;
+            SwitchTape->next = NULL;
+            ptrstack->stack[ ptrstack->top -1 ]->attr.jump.jmp = SwitchTape;
+            ptrstack->top -=2;
+            State = S_DEFAULT;
+            return E_OK;
+        case S_FUNCTION_END:
+        case S_FILE_END: // pridam default retval
+            if ( AddInstruction() != E_OK )
+                return E_INTERPRET_ERROR;
+            SwitchTape->opcode = RET;
+            SwitchTape->attr.tac.op1.type = VAR_NULL;
+            State = state; // pridat return
+    }
+    return E_OK;
+}
+
+
 
 E_ERROR_TYPE perform_eval_term(T_token *op)
 {
     /* TODO */
     PRINTD("perform_eval_term()\n");
     
-    // zistim ci sa da optimalizovat
-    if ( op->ttype == E_LOCAL && 
-         SwitchTape->opcode >= CONCAT && SwitchTape->opcode <= GREATEREQ && 
-         SwitchTape->attr.tac.dest == op->length)
+    if ( State == S_DEFAULT ) // zistim ci sa da optimalizovat
     {
-        PRINTD("predosla instrukcia bola 3adresna, typ %s\n", OPCODE_NAME[SwitchTape->opcode]);
-        SwitchTape->attr.tac.dest = assignvar->offset;
-        free(op);
-        return E_OK;
+        if ( op->ttype == E_LOCAL && 
+            SwitchTape->opcode >= MOVRET && SwitchTape->opcode <= GREATEREQ && 
+            SwitchTape->attr.tac.dest == op->length)
+        {
+            PRINTD("predosla instrukcia bola 3adresna, typ %s\n", OPCODE_NAME[SwitchTape->opcode]);
+            SwitchTape->attr.tac.dest = assignvar->offset;
+            free(op);
+            return E_OK;
+        }
     }
-    PRINTD("Generujem instrukciu mov\n");
-    if( ( SwitchTape->next = malloc( sizeof(Instruction) ) ) == NULL )
+
+    PRINTD("Generujem instrukciu termu\n");
+    if ( AddInstruction( ) != E_OK )
     {
+        free(op);
         return E_INTERPRET_ERROR;
     }
-    SwitchTape = SwitchTape->next;
     
-    SwitchTape->next = NULL;
-    SwitchTape->opcode = MOV;
-    SwitchTape->attr.tac.dest = assignvar->offset;
-    SwitchTape->attr.tac.op2.type = VAR_NO_VAR; 
+    T_DVAR *ptr;
+    switch( State )
+    {
+        case S_DEFAULT:
+            SwitchTape->opcode = MOV;
+            SwitchTape->attr.tac.dest = assignvar->offset;
+            SwitchTape->attr.tac.op2.type = VAR_NO_VAR;
+            ptr = &( SwitchTape->attr.tac.op1 );
+            break;
+        default:
+            {
+                SwitchTape->opcode = COND;
+                SwitchTape->attr.jump.jmp = NULL;
+                ptr = &( SwitchTape->attr.jump.op1 );
+                if( PtrStackCheck(&ptrstack) != E_OK )
+                {
+                    return E_INTERPRET_ERROR;
+                }
+                ptrstack->stack[ptrstack->top++] = SwitchTape;
+                PRINTD("Pointer pridany na zasobnik\n");
+                State = S_DEFAULT; // nastavim normalny stav
+                break;
+            }
+    } 
     
     switch( op->ttype )
     {
@@ -297,47 +448,176 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
                 free(op);
                 return retval;
             }                
-            SwitchTape->attr.tac.op1.type = VAR_LOCAL;
-            SwitchTape->attr.tac.op1.data.offset = op_ptr->offset; // offset je v _int
+            ptr->type = VAR_LOCAL;
+            ptr->data.offset = op_ptr->offset;
             break;
-        }
-        case E_INT:
-            SwitchTape->attr.tac.op1.type = VAR_INT; 
-            SwitchTape->attr.tac.op1.data._int = op->data._int;
-            break;
-        case E_DOUBLE:
-            SwitchTape->attr.tac.op1.type = VAR_DOUBLE; 
-            SwitchTape->attr.tac.op1.data._double = op->data._double;
-            break;
-        case E_LITER:
-            SwitchTape->attr.tac.op1.type = VAR_CONSTSTRING; 
-            SwitchTape->attr.tac.op1.data._string = op->data._string;
-            break;
-        case E_LOCAL:
-            SwitchTape->attr.tac.op1.type = VAR_LOCAL; 
-            SwitchTape->attr.tac.op1.data.offset = op->data._int;
-            break;
-        case E_TRUE:
-            SwitchTape->attr.tac.op1.type = VAR_BOOL; 
-            SwitchTape->attr.tac.op1.data._bool = true; 
-        case E_FALSE:
-            SwitchTape->attr.tac.op1.type = VAR_BOOL; 
-            SwitchTape->attr.tac.op1.data._bool = false; 
+        } 
         default :
-            PRINTD("eval() --> zly parameter pre TERM operaciu ");
-            free(op);
-            return E_OTHER;
+            translate_token( op, ptr );
             break;
     };
     free(op);
-    SwitchTape->attr.tac.op2.type = VAR_NO_VAR;
     return E_OK;
 }
 
+E_ERROR_TYPE get_local_var(unsigned int *dest)
+{
+    if ( actual_usage >= SwitchMap->used_space ) // nova premenna
+    {
+        if ( MapTableCheck( &SwitchMap ) != E_OK )
+        {
+            return E_INTERPRET_ERROR;
+        }   
+        PRINTD("actual_usage = %d, counter %d, maptable %d/%d\n", actual_usage, SwitchSTable->counter,
+                SwitchMap->used_space, SwitchMap->size);   
+        *dest = SwitchSTable->counter++;
+        SwitchMap->map[actual_usage++] = SwitchSTable->counter;
+        /* namapovana nova expr. premenna */
+        SwitchMap->used_space++;
+        PRINTD("actual_usage = %d, counter %d, maptable %d/%d\n", 
+                actual_usage, SwitchSTable->counter,
+                SwitchMap->used_space, SwitchMap->size);
+    }
+    else // vyuzije sa existujuca premenna
+    {
+        *dest = SwitchMap->map[actual_usage++];
+    }
+    return E_OK;
+}
+
+E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
+// array[0] - funkcia
+// array[1->(n-1)] - parametre
+{
+    FTableData *func;
+    E_ERROR_TYPE retval;
+    if( ( retval = LookupFunction( array[0]->data._string, array[0]->length, &func ) ) != E_OK)
+    { // chyba mallocu
+        for( unsigned int i = 0; i< size; i++)
+            free(array[i]);
+        return E_INTERPRET_ERROR;
+    }
+    /* instrukcia create*/
+    if ( AddInstruction( ) != E_OK )
+    {
+        for( unsigned int i = 0; i< size; i++ )
+            free(array[i]);
+        return E_INTERPRET_ERROR;
+    }
+    SwitchTape->opcode = CREATE;
+    PRINTD( "CREATE ADDED\n" );
+    
+    if ( func->state == E_UNKNOWN )
+    {
+        PRINTD("Calling unknown function %s \n", func->name );
+        if ( func->param_count < (size-1) )
+            func->param_count = size-1;
+        /* nastavim fixlist na prvu instrukciu volania funkcie*/
+        InstructionList *tmp = malloc( sizeof ( InstructionList ));
+        if ( tmp == NULL )
+        {
+            for( unsigned int i = 0; i < size; i++)
+                free(array[i]);
+            return E_INTERPRET_ERROR;
+        }
+        tmp->next = func->fix_list;
+        tmp->instr = SwitchTape;
+        func->fix_list = tmp;
+        
+    }
+
+    /* pocet parametrov */
+    if ( ( func->state == E_DEFINED || func->state == E_BUILTIN ) &&
+         ( func->param_count > (size-1) ) && func->unlimited_param == 0 )
+    {
+        PRINTD("BAD PARAM %s \n", func->name );
+        for( unsigned int i = 0; i < size; i++)
+            free(array[i]);
+        return E_PARAM;
+    }
+    
+    unsigned int params;
+    if( func->unlimited_param || func->state == E_UNKNOWN )
+    {
+        params = (size-1);
+    }
+    else
+    {
+        params = func->param_count;
+    }
+    /* create size */
+    SwitchTape->attr.size = params;
+    
+    for( unsigned int i = 1; i <= params; i++)
+    {
+        if ( AddInstruction( ) != E_OK )
+        {
+            for( unsigned int i = 0; i< size; i++ )
+                free(array[i]);
+            return E_INTERPRET_ERROR;
+        }
+        SwitchTape->opcode = PUSH;
+        SwitchTape->attr.tac.dest = i-1;
+        if ( array[i]->ttype == E_VAR )
+        {
+            STableData *var;
+            if( ( retval = BTfind(SwitchSTable, array[i]->data._string, array[i]->length, &var) ) != E_OK )
+            {
+                for( unsigned int i = 0; i < size; i++ )
+                    free(array[i]);
+                return E_INTERPRET_ERROR;
+            }
+            SwitchTape->attr.tac.op1.type = VAR_LOCAL;
+            SwitchTape->attr.tac.op1.data.offset = var->offset;
+        }
+        else
+        {  
+            translate_token( array[i], &( SwitchTape->attr.tac.op1 ) );
+        }
+    }
+    
+    /* instrukcia call*/
+    if ( AddInstruction( ) != E_OK )
+    {
+        for( unsigned int i = 0; i< size; i++ )
+            free(array[i]);
+        return E_INTERPRET_ERROR;
+    }
+    
+    if( func->state == E_BUILTIN )
+    {
+        SwitchTape->opcode = CALL_BUILTIN;
+        SwitchTape->attr.builtin = func->builtin_id;
+    }
+    else
+    {
+        SwitchTape->opcode = CALL;
+        SwitchTape->attr.jump.jmp = func->tape;
+    }
+    
+    /* uvolnim polozky*/
+    for( unsigned int i = 1; i< size; i++ )
+            free(array[i]);
+            
+    /* retval instrukcia*/
+    if ( AddInstruction( ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    SwitchTape->opcode = MOVRET;
+    
+    if( ( retval = get_local_var( &( SwitchTape->attr.tac.dest ) ) ) != E_OK)
+    {
+        return retval;
+    }
+    array[0]->ttype = E_LOCAL;
+    array[0]->length = SwitchTape->attr.tac.dest;
+    
+    return E_OK;
+}
 
 E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
 {
-    static unsigned int actual_usage = 0; // pocet pouzitych pomocnych premennych v jednom vyraze
     
     if ( operation == E_TERM )
     {
@@ -372,45 +652,21 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         }
         
         // nova instrukcia
-        Instruction *ptr;
-        if ( ( ptr = malloc( sizeof( Instruction ) ) ) == NULL )
+        if ( AddInstruction( ) != E_OK )
         {
             free(op2);
             return E_INTERPRET_ERROR;
         }
         
-        ptr->next = NULL;
-        SwitchTape->next = ptr;
-        SwitchTape = ptr;
-        
         unsigned int dest;
         /* zvolenie destination - nova destination iba ked su oba operandy VAR */
         if ( op_ptr1 != NULL || op_ptr2 != NULL )
         {
-            if ( actual_usage >= SwitchMap->used_space ) // nova premenna
+            E_ERROR_TYPE retval;
+            if( ( retval = get_local_var( &dest ) ) != E_OK )
             {
-                if ( MapTableCheck( &SwitchMap ) != E_OK )
-                {
-                    free(op2);
-                    return E_INTERPRET_ERROR;
-                }
-                    
-                PRINTD("actual_usage = %d, counter %d, maptable %d/%d\n", 
-                        actual_usage, SwitchSTable->counter,
-                        SwitchMap->used_space, SwitchMap->size);   
-                
-                dest = SwitchSTable->counter++;
-                SwitchMap->map[actual_usage++] = SwitchSTable->counter;
-                /* namapovana nova expr. premenna */
-                SwitchMap->used_space++;
-                PRINTD("actual_usage = %d, counter %d, maptable %d/%d\n", 
-                        actual_usage, SwitchSTable->counter,
-                        SwitchMap->used_space, SwitchMap->size);
+                free(op2);
             }
-            else // vyuzije sa existujuca premenna
-            {
-                dest = SwitchMap->map[actual_usage++];
-            }  
         }
         else
         {
@@ -487,7 +743,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         free(op2);
         return E_OK;
     }
-    
+    /* optimalizacia */
     switch(operation)
     {
         case E_PLUS:
@@ -875,19 +1131,19 @@ E_ERROR_TYPE LookupFunction(char *name, unsigned int size,  FTableData **ptr_out
         return E_INTERPRET_ERROR;
     }
     (*ptr)->metadata.tape = malloc(sizeof(Instruction));
-    // todo DUMMY instruction
     if ( (*ptr)->metadata.tape == NULL )
     {
         *ptr_out = NULL;
         return E_INTERPRET_ERROR;
     }
     (*ptr)->metadata.tape->next = NULL;
+    (*ptr)->metadata.tape->opcode = DUMMY;
     
     (*ptr)->metadata.name = name;
     (*ptr)->metadata.name_size = size;
     (*ptr)->metadata.state = E_UNKNOWN;
-    (*ptr)->metadata.param_count = 0;
-    (*ptr)->metadata.param_count = 0;
+    (*ptr)->metadata.param_count = -1;
+    (*ptr)->metadata.unlimited_param = 0;
     (*ptr)->metadata.fix_list = NULL;
     (*ptr)->lptr = (*ptr)->rptr = NULL;
     *ptr_out = &((**ptr).metadata);
@@ -1180,7 +1436,7 @@ E_ERROR_TYPE PtrStackInit(PtrStack **ptr)
  */
 E_ERROR_TYPE PtrStackCheck(PtrStack **ptr)
 {
-    if((*ptr)->size < (*ptr)->top)
+    if((*ptr)->size <= (*ptr)->top)
     {
         PtrStack *tmp = *ptr;
         
@@ -1204,10 +1460,9 @@ E_ERROR_TYPE PtrStackCheck(PtrStack **ptr)
  *  
  *  \details mallocuje novu tabulku
  */
-E_ERROR_TYPE MapTableInit(MapTable **ptr)
+E_ERROR_TYPE MapTableInit( MapTable **ptr )
 {
-    *ptr = malloc(sizeof( MapTable )+
-            FLEXIBLE_ARRAY_MEMBER*sizeof(int));
+    *ptr = malloc( sizeof( MapTable ) + FLEXIBLE_ARRAY_MEMBER * sizeof( int ) );
     if (*ptr == NULL)
         return E_INTERPRET_ERROR;
         
@@ -1225,11 +1480,11 @@ E_ERROR_TYPE MapTableInit(MapTable **ptr)
  */
 E_ERROR_TYPE MapTableCheck(MapTable **ptr)
 {
-    if((*ptr)->size < (*ptr)->used_space)
+    if((*ptr)->size <= (*ptr)->used_space)
     {
         MapTable *tmp = *ptr;
         
-        *ptr =  realloc (*ptr, sizeof(int)*((*ptr)->size)*2 + sizeof(MapTable));
+        *ptr =  realloc (*ptr, sizeof( int ) * ( ( *ptr )->size ) * 2 + sizeof( MapTable ) );
         if (*ptr == NULL) // ak realloc zlyha tak neuvolnuje pamat
         {
             free(tmp);
