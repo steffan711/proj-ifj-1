@@ -221,7 +221,16 @@ void function_treat ( void )
 
 void return_treat ( void )
 {
+    scanner_get_token( &token );
+    
+    if ( token.ttype == E_INVLD ) 
+    {
+        error_code = E_LEX;
+        return;
+    }
+    
     error_code = evaluate_expr( &token, E_SEMICL );
+    
     #ifdef TESTY
         printf("RETURN\n");
     #endif
