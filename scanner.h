@@ -34,7 +34,6 @@ typedef enum
     E_INT,          // integer
     E_DOUBLE,       // double
     E_LITER,        // literal
-    // ---- klucove slova
     E_WHILE,
     E_FUNCTION,
     E_IF,
@@ -42,13 +41,12 @@ typedef enum
     E_RETURN,
     E_FALSE,
     E_NULL,
-    E_TRUE,
-    // ----
+    E_TRUE, // ----
     E_EQ,           // =
     E_RABRACK,      // }
     E_INVLD,        // je to invalid
-    E_LOCAL,
     E_EOF, // padla
+    E_LOCAL,
     R_E,            // prvok precedencnej tabulky >
     R_C,            // prvok precedencnej tabulky <
     R_N,            // prvok precedencnej tabulky no_rule

@@ -43,6 +43,7 @@ void var_ident_treat ( void );
 void eof_treat ( void );
 void rabrack_treat ( void );
 void par_ident_treat ( void );
+void function_without_par ( void );
 
 /** special LL table */
 
@@ -72,16 +73,18 @@ void ( * LLtab[2][36] ) ( void ) = {
     [PAR_LIST][E_CONCAT] = NULL, [PAR_LIST][E_NOT_EQ] = NULL, [PAR_LIST][E_TRIPLEEQ] = NULL,
     [PAR_LIST][E_PLUS] = NULL, [PAR_LIST][E_MULT] = NULL, [PAR_LIST][E_MINUS] = NULL,
     [PAR_LIST][E_DIV] = NULL, [PAR_LIST][E_LESS] = NULL, [PAR_LIST][E_GREATER] = NULL,
-    [PAR_LIST][E_LESSEQ] = NULL, [PAR_LIST][E_GREATEREQ] = NULL, [PAR_LIST][E_RPARENTHESES] = NULL,
+    [PAR_LIST][E_LESSEQ] = NULL, [PAR_LIST][E_GREATEREQ] = NULL, [PAR_LIST][E_EOF] = NULL,
     [PAR_LIST][E_IDENT] = NULL, [PAR_LIST][E_LABRACK] = NULL, [PAR_LIST][E_SEMICL] = NULL,
     [PAR_LIST][E_INT] = NULL, [PAR_LIST][E_DOUBLE] = NULL, [PAR_LIST][E_LITER] = NULL,
     [PAR_LIST][E_WHILE] = NULL, [PAR_LIST][E_FUNCTION] = NULL, [PAR_LIST][E_IF] = NULL,
     [PAR_LIST][E_ELSE] = NULL, [PAR_LIST][E_RETURN] = NULL, [PAR_LIST][E_FALSE] = NULL,
     [PAR_LIST][E_NULL] = NULL, [PAR_LIST][E_TRUE] = NULL, [PAR_LIST][E_EQ] = NULL,
-    [PAR_LIST][E_RABRACK] = NULL, [PAR_LIST][E_INVLD] = NULL, [PAR_LIST][E_EOF] = NULL,
+    [PAR_LIST][E_RABRACK] = NULL, [PAR_LIST][E_INVLD] = NULL, [PAR_LIST][E_LPARENTHESES] = NULL,
+    [PAR_LIST][E_COMA] = NULL,
     
     //priradenie obsluznych ukazatelov podla pravidiel
     [PAR_LIST][E_VAR] = par_ident_treat,
+    [PAR_LIST][E_RPARENTHESES] = function_without_par,
     
 };
 
@@ -89,6 +92,7 @@ void ( * LLtab[2][36] ) ( void ) = {
 static enum NONTERM_TYPES nonterminal;
 static T_token token;
 static E_ERROR_TYPE error_code;
+static unsigned par_counter;
 
 void while_treat ( void )
 {
@@ -209,6 +213,7 @@ void function_treat ( void )
     if ( token.ttype == E_LPARENTHESES)
     {
         nonterminal = PAR_LIST;
+        par_counter = 0;
         #ifdef TESTY
             printf("FUNCTION - right syntax\n");
         #endif        
@@ -349,6 +354,7 @@ void par_ident_treat ( void )
             printf("NEXT PARAM MUST FOLLOW - right syntax\n");
         #endif
         error_code = E_OK;
+        par_counter++;
         return;
     }
     else if ( token.ttype != E_RPARENTHESES )
@@ -371,6 +377,36 @@ void par_ident_treat ( void )
         error_code = PDAStackPush( E_FUNCTION );
         #ifdef TESTY
             printf("FUNCTION PARAMS - right syntax\n");
+        #endif
+    }
+    else
+    {
+        error_code = E_SYNTAX;
+    }
+}
+
+void function_without_par ( void )
+{
+    if ( par_counter != 0 )
+    {
+        error_code = E_SYNTAX;
+        return;
+    }
+    
+    scanner_get_token( &token );
+    
+    if ( token.ttype == E_INVLD ) 
+    {
+        error_code = E_LEX;
+        return;
+    }
+    
+    if ( token.ttype == E_LABRACK)
+    {
+        nonterminal = ST_LIST;
+        error_code = PDAStackPush( E_FUNCTION );
+        #ifdef TESTY
+            printf("FUNCTION WITHOUT PARAMS - right syntax\n");
         #endif
     }
     else
@@ -433,11 +469,9 @@ E_ERROR_TYPE check_syntax ( void )
     precedenceInit( );
     PDAStackInit( );
     nonterminal = ST_LIST;
-    //error_code = E_OK;
     
     do {
         scanner_get_token( &token );
-        printf("typ tokenu je: %d\n", token.ttype);
         if ( LLtab[nonterminal][token.ttype] == NULL)
         {
             return E_SYNTAX;
@@ -454,7 +488,6 @@ E_ERROR_TYPE check_syntax ( void )
             }
             else
             {
-                printf("error_code %d\n", error_code);
                 break;
             }
         }
@@ -462,6 +495,5 @@ E_ERROR_TYPE check_syntax ( void )
     
     precedenceShutDown( );
     PDAStackFree( );
-    printf("error_code %d\n", error_code);
     return error_code;
 }
