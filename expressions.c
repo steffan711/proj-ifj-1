@@ -16,7 +16,7 @@
 #define SIZEOF_ESTACK 1
 #define SIZEOF_PFXSTACK 1
 
-//#define TESTY
+#define TESTY
 
 #ifdef TESTY
 #include <string.h>
@@ -96,7 +96,17 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         }
         else
         {
-            printf("\x1b[31mFATAL ERROR - RESULT IS NOT ON STACK\n\x1b[0m");
+                switch (op1->ttype) { 
+                case E_FALSE: printf("FALSE\n");  break; 
+                case E_TRUE: printf("TRUE\n"); break; 
+                case E_NULL: printf("NULL\n"); break;
+                case E_INT: printf("%d\n", op1->data._int); break;
+                case E_DOUBLE: printf("%e\n", op1->data._double); break;
+                case E_LITER: printf("\"%s\"\n", op1->data._string); break;
+                case E_E: printf("L%d\n", op1->data._int); break;
+                default: break;
+            }
+            //printf("\x1b[31mFATAL ERROR - RESULT IS NOT ON STACK\n\x1b[0m");
         }
         free(op1);
         return E_OK;
@@ -556,11 +566,13 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
         return E_INTERPRET_ERROR;
     }
     
-    copy_token( token, start_token );   //aby nevznikali konflikty pri uvolnovani pamate
-    
     if ( termination_ttype == E_RPARENTHESES )  //token obsahuje terminal lavu zatvorku, ktora oznacuje zaciatok vyrazu v podmienke
     {
         scanner_get_token( token ); //mozem to tu testovat na prazdny vyraz ak by som chcel vypisat chybu
+    }
+    else
+    {
+        copy_token( token, start_token ); //aby nevznikali konflikty pri uvolnovani pamate
     }
 
     if ( ( actual_ttype = token->ttype ) > E_SEMICL )

@@ -62,7 +62,7 @@ void ( * LLtab[2][36] ) ( void ) = {
     [ST_LIST][E_VAR] = var_ident_treat,
     [ST_LIST][E_WHILE] = while_treat,
     [ST_LIST][E_FUNCTION] = function_treat, 
-    [ST_LIST][E_IF] = while_treat, 
+    [ST_LIST][E_IF] = if_treat, 
     [ST_LIST][E_RETURN] = return_treat,
     [ST_LIST][E_RABRACK] = rabrack_treat,    
     [ST_LIST][E_EOF] = eof_treat,
@@ -242,6 +242,14 @@ void var_ident_treat ( void )
         #ifdef TESTY
             printf("EXPRESSION ASSIGN TO A VARIABLE - right syntax\n");
         #endif
+        scanner_get_token( &token );
+    
+        if ( token.ttype == E_INVLD ) 
+        {
+            error_code = E_LEX;
+            return;
+        }
+        
         error_code = evaluate_expr( &token, E_SEMICL );
     }
     else
@@ -420,6 +428,7 @@ E_ERROR_TYPE check_syntax ( void )
     
     do {
         scanner_get_token( &token );
+        printf("typ tokenu je: %d\n", token.ttype);
         if ( LLtab[nonterminal][token.ttype] == NULL)
         {
             return E_SYNTAX;
@@ -436,11 +445,14 @@ E_ERROR_TYPE check_syntax ( void )
             }
             else
             {
+                printf("error_code %d\n", error_code);
                 break;
             }
         }
     } while ( 1 ); 
     
-    precedenceShutDown();
+    precedenceShutDown( );
+    PDAStackFree( );
+    printf("error_code %d\n", error_code);
     return error_code;
 }
