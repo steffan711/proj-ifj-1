@@ -329,13 +329,13 @@ extern inline E_ERROR_TYPE estackPop ( void )
         {
             if ( ( help = eStack.data[eStack.top--] ) == E_LPARENTHESES )
             {
-                if ( ( help = eStack.data[eStack.top--] ) == R_C )
+                if ( eStack.data[eStack.top] == R_C )
                 {
                     findterm( );
                     eStack.data[eStack.top] = E_E;
                     return E_OK;
                 }
-                else if ( help == E_IDENT && eStack.data[eStack.top] == R_C )   //doplnenie analyzy funkcie typu f(E)
+                else if ( eStack.data[eStack.top] == E_IDENT && eStack.data[--eStack.top] == R_C )   //doplnenie analyzy funkcie typu f(E)
                 {
                     findterm( );
                     eStack.data[eStack.top] = E_E;
