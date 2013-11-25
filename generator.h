@@ -79,6 +79,7 @@ enum function_state { E_DEFINED, E_UNKNOWN, E_BUILTIN, E_DUMMY }; //TODO: DUMMY
  *  state - stav v akom sa funkcia nachadza
  *  param_count - pocet parametrov +- stav E_DEFINED = skutocny pocet parametrov
  *                                  ∟ stav E_UNKNOWN = minimalny najdeny pocet parametrov
+ *  frame_count - pocet vsetkych lokalnych premennych a parametrov
  *  unlimited_param - zabudovana funkcia moze mat neobmedzene vela parametrov
  *  builtin_id - identifikator zabudovanej funkcie
  *  *fix_list - zoznam, kde treba opravit volania tejto funkcie
@@ -89,6 +90,7 @@ struct metadata_function {          // informacie o funkcii
     unsigned int name_size;         // dlzka mena funkcie
     enum function_state state;      // stav
     unsigned int param_count;       // skutocny pocet
+    unsigned int frame_count;       // velkost ramca premennych
     bool unlimited_param;           // funkcia bere neobmedzeny pocet parametrov - napr putchar
     enum builtin_functions builtin_id; // enum zabudovanej funkcie
     struct instruction_list *fix_list; 
@@ -278,8 +280,10 @@ E_ERROR_TYPE MapTableCheck(MapTable **ptr);
 void GeneratorErrorCleanup(void);
 void PrintTape( Instruction *ptr );
 
+E_ERROR_TYPE define(T_token *token);
+E_ERROR_TYPE addparam(T_token *token);
 E_ERROR_TYPE setstate(enum gen_state state);
-E_ERROR_TYPE assing(T_token *op1);
+E_ERROR_TYPE assign(T_token *op1);
 E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation);
 E_ERROR_TYPE evalf(T_token *array[], unsigned int size);
 

@@ -31,7 +31,7 @@ int main(void)
     T_token *ptr2 = calloc( 1, sizeof( T_token ) );
     T_token *ptr3;
     
-    T_token assign = { .ttype = T_VAR, .line = 0, .length = 3, .data._string = "ABC" };
+    T_token assigntoken = { .ttype = T_VAR, .line = 0, .length = 3, .data._string = "ABC" };
     //$ABC = 10*5;
     ptr1->ttype = E_INT;
     ptr1->data._int = 10;
@@ -39,7 +39,7 @@ int main(void)
     ptr2->ttype = E_INT;
     ptr2->data._int = 5;
     
-    assing( &assign );
+    assign( &assigntoken );
     E_ERROR_TYPE retval = eval( ptr1, ptr2, E_MULT );
     
     if( retval != 0 )
@@ -51,8 +51,8 @@ int main(void)
         printf(" retval = %d\n", retval); 
     // $DEF = 5.5;
     ptr1 = calloc( 1, sizeof( T_token ) );
-    assign.data._string = "DEF";
-    assing( &assign );
+    assigntoken.data._string = "DEF";
+    assign( &assigntoken );
     
     ptr1->ttype = E_DOUBLE;
     ptr1->data._double = 5.5;
@@ -62,9 +62,9 @@ int main(void)
     if( retval != 0 )
         printf(" retval = %d\n", retval);
     //$MEC = $DEF + $DEF;    
-    assign.data._string = "MEC";
+    assigntoken.data._string = "MEC";
     
-    assing( &assign );
+    assign( &assigntoken );
     ptr1 = calloc( 1, sizeof( T_token ) );
     ptr2 = calloc( 1, sizeof( T_token ) );
     
@@ -83,7 +83,7 @@ int main(void)
         printf(" retval = %d\n", retval);
     printf("vsetko je ok\n");
       ////////////////////////////////////////////  
-    /*ptr1 = calloc( 1, sizeof( T_token ) );
+    ptr1 = calloc( 1, sizeof( T_token ) );
     ptr2 = calloc( 1, sizeof( T_token ) );
     
     ptr3 = calloc( 1, sizeof( T_token ) );
@@ -101,15 +101,14 @@ int main(void)
     ptr1->length = 3;
     ptr3->length = 3;
     
-    assing( &assign );
+    assign( &assigntoken );
     T_token *pole[] = { ptr3, ptr1, ptr2 };
     retval = evalf(pole, 3);
     if( retval != 0 )
         printf(" retval = %d\n", retval);
-    
     retval = eval(ptr3, NULL, E_TERM);
     if( retval != 0 )
-        printf(" retval = %d\n", retval);*/
+        printf(" retval = %d\n", retval);
     /* skuska ifu */
     
     setstate(S_WHILE_BEGIN);
@@ -123,8 +122,77 @@ int main(void)
         
     setstate(S_WHILE_END);
     //setstate(S_IF_END);
+    assign(NULL);
+    ptr3 = calloc( 1, sizeof( T_token ) );
+    ptr3->ttype = E_VAR;
+    ptr3->length = 3;
+    ptr3->data._string = "DEF";
+     retval = eval(ptr3, NULL, E_TERM);
+    if( retval != 0 )
+        printf(" retval = %d\n", retval);
+    
+ 
+    ptr3 = calloc( 1, sizeof( T_token ) );
+    ptr3->data._string = "nut";
+    ptr3->ttype = E_IDENT;
+    ptr3->length = 3;
+    define(ptr3);
+    free(ptr3);
+    T_token p1 = { .ttype = T_VAR, .line = 0, .length = 3, .data._string = "ABC" };
+    T_token p2 = { .ttype = T_VAR, .line = 0, .length = 3, .data._string = "BCD" };
+    T_token p3 = { .ttype = T_VAR, .line = 0, .length = 3, .data._string = "BCD" };
+    addparam(&p1);
+    //addparam(&p2);
+    addparam(&p3);
+    retval = addparam(NULL);
+    if( retval != 0 )
+        printf(" retval = %d\n", retval);
+    assign(NULL);
+    ptr1 = calloc( 1, sizeof( T_token ) );
+    
+    ptr1->ttype = E_DOUBLE;
+    ptr1->data._double = 5.5;
+    
+    retval = eval(ptr1, NULL, E_TERM);
+    setstate(S_FUNCTION_END);
+    
+    
+    
+     printf(" testtttttttttt\n");
+     ptr1 = calloc( 1, sizeof( T_token ) );
+    ptr2 = calloc( 1, sizeof( T_token ) );
+    
+    ptr3 = calloc( 1, sizeof( T_token ) );
+    
+    ptr1->ttype = E_INT;
+    ptr1->data._int = 10;
+    
+    ptr2->ttype = E_INT;
+    ptr2->data._int = 5;
+    ptr3->ttype = E_IDENT;
+    ptr3->data._string = "nut";
+    ptr2->length = 3;
+    ptr1->length = 3;
+    ptr3->length = 3;
+    
+    assign( &assigntoken );
+    pole[0] = ptr3;
+    pole[1] = ptr1;
+    pole[2] = ptr2;
+    retval = evalf(pole, 3);
+    if( retval != 0 )
+        printf(" retval = %d\n", retval);
+    retval = eval(ptr3, NULL, E_TERM);
+    if( retval != 0 )
+        printf(" retval = %d\n", retval);
+    
+    
     setstate(S_FILE_END);
-    PrintTape( FT.tape );  
+    PrintTape( FT.tape ); 
+printf("/**************************/\n");
+    PrintTape( FT.btreeroot->metadata.tape ); 
+    printf("funkcia %s ma pocet parametrov %u je v stave %d a pointer na fixlist ma %p, nextptr %p\n", FT.btreeroot->metadata.name,FT.btreeroot->metadata.param_count, FT.btreeroot->metadata.state, (void*)FT.btreeroot->metadata.fix_list->instr, (void*)FT.btreeroot->metadata.fix_list->next );
+    printf("function tree %d\n",FT.unknown_count);
     /*printf("-------------\n");
     AddBuiltinFunction("sracka", 6, 6, 0, F_DUMMY);
     printf("-------------\n");

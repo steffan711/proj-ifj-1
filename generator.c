@@ -299,6 +299,24 @@ E_ERROR_TYPE AddInstruction(  )
     return E_OK;
 }
 
+void SwitchContextToFunction( void )
+{
+    SwitchSTable = STableLocal;
+    SwitchMap = Localmap;
+    GlobalTape = SwitchTape;
+    SwitchTape = actualfunction->tape;
+    State = S_DEFAULT;
+}
+void SwitchContextToGobal( void )
+{
+    DeleteBT( SwitchSTable );
+    SwitchSTable = STableGlobal;
+    SwitchMap->used_space = 0;
+    SwitchMap = Globalmap;
+    SwitchTape = GlobalTape;
+    State = S_DEFAULT;
+}
+
 E_ERROR_TYPE setstate(enum gen_state state)
 {
     switch( state )
@@ -375,24 +393,84 @@ E_ERROR_TYPE setstate(enum gen_state state)
             State = S_DEFAULT;
             return E_OK;
         case S_FUNCTION_END:
-        case S_FILE_END: // pridam default retval
             if ( AddInstruction() != E_OK )
                 return E_INTERPRET_ERROR;
             SwitchTape->opcode = RET;
             SwitchTape->attr.tac.op1.type = VAR_NULL;
             State = state; // pridat return
+            actualfunction->frame_count = SwitchSTable->counter;
+            SwitchContextToGobal();
+            break;
+        case S_FILE_END: // pridam default retval
+            if ( AddInstruction() != E_OK )
+                return E_INTERPRET_ERROR;
+            SwitchTape->opcode = RET;
+            SwitchTape->attr.tac.op1.type = VAR_NULL;
+            /* nastavim velkost ramca prvej instrukcie */
+            FT.tape->attr.size = SwitchSTable->counter;
+            State = state;
+            break;
     }
     return E_OK;
 }
 
+E_ERROR_TYPE define(T_token *token)
+{
+    /* todo counter*/
+    E_ERROR_TYPE retval;
+    if( ( retval = LookupFunction( token->data._string, token->length, &actualfunction ) ) != E_OK)
+    {   
+        // chyba mallocu
+        return E_INTERPRET_ERROR;
+    }
+    PRINTD( "new function declared %s\n", token->data._string );
+    if ( actualfunction->state == E_UNKNOWN )
+    {
+        actualfunction->state = E_DEFINED;
+        FT.unknown_count--;
+    }
+    else
+    {
+        return E_SEM;
+    }
+    SwitchContextToFunction();
+    return E_OK;
+}
 
+E_ERROR_TYPE addparam(T_token *token)
+{
+    static unsigned int param_counter = 0;
+    if ( token != NULL )
+    {
+        E_ERROR_TYPE retval;
+        STableData *ptr;
+        if ( ( retval = BTlookup( SwitchSTable, token->data._string, token->length, &ptr ) ) != E_OK )
+        {
+            return retval;
+        }
+        param_counter++;
+    }
+    else
+    {
+        printf("param_counter = %d, actualfunction->param_count = %d\n",param_counter, actualfunction->param_count);
+        if ( param_counter <= actualfunction->param_count ) // (unsigned)-1 = max int
+        {
+            actualfunction->param_count = param_counter;
+            param_counter = 0;
+        }
+        else
+        {
+            return E_PARAM;
+        }
+    }
+    return E_OK;
+}
 
 E_ERROR_TYPE perform_eval_term(T_token *op)
 {
-    /* TODO */
     PRINTD("perform_eval_term()\n");
     
-    if ( State == S_DEFAULT ) // zistim ci sa da optimalizovat
+    if ( State == S_DEFAULT && assignvar ) // zistim ci sa da optimalizovat
     {
         if ( op->ttype == E_LOCAL && 
             SwitchTape->opcode >= MOVRET && SwitchTape->opcode <= GREATEREQ && 
@@ -413,11 +491,21 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
     }
     
     T_DVAR *ptr;
+    
     switch( State )
     {
         case S_DEFAULT:
-            SwitchTape->opcode = MOV;
-            SwitchTape->attr.tac.dest = assignvar->offset;
+            if( assignvar != NULL )
+            {
+                SwitchTape->opcode = MOV;
+                SwitchTape->attr.tac.dest = assignvar->offset;
+            }
+            else
+            {
+                /* RETURN */
+                SwitchTape->opcode = RET;
+                SwitchTape->attr.tac.dest = 0;
+            }
             SwitchTape->attr.tac.op2.type = VAR_NO_VAR;
             ptr = &( SwitchTape->attr.tac.op1 );
             break;
@@ -487,7 +575,7 @@ E_ERROR_TYPE get_local_var(unsigned int *dest)
 
 E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
 // array[0] - funkcia
-// array[1->(n-1)] - parametre
+// array[1..(size-1)] - parametre
 {
     FTableData *func;
     E_ERROR_TYPE retval;
@@ -510,8 +598,10 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
     if ( func->state == E_UNKNOWN )
     {
         PRINTD("Calling unknown function %s \n", func->name );
-        if ( func->param_count < (size-1) )
+        if ( func->param_count > (size-1) )
+        {
             func->param_count = size-1;
+        }
         /* nastavim fixlist na prvu instrukciu volania funkcie*/
         InstructionList *tmp = malloc( sizeof ( InstructionList ));
         if ( tmp == NULL )
@@ -546,7 +636,7 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
         params = func->param_count;
     }
     /* create size */
-    SwitchTape->attr.size = params;
+    SwitchTape->attr.size = func->frame_count;
     
     for( unsigned int i = 1; i <= params; i++)
     {
@@ -1001,13 +1091,21 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
     return E_OK;
 }
 
-E_ERROR_TYPE assing(T_token *op1)
+E_ERROR_TYPE assign(T_token *op1)
 /* nastavuje globalnu premennu */
 {
-    PRINTD("assigning, name %.3s\n", op1->data._string);
-    if ( BTlookup(SwitchSTable , op1->data._string, op1->length, &assignvar ) != E_OK )
-        return E_INTERPRET_ERROR;
-    PRINTD("name %.3s got id %d\n", op1->data._string, assignvar->offset);
+    if ( op1 != NULL )
+    {
+        PRINTD("assigning, name %.3s\n", op1->data._string);
+        if ( BTlookup(SwitchSTable , op1->data._string, op1->length, &assignvar ) != E_OK )
+            return E_INTERPRET_ERROR;
+        PRINTD("name %.3s got id %d\n", op1->data._string, assignvar->offset);
+    }
+    else
+    {
+        assignvar = NULL;
+        PRINTD("preparing to emit return\n");
+    }
         
     return E_OK;
 }
@@ -1142,7 +1240,8 @@ E_ERROR_TYPE LookupFunction(char *name, unsigned int size,  FTableData **ptr_out
     (*ptr)->metadata.name = name;
     (*ptr)->metadata.name_size = size;
     (*ptr)->metadata.state = E_UNKNOWN;
-    (*ptr)->metadata.param_count = -1;
+    (*ptr)->metadata.param_count = -1; // maximalny pocet parametrov
+    (*ptr)->metadata.frame_count = 0;
     (*ptr)->metadata.unlimited_param = 0;
     (*ptr)->metadata.fix_list = NULL;
     (*ptr)->lptr = (*ptr)->rptr = NULL;
