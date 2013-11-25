@@ -33,18 +33,19 @@ int main(void)
     
     T_token assigntoken = { .ttype = T_VAR, .line = 0, .length = 3, .data._string = "ABC" };
     //$ABC = 10*5;
-    ptr1->ttype = E_INT;
-    ptr1->data._int = 10;
+    ptr1->ttype = E_LITER;
+    ptr1->data._string = "AB";
+    ptr1->length = 2;
     
-    ptr2->ttype = E_INT;
-    ptr2->data._int = 5;
+    ptr2->ttype = E_LITER;
+    ptr2->data._string = "ABC";
+    ptr2->length = 3;
     
     assign( &assigntoken );
-    E_ERROR_TYPE retval = eval( ptr1, ptr2, E_MULT );
+    E_ERROR_TYPE retval = eval( ptr1, ptr2, E_LESS );
     
     if( retval != 0 )
         printf(" retval = %d\n", retval);
-    print_token( ptr1 );
     
     retval = eval( ptr1, NULL, E_TERM );
     if( retval != 0 )
@@ -77,11 +78,10 @@ int main(void)
     retval = eval(ptr1, ptr2, E_CONCAT);
     if( retval != 0 )
         printf(" retval = %d\n", retval);
-    print_token( ptr1 );
     retval = eval(ptr1, NULL, E_TERM);
     if( retval != 0 )
         printf(" retval = %d\n", retval);
-    printf("vsetko je ok\n");
+    PRINTD("vsetko je ok\n");
       ////////////////////////////////////////////  
     ptr1 = calloc( 1, sizeof( T_token ) );
     ptr2 = calloc( 1, sizeof( T_token ) );
@@ -158,7 +158,6 @@ int main(void)
     
     
     
-     printf(" testtttttttttt\n");
      ptr1 = calloc( 1, sizeof( T_token ) );
     ptr2 = calloc( 1, sizeof( T_token ) );
     
@@ -189,10 +188,10 @@ int main(void)
     
     setstate(S_FILE_END);
     PrintTape( FT.tape ); 
-printf("/**************************/\n");
+    PRINTD("/**************************/\n");
     PrintTape( FT.btreeroot->metadata.tape ); 
-    printf("funkcia %s ma pocet parametrov %u je v stave %d a pointer na fixlist ma %p, nextptr %p\n", FT.btreeroot->metadata.name,FT.btreeroot->metadata.param_count, FT.btreeroot->metadata.state, (void*)FT.btreeroot->metadata.fix_list->instr, (void*)FT.btreeroot->metadata.fix_list->next );
-    printf("function tree %d\n",FT.unknown_count);
+    PRINTD("funkcia %s ma pocet parametrov %u je v stave %d a pointer na fixlist ma %p, nextptr %p\n", FT.btreeroot->metadata.name,FT.btreeroot->metadata.param_count, FT.btreeroot->metadata.state, (void*)FT.btreeroot->metadata.fix_list->instr, (void*)FT.btreeroot->metadata.fix_list->next );
+    PRINTD("function tree %d\n",FT.unknown_count);
     /*printf("-------------\n");
     AddBuiltinFunction("sracka", 6, 6, 0, F_DUMMY);
     printf("-------------\n");

@@ -27,21 +27,7 @@ STableData *assignvar;
 unsigned int actual_usage = 0; // pocet pouzitych pomocnych premennych v jednom vyraze
 
 /* DEBUG */
-#define DEBUG
-
-#ifdef DEBUG 
-    #define PRINTD(...) \
-        do { \
-            fprintf ( stderr, __VA_ARGS__ ); \
-        } \
-        while(0)
-#else
-    #define PRINTD(...) \
-        do { \
-        ; \
-        } \
-        while(0)
-#endif
+// #define DEBUG
 
 /*  END DEBUG */
 
@@ -84,7 +70,7 @@ void print_DVAR(T_DVAR *ptr)
             printf("VAR_NULL\n");
             break;
         default:
-            printf("UNKNOWN VAR -->FIX ME\n");
+            printf("UNKNOWN VAR\n");
             break;
     }
 }
@@ -93,13 +79,11 @@ void PrintTape( Instruction *ptr )
 {
     while( ptr != NULL )
     {
-        printf("----------------\n");
+        printf("-----------------------\n");
         printf("ADRESA %p\n", (void*)ptr);
         printf("Opcode: %s\n", OPCODE_NAME[ptr->opcode]);
         switch( ptr->opcode )
         {
-            case CLEAR:
-                break;
             case START:
             case CREATE:
                 printf("Size: %u\n", ptr->attr.size);
@@ -131,6 +115,11 @@ void PrintTape( Instruction *ptr )
                 print_DVAR( &( ptr->attr.jump.op1 ) );
                 break;
             case DUMMY:
+                break;
+            case MOV:
+                printf("Dest: [%u]\n", ptr->attr.tac.dest);
+                printf("OP1: ");
+                print_DVAR( &( ptr->attr.tac.op1 ) );
                 break;
             default:
                 printf("Dest: [%u]\n", ptr->attr.tac.dest);
@@ -280,7 +269,7 @@ void translate_token( T_token *token, T_DVAR *out )
             out->data._bool = true;
             break;
         default:
-            PRINTD("ERROR translate_token() bad token type %s\n", TOKEN_NAME[token->ttype]);
+            fprintf(stderr, "ERROR translate_token() bad token type %s\n", TOKEN_NAME[token->ttype]);
             break;
     }
 }
@@ -452,7 +441,7 @@ E_ERROR_TYPE addparam(T_token *token)
     }
     else
     {
-        printf("param_counter = %d, actualfunction->param_count = %d\n",param_counter, actualfunction->param_count);
+        PRINTD("param_counter = %d, actualfunction->param_count = %d\n",param_counter, actualfunction->param_count);
         if ( param_counter <= actualfunction->param_count ) // (unsigned)-1 = max int
         {
             actualfunction->param_count = param_counter;
@@ -787,6 +776,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
             SwitchTape->attr.tac.op2.data.offset = op_ptr2->offset;
         }
         
+        
         op1->ttype = E_LOCAL;
         op1->length = dest;
         
@@ -794,7 +784,17 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         switch(operation)
         {
             case E_CONCAT:
-                SwitchTape->opcode = CONCAT;
+                /* konkatenovat mozem len ked je prvy string alebo lokalna premenna */
+                if( SwitchTape->attr.tac.op1.type ==  VAR_LOCAL ||
+                    SwitchTape->attr.tac.op1.type ==  VAR_CONSTSTRING )
+                {
+                    SwitchTape->opcode = CONCAT;
+                }
+                else
+                {
+                    free(op2);
+                    return E_SEM;
+                }
                 break;
             case E_TRIPLEEQ:
                 SwitchTape->opcode = EQUAL;
@@ -827,6 +827,8 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 SwitchTape->opcode = GREATEREQ;
                 break;
             default:
+                free(op2);
+                return E_SEM;
                 PRINTD("eval() --> invalid operation %s\n", TOKEN_NAME[operation]);
                 break;
         }
@@ -924,8 +926,11 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                             val = (op1->data._double) < ( op2->data._double );
                             break;
                         case E_LITER:
-                            val = true; // TODO
+                        {
+                            int retval = lexsstrcmp(op1->data._string, op2->data._string, op1->length, op2->length );
+                            val = ( retval < 0 ) ? true : false;
                             break;
+                        }
                         default:
                             break;
                     }
@@ -958,7 +963,11 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                             val = (op1->data._double) > ( op2->data._double );
                             break;
                         case E_LITER:
-                            val = true; // TODO
+                        {
+                            int retval = lexsstrcmp(op1->data._string, op2->data._string, op1->length, op2->length );
+                            val = ( retval > 0 ) ? true : false;
+                            break;
+                        }
                             break;
                         default:
                             break;
@@ -993,8 +1002,11 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                             val = (op1->data._double) <= ( op2->data._double );
                             break;
                         case E_LITER:
-                            val = true; // TODO
+                        {
+                            int retval = lexsstrcmp(op1->data._string, op2->data._string, op1->length, op2->length );
+                            val = ( retval <= 0 ) ? true : false;
                             break;
+                        }
                         default:
                             break;
                     }
@@ -1029,8 +1041,11 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                             val = (op1->data._double) >= ( op2->data._double );
                             break;
                         case E_LITER:
-                            val = true; // TODO
+                        {
+                            int retval = lexsstrcmp(op1->data._string, op2->data._string, op1->length, op2->length );
+                            val = ( retval >= 0 ) ? true : false;
                             break;
+                        }
                         default:
                             break;
                     }
@@ -1594,8 +1609,44 @@ E_ERROR_TYPE MapTableCheck(MapTable **ptr)
     return E_OK;  
 }
 
-
-
+extern inline int lexsstrcmp( const char * str1, const char * str2, int str1_size, int str2_size )
+{
+    const char * offset;
+    int result;
+   
+    if ( str1_size > str2_size )
+    {
+        offset = str1 + str2_size;
+       
+        do {
+            result = ( unsigned ) *str1++ - ( unsigned ) *str2++;
+        } while ( ( result == 0 ) && ( str1 != offset ) );
+       
+        if ( result == 0 )
+            return 1;
+    }
+    else if ( str1_size < str2_size )
+    {
+        offset = str1 + str1_size;
+       
+        do {
+            result = ( unsigned ) *str1++ - ( unsigned ) *str2++;
+        } while ( ( result == 0 ) && ( str1 != offset ) );
+       
+        if ( result == 0 )
+            return -1;
+    }
+    else
+    {
+        offset = str1 + str1_size;
+       
+        do {
+            result = ( unsigned ) *str1++ - ( unsigned ) *str2++;
+        } while ( ( result == 0 ) && ( str1 != offset ) );
+    }
+ 
+    return result;
+}
 
 
 

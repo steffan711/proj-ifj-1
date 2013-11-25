@@ -243,7 +243,6 @@ extern FTableData *actualfunction;      // aktualna funkcia
 extern FTableData *callfunction;        // docasne uchovanie volanej funkcie
 extern STableData *assignvar;           // docasne uchovanie premennej do ktorej sa priraduje
 
-E_ERROR_TYPE GeneratorInit();
 
 E_ERROR_TYPE AddBuiltinFunction( char *name,
                                  unsigned int size,
@@ -276,10 +275,13 @@ E_ERROR_TYPE PtrStackInit(PtrStack **ptr);
 E_ERROR_TYPE PtrStackCheck(PtrStack **ptr);
 E_ERROR_TYPE MapTableInit(MapTable **ptr);
 E_ERROR_TYPE MapTableCheck(MapTable **ptr);
+int lexsstrcmp( const char * str1, const char * str2, int str1_size, int str2_size );
 
-void GeneratorErrorCleanup(void);
+
 void PrintTape( Instruction *ptr );
 
+void GeneratorErrorCleanup(void);
+E_ERROR_TYPE GeneratorInit();
 E_ERROR_TYPE define(T_token *token);
 E_ERROR_TYPE addparam(T_token *token);
 E_ERROR_TYPE setstate(enum gen_state state);
