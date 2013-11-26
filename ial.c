@@ -19,5 +19,26 @@
  */
 void quicksort( char *input, int beg, int end )
 {
-	// NEEDS REPLACEMENT!!
+	int i = beg, j = end;
+	char pom, PM = input[( beg + end ) / 2];
+	
+	do
+	{
+		while( input[i] < PM )
+			i++;
+		while( input[j] > PM )
+			j--;
+		if( i <= j )
+		{
+			pom = input[i];
+			input[i] = input[j];
+			input[j] = pom;
+			i++;
+			j--;
+		}
+		
+	} while( i <= j );
+	
+	if( beg < j ) quicksort( input, beg, j );
+	if( i < end ) quicksort( input, i, end );
 }
