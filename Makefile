@@ -1,4 +1,4 @@
-CFLAGS = -pedantic -Wall -Wextra -std=c99
+CFLAGS = -pedantic -Wall -Wextra -g -fprofile-arcs -ftest-coverage -std=c99
 #CC=gcc-4.8
 .PHONY = clean run all cleanall
 EXE = main

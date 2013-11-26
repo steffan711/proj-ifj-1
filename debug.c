@@ -1,8 +1,9 @@
 
 
+
 #include <stdio.h> // printf
 #include "scanner.h"
-
+#include <stdarg.h>
 
 const char const *TOKEN_NAME[] = 
 {
@@ -118,4 +119,21 @@ void print_token( T_token* token )
     else
         printf( "NO DATA" );
     printf( "\nToken -> line: %u\n", token->line );
+}
+
+
+void  ERROR ( const char * format, ... )
+{
+  va_list args;
+  va_start( args, format );
+  vfprintf( stderr, format, args );
+  va_end( args );
+}
+
+void print_char( FILE *file, char *text, unsigned int size )
+{
+    for( unsigned int i = 0; i < size; i++ )
+    {
+        putc( text[i], file );
+    }
 }
