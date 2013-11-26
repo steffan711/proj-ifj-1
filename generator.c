@@ -6,7 +6,7 @@
 #include "generator.h"
 #include "scanner.h"
 
-const int FLEXIBLE_ARRAY_MEMBER = 32;
+const int FLEXIBLE_ARRAY_MEMBER = 1;
 FTable FT;
 STable *STableLocal;
 STable *STableGlobal;
@@ -26,7 +26,7 @@ STableData *assignvar;
 unsigned int actual_usage = 0; // pocet pouzitych pomocnych premennych v jednom vyraze
 
 /* DEBUG */
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 /*  END DEBUG */
 
@@ -309,6 +309,7 @@ void SwitchContextToGobal( void )
     SwitchMap->used_space = 0;
     SwitchMap = Globalmap;
     SwitchTape = GlobalTape;
+    actualfunction = NULL;
     State = S_DEFAULT;
 }
 
@@ -419,7 +420,7 @@ E_ERROR_TYPE define(T_token *token)
         // chyba mallocu
         return E_INTERPRET_ERROR;
     }
-    PRINTD( "new function declared %s\n", token->data._string );
+    PRINTD( "new function declared %.1s\n", token->data._string );
     if ( actualfunction->state == E_UNKNOWN )
     {
         actualfunction->state = E_DEFINED;
@@ -449,14 +450,15 @@ E_ERROR_TYPE addparam(T_token *token)
     }
     else
     {
-        PRINTD("param_counter = %d, actualfunction->param_count = %d\n",param_counter, actualfunction->param_count);
         if ( param_counter <= actualfunction->param_count ) // (unsigned)-1 = max int
         {
+            
             actualfunction->param_count = param_counter;
             param_counter = 0;
         }
         else
         {
+            PRINTD("Error: function %.1s defined with %d parameters but called with %d parameters\n", actualfunction->name, param_counter, actualfunction->param_count);
             return E_PARAM;
         }
     }
@@ -541,13 +543,18 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
             translate_token( op, ptr );
             break;
     };
+    assignvar = NULL;
     free(op);
     return E_OK;
 }
 
 E_ERROR_TYPE get_local_var(unsigned int *dest)
 {
-    PRINTD("%s()\n", __func__ );
+    PRINTD("%s(actual usage = %d)\n", __func__ , actual_usage);
+    PRINTD("-------------------\n");
+    for (unsigned int i = 0; i < SwitchMap->used_space; i++)
+        PRINTD("[%d/%d]:%d\n", i, SwitchMap->size, SwitchMap->map[i] );
+    PRINTD("-------------------\n");
     if ( actual_usage >= SwitchMap->used_space ) // nova premenna
     {
         if ( MapTableCheck( &SwitchMap ) != E_OK )
@@ -557,7 +564,7 @@ E_ERROR_TYPE get_local_var(unsigned int *dest)
         PRINTD("actual_usage = %d, counter %d, maptable %d/%d\n", actual_usage, SwitchSTable->counter,
                 SwitchMap->used_space, SwitchMap->size);   
         *dest = SwitchSTable->counter++;
-        SwitchMap->map[actual_usage++] = SwitchSTable->counter;
+        SwitchMap->map[actual_usage++] = *dest;
         /* namapovana nova expr. premenna */
         SwitchMap->used_space++;
         PRINTD("actual_usage = %d, counter %d, maptable %d/%d\n", 
@@ -573,39 +580,39 @@ E_ERROR_TYPE get_local_var(unsigned int *dest)
 
 E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
 // array[0] - funkcia
-// array[1..(size-1)] - parametre
+// array[1..(size)] - parametre
 {
     PRINTD("%s()\n", __func__ );
     FTableData *func;
     E_ERROR_TYPE retval;
     if( ( retval = LookupFunction( array[0]->data._string, array[0]->length, &func ) ) != E_OK)
     { // chyba mallocu
-        for( unsigned int i = 0; i< size; i++)
+        for( unsigned int i = 1; i<= size; i++)
             free(array[i]);
         return E_INTERPRET_ERROR;
     }
     /* instrukcia create*/
     if ( AddInstruction( ) != E_OK )
     {
-        for( unsigned int i = 0; i< size; i++ )
+        for( unsigned int i = 1; i<= size; i++ )
             free(array[i]);
         return E_INTERPRET_ERROR;
     }
     SwitchTape->opcode = CREATE;
     PRINTD( "CREATE ADDED\n" );
     
-    if ( func->state == E_UNKNOWN )
+    if ( func->state == E_UNKNOWN || actualfunction == func )
     {
-        PRINTD("Calling unknown function %s \n", func->name );
-        if ( func->param_count > (size-1) )
+        PRINTD("Calling unknown function %.1s \n", func->name );
+        if ( func->param_count > (size) )
         {
-            func->param_count = size-1;
+            func->param_count = size;
         }
         /* nastavim fixlist na prvu instrukciu volania funkcie*/
         InstructionList *tmp = malloc( sizeof ( InstructionList ));
         if ( tmp == NULL )
         {
-            for( unsigned int i = 0; i < size; i++)
+            for( unsigned int i = 1; i <= size; i++)
                 free(array[i]);
             return E_INTERPRET_ERROR;
         }
@@ -614,26 +621,26 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
         func->fix_list = tmp;
         
     }
-
     /* pocet parametrov */
     if ( ( func->state == E_DEFINED || func->state == E_BUILTIN ) &&
-         ( func->param_count > (size-1) ) && func->unlimited_param == 0 )
+         ( func->param_count > (size) ) && func->unlimited_param == 0 )
     {
-        PRINTD("BAD PARAM %s \n", func->name );
-        for( unsigned int i = 0; i < size; i++)
+        PRINTD("BAD PARAM %.1s \n", func->name );
+        for( unsigned int i = 1; i <= size; i++)
             free(array[i]);
         return E_PARAM;
     }
     
-    unsigned int params;
+    unsigned int params = 0;
     if( func->unlimited_param || func->state == E_UNKNOWN )
     {
-        params = (size-1);
+        params = (size);
     }
     else
     {
         params = func->param_count;
     }
+
     /* create size */
     SwitchTape->attr.size = func->frame_count;
     
@@ -641,7 +648,7 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
     {
         if ( AddInstruction( ) != E_OK )
         {
-            for( unsigned int i = 0; i< size; i++ )
+            for( unsigned int i = 1; i<= size; i++ )
                 free(array[i]);
             return E_INTERPRET_ERROR;
         }
@@ -652,7 +659,7 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
             STableData *var;
             if( ( retval = BTfind(SwitchSTable, array[i]->data._string, array[i]->length, &var) ) != E_OK )
             {
-                for( unsigned int i = 0; i < size; i++ )
+                for( unsigned int i = 1; i <= size; i++ )
                     free(array[i]);
                 return E_INTERPRET_ERROR;
             }
@@ -668,7 +675,7 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
     /* instrukcia call*/
     if ( AddInstruction( ) != E_OK )
     {
-        for( unsigned int i = 0; i< size; i++ )
+        for( unsigned int i = 1; i<= size; i++ )
             free(array[i]);
         return E_INTERPRET_ERROR;
     }
@@ -685,7 +692,7 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
     }
     
     /* uvolnim polozky*/
-    for( unsigned int i = 1; i< size; i++ )
+    for( unsigned int i = 1; i<= size; i++ )
             free(array[i]);
             
     /* retval instrukcia*/
@@ -717,6 +724,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
          ( ( op1->ttype == E_VAR || op1->ttype == E_LOCAL ) ||
          ( op2->ttype == E_VAR || op2->ttype == E_LOCAL ) ) )
     {
+        PRINTD( "%s---- op1 %s op2 %s -----\n", __func__, TOKEN_NAME[op1->ttype], TOKEN_NAME[op2->ttype] );
         /* overit platnost premennych */
         STableData *op_ptr1 = NULL;
         STableData *op_ptr2 = NULL;
@@ -747,8 +755,8 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         }
         
         unsigned int dest;
-        /* zvolenie destination - nova destination iba ked su oba operandy VAR */
-        if ( op_ptr1 != NULL || op_ptr2 != NULL )
+        /* zvolenie destination - nova destination ked nie je ziaden operand E_LOCAL */
+        if ( op1->ttype != E_LOCAL && op2->ttype != E_LOCAL )
         {
             E_ERROR_TYPE retval;
             if( ( retval = get_local_var( &dest ) ) != E_OK )
@@ -759,9 +767,9 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         else
         {
             if ( op1->ttype == E_LOCAL )
-                dest = op1->data._int;
+                dest = op1->length;
             else
-                dest = op2->data._int;
+                dest = op2->length;
         }
         SwitchTape->attr.tac.dest = dest;
         /* operand 1 */
@@ -1297,7 +1305,6 @@ void DeteteFunctionItem(FTableNode *ptr)
     }
     
     /* skutocna funkcia */
-    
     /* uvolnit zoznam fixov */
     if (ptr->metadata.fix_list)
     {
@@ -1333,6 +1340,7 @@ void DeteteFunctionItem(FTableNode *ptr)
 void DeleteFT(void)
 {
     DeteteFunctionItem(FT.btreeroot);
+    FT.btreeroot = NULL;
     /* uvolnit instrukcie hlavneho programu */
     Instruction *ptr = FT.tape;
     Instruction *ptr_help = ptr;
@@ -1343,6 +1351,7 @@ void DeleteFT(void)
         free(ptr);
         ptr = ptr_help;
     }
+    FT.tape = NULL;
     /* dokonane */
 }
 
@@ -1564,9 +1573,7 @@ E_ERROR_TYPE PtrStackCheck(PtrStack **ptr)
     if((*ptr)->size <= (*ptr)->top)
     {
         PtrStack *tmp = *ptr;
-        
-        *ptr =  realloc (*ptr, sizeof( Instruction *) * ((*ptr)->size)*2
-                         + sizeof( PtrStack ));
+        *ptr =  realloc (*ptr, sizeof( Instruction *) * ((*ptr)->size)*2 + sizeof( PtrStack ));
         if (*ptr == NULL) // ak realloc zlyha tak neuvolnuje pamat
         {
             free(tmp);
@@ -1608,13 +1615,16 @@ E_ERROR_TYPE MapTableCheck(MapTable **ptr)
     if((*ptr)->size <= (*ptr)->used_space)
     {
         MapTable *tmp = *ptr;
-        
         *ptr =  realloc (*ptr, sizeof( int ) * ( ( *ptr )->size ) * 2 + sizeof( MapTable ) );
         if (*ptr == NULL) // ak realloc zlyha tak neuvolnuje pamat
         {
             free(tmp);
             return E_INTERPRET_ERROR;
         }
+        if( tmp == Globalmap )
+            Globalmap = *ptr;
+        else
+            Localmap = *ptr;
         (*ptr)->size = (*ptr)->size *2;
     }
     return E_OK;  
