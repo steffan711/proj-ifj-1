@@ -24,10 +24,10 @@ scanner.o: scanner.c scanner.h types.h
 file_io.o : file_io.c file_io.h
 	$(CC) $(CFLAGS) -o $@ -c $<
     
-syntax.o: syntax.c types.h expressions.h syntax.h scanner.h
+syntax.o: syntax.c types.h expressions.h syntax.h scanner.h generator.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 	
-expr.o: expressions.c types.h expressions.h scanner.h
+expr.o: expressions.c types.h expressions.h scanner.h generator.h
 	$(CC) $(CFLAGS) -o $@ -c $<
     
 generator.o : generator.c generator.h types.h
@@ -39,7 +39,7 @@ main.o : main.c types.h file_io.h
 debug.o : debug.c scanner.h debug.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 	
-main : main.o file_io.o scanner.o syntax.o expr.o ial.o built-in.o
+main : main.o file_io.o scanner.o syntax.o expr.o ial.o built-in.o generator.o debug.o
 	$(CC) $(CFLAGS) -o $@ $^
     
 clean:

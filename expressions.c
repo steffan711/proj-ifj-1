@@ -11,12 +11,16 @@
 #include "types.h"
 #include "scanner.h"
 #include "expressions.h"
+#include "generator.h"
 
 /** inicializacne velkosti zasobnikov, ktorych pamat sa pri naplneni linearne zvacsuje */
 #define SIZEOF_ESTACK 1
 #define SIZEOF_PFXSTACK 1
 
-#define TESTY
+//#define TESTY
+#ifndef TESTY
+#include "generator.h"
+#endif
 
 #ifdef TESTY
 #include <string.h>
@@ -84,7 +88,7 @@ const char *enums[] = { //iba na testovacie ucely
 "E_LITER","EVAL", "SHIFT", "x","PUSH","E","E_EQ","E_RABRACK","E_INVLD","E_WHILE",
  "E_FUNCTION","E_FALSE","E_NULL","E_TRUE","E_IF","E_ELSE","E_RETURN","E_MALLOC","E_EOF"
 };
-
+#ifdef TESTY
 E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
 {
     static int counter = 0;
@@ -204,6 +208,7 @@ E_ERROR_TYPE evalf( T_token **array, int counter )
     c++;
     return E_OK;
 }
+#endif
 
 /**
  * Funkcia alokuje pamat zasobnika PFXStack

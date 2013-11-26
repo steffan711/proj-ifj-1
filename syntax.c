@@ -7,13 +7,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "types.h"
 #include "scanner.h"
 #include "expressions.h"
 #include "syntax.h"
+#include "generator.h"
 
-#define TESTY
+//#define TESTY
 
+//#define OLD
+
+#ifdef OLD
 /** PDA - pushdown automaton, konstanta velkosti a velkosti zmeny PDA */
 #define SIZEOF_PDASTACK 2   //minimum je 2
 
@@ -184,6 +189,12 @@ void if_treat ( void )
 
 void function_treat ( void )
 {
+    if ( PDAStackTop( ) != E_EOF )
+    {
+        error_code = E_SYNTAX;
+        return;
+    }
+    
     scanner_get_token( &token );
     
     if ( token.ttype == E_INVLD ) 
@@ -326,6 +337,9 @@ void rabrack_treat ( void )
         }
         else
         {
+            #ifdef TESTY
+                printf("ELSE - right syntax\n");
+            #endif
             PDAStack.data[PDAStack.top] = E_ELSE;   //nechcelo sa mi kvoli tomu pisat zapuzdrovaciu funkciu
             error_code = E_OK;
         }
@@ -497,3 +511,473 @@ E_ERROR_TYPE check_syntax ( void )
     PDAStackFree( );
     return error_code;
 }
+
+#else
+
+static T_token token;
+static E_ERROR_TYPE error_code;
+
+/** deklaracie funkcii */
+bool st_list( void );
+bool st_list2( void );
+bool par( void );
+bool par( void );
+bool par_list( void );
+bool st_else( void );
+bool while_end( void );
+bool if_end( void );
+bool func_end( void );
+E_ERROR_TYPE check_syntax ( void );
+
+#ifdef TESTY
+#define PRINT_DEBUG(x) do { printf(x); } while(0)
+#else
+#define PRINT_DEBUG(x) do {} while (0)
+#endif
+
+bool st_list( void )
+{
+    scanner_get_token( &token );
+    
+    switch ( token.ttype ) 
+    {
+        case E_WHILE:
+            PRINT_DEBUG("ST_LIST: dosiel mi while\n");
+            scanner_get_token( &token );
+            
+            if ( token.ttype == E_LPARENTHESES )
+            {
+                setstate( S_WHILE_BEGIN );
+                error_code = evaluate_expr( &token, E_RPARENTHESES );
+                if ( error_code != E_OK )
+                    return false;
+            }
+            else
+            {
+                if (token.ttype == E_INVLD)
+                    error_code = E_LEX;
+                else 
+                    error_code = E_SYNTAX;
+                return false;
+            }
+            
+            scanner_get_token( &token );
+            
+            if ( token.ttype == E_LABRACK )
+                return st_list2() && while_end() && st_list();
+            else
+            {
+                if (token.ttype == E_INVLD)
+                    error_code = E_LEX;
+                else 
+                    error_code = E_SYNTAX;
+                return false;
+            }
+            break;
+            
+        case E_IF:
+            PRINT_DEBUG("ST_LIST: dosiel mi if\n");
+            scanner_get_token( &token );
+            
+            if ( token.ttype == E_LPARENTHESES )
+            {   
+                setstate( S_IF_BEGIN );
+                error_code = evaluate_expr( &token, E_RPARENTHESES );
+                if ( error_code != E_OK )
+                    return false;
+            }
+            else
+            {
+                if (token.ttype == E_INVLD)
+                    error_code = E_LEX;
+                else 
+                    error_code = E_SYNTAX;
+                return false;
+            }
+            
+            scanner_get_token( &token );
+            
+            if ( token.ttype == E_LABRACK )
+                return st_list2() && st_else() && st_list2() && if_end() && st_list();
+            else
+            {
+                if (token.ttype == E_INVLD)
+                    error_code = E_LEX;
+                else 
+                    error_code = E_SYNTAX;
+                return false;
+            }
+            break;
+        case E_FUNCTION:
+            PRINT_DEBUG("ST_LIST: dosla mi funkcia\n");
+            scanner_get_token( &token );
+            
+            if ( token.ttype == E_IDENT )
+            {
+                define( &token );
+            }
+            else
+            {
+                if (token.ttype == E_INVLD)
+                    error_code = E_LEX;
+                else 
+                    error_code = E_SYNTAX;
+                return false;
+            }
+            
+            scanner_get_token( &token );
+            
+            if ( token.ttype == E_LPARENTHESES )
+            {
+                if ( par() && par_list() )
+                {
+                    if ( token.ttype != E_RPARENTHESES )
+                    {
+                        if (token.ttype == E_INVLD)
+                            error_code = E_LEX;
+                        else 
+                            error_code = E_SYNTAX;
+                        return false;
+                    }
+                        
+                    scanner_get_token( &token );
+                    
+                    if ( token.ttype == E_LABRACK )
+                    {
+                        addparam( NULL );
+                        return st_list2() && func_end() && st_list();
+                    }
+                    else
+                    {
+                        if (token.ttype == E_INVLD)
+                            error_code = E_LEX;
+                        else 
+                            error_code = E_SYNTAX;
+                        return false;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (token.ttype == E_INVLD)
+                    error_code = E_LEX;
+                else 
+                    error_code = E_SYNTAX;
+                return false;
+            }
+            break;
+            
+        case E_RETURN:
+            PRINT_DEBUG("ST_LIST: dosiel mi return\n");
+            assign( NULL );
+            scanner_get_token( &token );
+            
+            error_code = evaluate_expr( &token, E_SEMICL );
+            if ( error_code != E_OK )
+                return false;
+            
+            return st_list();
+            
+        case E_VAR:
+            PRINT_DEBUG("ST_LIST: dosla mi var\n");
+            assign( &token );
+            scanner_get_token( &token );
+            
+            if ( token.ttype == E_EQ )
+            {   
+                scanner_get_token( &token );
+                error_code = evaluate_expr( &token, E_SEMICL );
+                if ( error_code != E_OK )
+                    return false;
+            }
+            else
+            {
+                if (token.ttype == E_INVLD)
+                    error_code = E_LEX;
+                else 
+                    error_code = E_SYNTAX;
+                return false;
+            }
+            
+            return st_list();
+            
+        case E_EOF:
+            //todo co bude na konci
+            PRINT_DEBUG("validne sa to cele ukoncilo **********************\n");
+            setstate( S_FILE_END );
+            return true;
+        default:
+            PRINT_DEBUG("ST_LIST: dosiel mi default\n");
+            if (token.ttype == E_INVLD)
+                error_code = E_LEX;
+            else 
+                error_code = E_SYNTAX;
+            return false;
+    }
+    
+    return true;
+}
+
+bool st_list2( void )
+{
+    scanner_get_token( &token );
+    
+    switch ( token.ttype ) 
+    {
+        case E_WHILE:
+            PRINT_DEBUG("ST_LIST2: dosiel mi while\n");
+            scanner_get_token( &token );
+            
+            if ( token.ttype == E_LPARENTHESES )
+            {
+                setstate( S_WHILE_BEGIN );
+                error_code = evaluate_expr( &token, E_RPARENTHESES );
+                if ( error_code != E_OK )
+                    return false;
+            }
+            else
+            {
+                if (token.ttype == E_INVLD)
+                    error_code = E_LEX;
+                else 
+                    error_code = E_SYNTAX;
+                return false;
+            }
+            
+            scanner_get_token( &token );
+            
+            if ( token.ttype == E_LABRACK )
+                return st_list2() && while_end() && st_list2();
+            else
+            {
+                if (token.ttype == E_INVLD)
+                    error_code = E_LEX;
+                else 
+                    error_code = E_SYNTAX;
+                return false;
+            }
+            break;
+            
+        case E_IF:
+            PRINT_DEBUG("ST_LIST2: dosiel mi if\n");
+            scanner_get_token( &token );
+            
+            if ( token.ttype == E_LPARENTHESES )
+            {
+                setstate( S_IF_BEGIN );
+                error_code = evaluate_expr( &token, E_RPARENTHESES );
+                if ( error_code != E_OK )
+                    return false;
+            }
+            else
+            {
+                if (token.ttype == E_INVLD)
+                    error_code = E_LEX;
+                else 
+                    error_code = E_SYNTAX;
+                return false;
+            }
+            
+            scanner_get_token( &token );
+            
+            if ( token.ttype == E_LABRACK )
+                return st_list2() && st_else() && st_list2() && if_end() && st_list2();
+            else
+            {
+                if (token.ttype == E_INVLD)
+                    error_code = E_LEX;
+                else 
+                    error_code = E_SYNTAX;
+                return false;
+            }
+            break;
+            
+        case E_RETURN:
+            PRINT_DEBUG("ST_LIST2: dosiel mi return\n");
+            assign( NULL );
+            scanner_get_token( &token );
+            
+            error_code = evaluate_expr( &token, E_SEMICL );
+            if ( error_code != E_OK )
+                return false;
+            
+            return st_list2();
+            
+        case E_VAR:
+            PRINT_DEBUG("ST_LIST2: dosla mi premenna\n");
+            assign( &token );
+            scanner_get_token( &token );
+            
+            if ( token.ttype == E_EQ )
+            {   
+                scanner_get_token( &token );
+                error_code = evaluate_expr( &token, E_SEMICL );
+                if ( error_code != E_OK )
+                    return false;
+            }
+            else
+            {
+                if (token.ttype == E_INVLD)
+                    error_code = E_LEX;
+                else 
+                    error_code = E_SYNTAX;
+                return false;
+            }
+            
+            return st_list2();
+            
+        case E_RABRACK:
+            PRINT_DEBUG("ST_LIST2: dosla mi }\n");
+            return true;
+            
+        default:
+            PRINT_DEBUG("ST_LIST2: chybny token\n");
+            if (token.ttype == E_INVLD)
+                error_code = E_LEX;
+            else 
+                error_code = E_SYNTAX;
+            return false;
+    }
+    
+    return true;
+}
+
+bool par( void )
+{
+    scanner_get_token( &token );
+    
+    if ( token.ttype == E_VAR )
+    {   
+        PRINT_DEBUG("PAR: dosla mi premenna\n");
+        addparam( &token );
+        scanner_get_token( &token );
+        return true;
+    }
+    else if ( token.ttype == E_LPARENTHESES )
+    {
+        PRINT_DEBUG("PAR: epsilon\n");
+        return true;
+    }
+    else
+    {   
+        PRINT_DEBUG("PAR: chybny token\n");
+        if (token.ttype == E_INVLD)
+            error_code = E_LEX;
+        else 
+            error_code = E_SYNTAX;
+        return false;
+    }
+    return true;
+}
+
+bool par_list( void )
+{
+    if ( token.ttype == E_LPARENTHESES )
+    {
+        PRINT_DEBUG("PAR_LIST: epsilon\n");
+        return true;
+    }
+    else if ( token.ttype == E_COMA )
+    {
+        PRINT_DEBUG("PAR_LIST: dosla mi ciarka\n");
+        scanner_get_token( &token );
+        if ( token.ttype == E_VAR )
+        {
+            addparam( &token );
+            PRINT_DEBUG("PAR_LIST: dosla mi premenna\n");
+            scanner_get_token( &token );
+            return par_list();
+        }
+        else
+        {
+            PRINT_DEBUG("PAR_LIST: chybny token\n");
+            if (token.ttype == E_INVLD)
+                error_code = E_LEX;
+            else 
+                error_code = E_SYNTAX;
+            return false;
+        }
+    }
+    else
+    {
+        PRINT_DEBUG("PAR_LIST: chybny token\n");
+        if (token.ttype == E_INVLD)
+            error_code = E_LEX;
+        else 
+            error_code = E_SYNTAX;
+        return false;
+    }
+    return true;
+}
+
+bool st_else( void )
+{   
+    if ( token.ttype == E_RABRACK )
+    {
+        PRINT_DEBUG("ST_ELSE: RABRACK\n");
+        scanner_get_token( &token );
+        if ( token.ttype == E_ELSE )
+        {
+            PRINT_DEBUG("ST_ELSE: E_ELSE\n");
+            scanner_get_token( &token );
+            if ( token.ttype == E_LABRACK )
+            {
+                PRINT_DEBUG("ST_ELSE: LABRACK\n");
+                setstate( S_IF_ELSE );
+                return true;
+            }
+        }
+    }
+    
+    PRINT_DEBUG("ST_ELSE: chybny token\n");
+    if (token.ttype == E_INVLD)
+        error_code = E_LEX;
+    else 
+        error_code = E_SYNTAX;
+    return false;
+}
+
+bool while_end( void )
+{
+    PRINT_DEBUG("WHILE_END");
+    setstate( S_WHILE_END );
+    return true;
+}
+
+bool if_end( void )
+{
+    PRINT_DEBUG("IF_END");
+    setstate( S_IF_END );
+    return true;
+}
+
+bool func_end( void )
+{
+    PRINT_DEBUG("FUNC_END");
+    setstate( S_FUNCTION_END );
+    return true;
+}
+
+E_ERROR_TYPE check_syntax ( void )
+{
+    precedenceInit( );
+    GeneratorInit( );
+    
+    if (st_list())
+        PRINT_DEBUG("je to panske\n");
+    else
+    {
+        GeneratorErrorCleanup( );
+    }
+    
+    //todo
+    GeneratorErrorCleanup( );
+    precedenceShutDown ( );
+    return error_code;
+}
+
+#endif
