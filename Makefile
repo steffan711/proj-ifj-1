@@ -15,7 +15,7 @@ all : main
 ial.o: ial.c ial.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 	
-built-in.o: built-in.c built-in.h types.h ial.h
+built-in.o: built-in.c built-in.h types.h ial.h generator.h scanner.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 scanner.o: scanner.c scanner.h types.h
@@ -62,7 +62,7 @@ lextest.o : lextest.c types.h file_io.h debug.h
 gentest.o : gentest.c types.h generator.h debug.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-test-built-in.o: test-built-in.c types.h
+test-built-in.o: test-built-in.c types.h scanner.h generator.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 lextest : lextest.o file_io.o scanner.o debug.o
@@ -71,5 +71,5 @@ lextest : lextest.o file_io.o scanner.o debug.o
 gentest : gentest.o file_io.o scanner.o generator.o debug.o
 	$(CC) $(CFLAGS) -o $@ $^
 	
-test-built-in: built-in.o test-built-in.o ial.o
+test-built-in: built-in.o test-built-in.o ial.o scanner.o
 	$(CC) $(CFLAGS) -o $@ $^
