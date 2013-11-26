@@ -11,13 +11,13 @@
 #include "types.h"
 #include "scanner.h"
 #include "expressions.h"
-#include "generator.h"
 
 /** inicializacne velkosti zasobnikov, ktorych pamat sa pri naplneni linearne zvacsuje */
 #define SIZEOF_ESTACK 1
 #define SIZEOF_PFXSTACK 1
 
 //#define TESTY
+//#define TESTY2
 #ifndef TESTY
 #include "generator.h"
 #endif
@@ -624,7 +624,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
     }
     
     do {
-        #ifdef TESTY
+        #ifdef TESTY2
             printf("na vstupe je: \x1B[32m%s\x1B[0m\n", enums[actual_ttype]);
             for (int i = 0; i <= eStack.top; i++) { printf("\x1B[34m-----\x1B[0m"); for(unsigned j = 0; j < strlen(enums[eStack.data[i]]); j++) printf("\x1B[34m-\x1B[0m");}
             printf("\n");
@@ -760,7 +760,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
         }    
     } while ( ( eStack.last_terminal != E_LABRACK ) || ( actual_ttype != termination_ttype ) );
     
-    #ifdef TESTY
+    #ifdef TESTY2
         printf("Ukoncil sa cyklus a na vstupe je: \x1B[31m%s\x1B[0m\n", enums[actual_ttype]);
         for (int i = 0; i <= eStack.top; i++) { printf("\x1B[32m------\x1B[0m"); }
         printf("\n");

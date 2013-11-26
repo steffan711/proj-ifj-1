@@ -547,7 +547,9 @@ bool st_list( void )
             
             if ( token.ttype == E_LPARENTHESES )
             {
-                setstate( S_WHILE_BEGIN );
+                #ifndef TESTY
+                    setstate( S_WHILE_BEGIN );
+                #endif
                 error_code = evaluate_expr( &token, E_RPARENTHESES );
                 if ( error_code != E_OK )
                     return false;
@@ -581,7 +583,9 @@ bool st_list( void )
             
             if ( token.ttype == E_LPARENTHESES )
             {   
-                setstate( S_IF_BEGIN );
+                #ifndef TESTY
+                    setstate( S_IF_BEGIN );
+                #endif
                 error_code = evaluate_expr( &token, E_RPARENTHESES );
                 if ( error_code != E_OK )
                     return false;
@@ -598,7 +602,9 @@ bool st_list( void )
             scanner_get_token( &token );
             
             if ( token.ttype == E_LABRACK )
+            {
                 return st_list2() && st_else() && st_list2() && if_end() && st_list();
+            }
             else
             {
                 if (token.ttype == E_INVLD)
@@ -614,7 +620,9 @@ bool st_list( void )
             
             if ( token.ttype == E_IDENT )
             {
-                define( &token );
+                #ifndef TESTY
+                    define( &token );
+                #endif
             }
             else
             {
@@ -644,7 +652,9 @@ bool st_list( void )
                     
                     if ( token.ttype == E_LABRACK )
                     {
-                        addparam( NULL );
+                        #ifndef TESTY
+                            addparam( NULL );
+                        #endif
                         return st_list2() && func_end() && st_list();
                     }
                     else
@@ -673,7 +683,9 @@ bool st_list( void )
             
         case E_RETURN:
             PRINT_DEBUG("ST_LIST: dosiel mi return\n");
-            assign( NULL );
+            #ifndef TESTY
+                assign( NULL );
+            #endif
             scanner_get_token( &token );
             
             error_code = evaluate_expr( &token, E_SEMICL );
@@ -684,7 +696,9 @@ bool st_list( void )
             
         case E_VAR:
             PRINT_DEBUG("ST_LIST: dosla mi var\n");
-            assign( &token );
+            #ifndef TESTY
+                assign( &token );
+            #endif
             scanner_get_token( &token );
             
             if ( token.ttype == E_EQ )
@@ -706,9 +720,9 @@ bool st_list( void )
             return st_list();
             
         case E_EOF:
-            //todo co bude na konci
-            PRINT_DEBUG("validne sa to cele ukoncilo **********************\n");
-            setstate( S_FILE_END );
+            #ifndef TESTY
+                setstate( S_FILE_END );
+            #endif
             return true;
         default:
             PRINT_DEBUG("ST_LIST: dosiel mi default\n");
@@ -734,7 +748,9 @@ bool st_list2( void )
             
             if ( token.ttype == E_LPARENTHESES )
             {
-                setstate( S_WHILE_BEGIN );
+                #ifndef TESTY
+                    setstate( S_WHILE_BEGIN );
+                #endif
                 error_code = evaluate_expr( &token, E_RPARENTHESES );
                 if ( error_code != E_OK )
                     return false;
@@ -768,7 +784,9 @@ bool st_list2( void )
             
             if ( token.ttype == E_LPARENTHESES )
             {
-                setstate( S_IF_BEGIN );
+                #ifndef TESTY
+                    setstate( S_IF_BEGIN );
+                #endif
                 error_code = evaluate_expr( &token, E_RPARENTHESES );
                 if ( error_code != E_OK )
                     return false;
@@ -798,7 +816,9 @@ bool st_list2( void )
             
         case E_RETURN:
             PRINT_DEBUG("ST_LIST2: dosiel mi return\n");
-            assign( NULL );
+            #ifndef TESTY
+                assign( NULL );
+            #endif
             scanner_get_token( &token );
             
             error_code = evaluate_expr( &token, E_SEMICL );
@@ -809,7 +829,9 @@ bool st_list2( void )
             
         case E_VAR:
             PRINT_DEBUG("ST_LIST2: dosla mi premenna\n");
-            assign( &token );
+            #ifndef TESTY
+                assign( &token );
+            #endif
             scanner_get_token( &token );
             
             if ( token.ttype == E_EQ )
@@ -853,11 +875,13 @@ bool par( void )
     if ( token.ttype == E_VAR )
     {   
         PRINT_DEBUG("PAR: dosla mi premenna\n");
-        addparam( &token );
+        #ifndef TESTY
+            addparam( &token );
+        #endif
         scanner_get_token( &token );
         return true;
     }
-    else if ( token.ttype == E_LPARENTHESES )
+    else if ( token.ttype == E_RPARENTHESES )
     {
         PRINT_DEBUG("PAR: epsilon\n");
         return true;
@@ -876,7 +900,7 @@ bool par( void )
 
 bool par_list( void )
 {
-    if ( token.ttype == E_LPARENTHESES )
+    if ( token.ttype == E_RPARENTHESES )
     {
         PRINT_DEBUG("PAR_LIST: epsilon\n");
         return true;
@@ -887,7 +911,9 @@ bool par_list( void )
         scanner_get_token( &token );
         if ( token.ttype == E_VAR )
         {
-            addparam( &token );
+            #ifndef TESTY
+                addparam( &token );
+            #endif
             PRINT_DEBUG("PAR_LIST: dosla mi premenna\n");
             scanner_get_token( &token );
             return par_list();
@@ -927,7 +953,9 @@ bool st_else( void )
             if ( token.ttype == E_LABRACK )
             {
                 PRINT_DEBUG("ST_ELSE: LABRACK\n");
-                setstate( S_IF_ELSE );
+                #ifndef TESTY
+                    setstate( S_IF_ELSE );
+                #endif
                 return true;
             }
         }
@@ -943,39 +971,51 @@ bool st_else( void )
 
 bool while_end( void )
 {
-    PRINT_DEBUG("WHILE_END");
-    setstate( S_WHILE_END );
+    PRINT_DEBUG("WHILE_END\n");
+    #ifndef TESTY
+        setstate( S_WHILE_END );
+    #endif
     return true;
 }
 
 bool if_end( void )
 {
-    PRINT_DEBUG("IF_END");
-    setstate( S_IF_END );
+    PRINT_DEBUG("IF_END\n");
+    #ifndef TESTY
+        setstate( S_IF_END );
+    #endif
     return true;
 }
 
 bool func_end( void )
 {
-    PRINT_DEBUG("FUNC_END");
-    setstate( S_FUNCTION_END );
+    PRINT_DEBUG("FUNC_END\n");
+    #ifndef TESTY
+        setstate( S_FUNCTION_END );
+    #endif
     return true;
 }
 
 E_ERROR_TYPE check_syntax ( void )
 {
     precedenceInit( );
-    GeneratorInit( );
+    #ifndef TESTY
+        GeneratorInit( );
+    #endif
     
     if (st_list())
         PRINT_DEBUG("je to panske\n");
     else
     {
-        GeneratorErrorCleanup( );
+        #ifndef TESTY
+            GeneratorErrorCleanup( );
+        #endif
     }
     
     //todo
-    GeneratorErrorCleanup( );
+    #ifndef TESTY
+        GeneratorErrorCleanup( );
+    #endif
     precedenceShutDown ( );
     return error_code;
 }
