@@ -149,7 +149,7 @@ typedef struct variable
     unsigned int size;
 } T_DVAR;
 
-enum opcodes { CLEAR, DUMMY, START, CREATE, CALL, CALL_BUILTIN, MOV, RET, PUSH, COND, JMP,
+enum opcodes { DUMMY, START, CREATE, CALL, CALL_BUILTIN, MOV, RET, PUSH, COND, JMP,
               MOVRET, CONCAT, EQUAL, NONEQUAL, PLUS, MINUS, DIV, MUL, LESS, GREATER, LESSEQ, GREATEREQ };
 
 struct instruction {
