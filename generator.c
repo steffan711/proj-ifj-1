@@ -214,7 +214,7 @@ void GeneratorErrorCleanup()
     DeleteFT();
 }
 
-double toDouble( T_token *token )
+static inline double toDouble( T_token *token )
 {
     PRINTD("%s()\n", __func__ );
     switch(token->ttype)
@@ -223,18 +223,10 @@ double toDouble( T_token *token )
             return (double)token->data._int;
         case E_DOUBLE:
             return token->data._double;
-        case E_NULL:
-        case E_FALSE:
-            return 0.0;
-        case E_TRUE:
-            return 1.0;
-        case E_LITER:
-            /*return doubleval(token);*/
         default:
             return 0.0;
     }
     return 0.0;
-    
 }
 
 void translate_token( T_token *token, T_DVAR *out )
@@ -272,7 +264,7 @@ void translate_token( T_token *token, T_DVAR *out )
             out->data._bool = true;
             break;
         default:
-            fprintf(stderr, "ERROR translate_token() bad token type %s\n", TOKEN_NAME[token->ttype]);
+            ERROR( "ERROR translate_token() bad token type %s\n", TOKEN_NAME[token->ttype]);
             break;
     }
 }
@@ -428,6 +420,9 @@ E_ERROR_TYPE define(T_token *token)
     }
     else
     {
+        ERROR("Error : Redefinition of function ");
+        print_char( stderr, actualfunction->name, actualfunction->name_size );
+        ERROR("()\n");
         return E_SEM;
     }
     SwitchContextToFunction();
@@ -452,13 +447,14 @@ E_ERROR_TYPE addparam(T_token *token)
     {
         if ( param_counter <= actualfunction->param_count ) // (unsigned)-1 = max int
         {
-            
             actualfunction->param_count = param_counter;
             param_counter = 0;
         }
         else
         {
-            PRINTD("Error: function %.1s defined with %d parameters but called with %d parameters\n", actualfunction->name, param_counter, actualfunction->param_count);
+            ERROR("Error: function ");
+            print_char( stderr, actualfunction->name, actualfunction->name_size );
+            ERROR(" defined with %d parameters but called with %d parameters\n", param_counter, actualfunction->param_count);
             return E_PARAM;
         }
     }
@@ -601,7 +597,7 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
     SwitchTape->opcode = CREATE;
     PRINTD( "CREATE ADDED\n" );
     
-    if ( func->state == E_UNKNOWN || actualfunction == func )
+    if ( func->state == E_UNKNOWN )
     {
         PRINTD("Calling unknown function %.1s \n", func->name );
         if ( func->param_count > (size) )
@@ -619,13 +615,29 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
         tmp->next = func->fix_list;
         tmp->instr = SwitchTape;
         func->fix_list = tmp;
-        
     }
+    else if( actualfunction == func )
+    {
+        /* nastavim fixlist na prvu instrukciu volania funkcie*/
+        InstructionList *tmp = malloc( sizeof ( InstructionList ));
+        if ( tmp == NULL )
+        {
+            for( unsigned int i = 1; i <= size; i++)
+                free(array[i]);
+            return E_INTERPRET_ERROR;
+        }
+        tmp->next = func->fix_list;
+        tmp->instr = SwitchTape;
+        func->fix_list = tmp;
+    }
+    
     /* pocet parametrov */
     if ( ( func->state == E_DEFINED || func->state == E_BUILTIN ) &&
          ( func->param_count > (size) ) && func->unlimited_param == 0 )
     {
-        PRINTD("BAD PARAM %.1s \n", func->name );
+        ERROR("Error: Function ");
+        print_char(stderr, func->name, func->name_size);
+        ERROR( " called with %d parameters, expecting %d.\n", (size), func->param_count );
         for( unsigned int i = 1; i <= size; i++)
             free(array[i]);
         return E_PARAM;
@@ -858,14 +870,15 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
     {
         case E_PLUS:
             {
-                if ( op1->ttype == E_DOUBLE || op2->ttype == E_DOUBLE )
+                if ( op1->ttype == E_INT && op2->ttype == E_INT )
+                {
+                    op1->data._int += op2->data._int;
+                }
+                else if( (op1->ttype == E_DOUBLE || op1->ttype == E_INT ) &&
+                         (op2->ttype == E_DOUBLE || op2->ttype == E_INT )     )
                 {
                     op1->data._double = toDouble(op1) + toDouble(op2);
                     op1->ttype = E_DOUBLE;
-                }
-                else if ( op1->ttype == E_INT && op2->ttype == E_INT )
-                {
-                    op1->data._int += op2->data._int;
                 }
                 else
                 {
@@ -877,14 +890,15 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
             }
         case E_MINUS:
             {
-                if ( op1->ttype == E_DOUBLE || op2->ttype == E_DOUBLE )
+                if ( op1->ttype == E_INT && op2->ttype == E_INT )
+                {
+                    op1->data._int -= op2->data._int;
+                }
+                else if( (op1->ttype == E_DOUBLE || op1->ttype == E_INT ) &&
+                         (op2->ttype == E_DOUBLE || op2->ttype == E_INT )     )
                 {
                     op1->data._double = toDouble(op1) - toDouble(op2);
                     op1->ttype = E_DOUBLE;
-                }
-                else if ( op1->ttype == E_INT && op2->ttype == E_INT )
-                {
-                    op1->data._int -= op2->data._int;
                 }
                 else
                 {
@@ -896,19 +910,20 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
             }
         case E_MULT:
             {
-                if ( op1->ttype == E_DOUBLE || op2->ttype == E_DOUBLE )
+                if ( op1->ttype == E_INT && op2->ttype == E_INT )
+                {
+                    op1->data._int *= op2->data._int;
+                }
+                else if( (op1->ttype == E_DOUBLE || op1->ttype == E_INT ) &&
+                         (op2->ttype == E_DOUBLE || op2->ttype == E_INT )     )
                 {
                     op1->data._double = toDouble(op1) * toDouble(op2);
                     op1->ttype = E_DOUBLE;
                 }
-                else if ( op1->ttype == E_INT && op2->ttype == E_INT )
-                {
-                    op1->data._int *= op2->data._int;
-                }
                 else
                 {
-                    free(op2);
-                    return E_INCOMPATIBLE; 
+                   free(op2);
+                   return E_INCOMPATIBLE; 
                 }
                 free(op2);
                 break;   

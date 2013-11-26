@@ -62,7 +62,7 @@ int main(void)
     
     if( retval != 0 )
         printf(" retval = %d\n", retval);
-    //$MEC = $DEF + $DEF;    
+    //$MEC = $DEF . $DEF;    
     assigntoken.data._string = "MEC";
     
     assign( &assigntoken );
