@@ -5,7 +5,6 @@
 #include "types.h"
 #include "generator.h"
 #include "scanner.h"
-#include "debug.h"
 
 const int FLEXIBLE_ARRAY_MEMBER = 32;
 FTable FT;
@@ -27,8 +26,8 @@ STableData *assignvar;
 unsigned int actual_usage = 0; // pocet pouzitych pomocnych premennych v jednom vyraze
 
 /* DEBUG */
-// #define DEBUG
-
+#define DEBUG
+#include "debug.h"
 /*  END DEBUG */
 
 void print_DVAR(T_DVAR *ptr)
@@ -135,6 +134,7 @@ void PrintTape( Instruction *ptr )
 
 E_ERROR_TYPE GeneratorInit()
 {
+    PRINTD("%s()\n", __func__ );
     /* Inicializacia zasobnikov a pomocnych struktur */
     if ( PtrStackInit( &ptrstack ) != E_OK )
     {
@@ -181,6 +181,7 @@ E_ERROR_TYPE GeneratorInit()
 
 void GeneratorErrorCleanup()
 {
+    PRINTD("%s()\n", __func__ );
     if(ptrstack)
     {
         free(ptrstack);
@@ -215,6 +216,7 @@ void GeneratorErrorCleanup()
 
 double toDouble( T_token *token )
 {
+    PRINTD("%s()\n", __func__ );
     switch(token->ttype)
     {
         case E_INT:
@@ -237,6 +239,7 @@ double toDouble( T_token *token )
 
 void translate_token( T_token *token, T_DVAR *out )
 {
+    PRINTD("%s()\n", __func__ );
     switch( token->ttype )
     {
         case E_LOCAL:
@@ -276,6 +279,7 @@ void translate_token( T_token *token, T_DVAR *out )
 
 E_ERROR_TYPE AddInstruction(  )
 {
+    PRINTD("%s()\n", __func__ );
     if ( SwitchTape->opcode != DUMMY )
     {
         if( ( SwitchTape->next = malloc( sizeof(Instruction) ) ) == NULL )
@@ -290,6 +294,7 @@ E_ERROR_TYPE AddInstruction(  )
 
 void SwitchContextToFunction( void )
 {
+    PRINTD("%s()\n", __func__ );
     SwitchSTable = STableLocal;
     SwitchMap = Localmap;
     GlobalTape = SwitchTape;
@@ -298,6 +303,7 @@ void SwitchContextToFunction( void )
 }
 void SwitchContextToGobal( void )
 {
+    PRINTD("%s()\n", __func__ );
     DeleteBT( SwitchSTable );
     SwitchSTable = STableGlobal;
     SwitchMap->used_space = 0;
@@ -308,6 +314,7 @@ void SwitchContextToGobal( void )
 
 E_ERROR_TYPE setstate(enum gen_state state)
 {
+    PRINTD("%s()\n", __func__ );
     switch( state )
     {
         case S_DEFAULT:
@@ -405,7 +412,7 @@ E_ERROR_TYPE setstate(enum gen_state state)
 
 E_ERROR_TYPE define(T_token *token)
 {
-    /* todo counter*/
+    PRINTD("%s()\n", __func__ );
     E_ERROR_TYPE retval;
     if( ( retval = LookupFunction( token->data._string, token->length, &actualfunction ) ) != E_OK)
     {   
@@ -428,6 +435,7 @@ E_ERROR_TYPE define(T_token *token)
 
 E_ERROR_TYPE addparam(T_token *token)
 {
+    PRINTD("%s()\n", __func__ );
     static unsigned int param_counter = 0;
     if ( token != NULL )
     {
@@ -457,7 +465,7 @@ E_ERROR_TYPE addparam(T_token *token)
 
 E_ERROR_TYPE perform_eval_term(T_token *op)
 {
-    PRINTD("perform_eval_term()\n");
+    PRINTD("%s()\n", __func__ );
     
     if ( State == S_DEFAULT && assignvar ) // zistim ci sa da optimalizovat
     {
@@ -539,6 +547,7 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
 
 E_ERROR_TYPE get_local_var(unsigned int *dest)
 {
+    PRINTD("%s()\n", __func__ );
     if ( actual_usage >= SwitchMap->used_space ) // nova premenna
     {
         if ( MapTableCheck( &SwitchMap ) != E_OK )
@@ -566,6 +575,7 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
 // array[0] - funkcia
 // array[1..(size-1)] - parametre
 {
+    PRINTD("%s()\n", __func__ );
     FTableData *func;
     E_ERROR_TYPE retval;
     if( ( retval = LookupFunction( array[0]->data._string, array[0]->length, &func ) ) != E_OK)
@@ -697,15 +707,14 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
 
 E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
 {
-    
+    PRINTD( "%s( operation %s )\n", __func__ , TOKEN_NAME[operation] );
     if ( operation == E_TERM )
     {
         actual_usage = 0;
         return perform_eval_term(op1);
     }
-    
     if ( ( operation == E_CONCAT ) || 
-         ( ( op1->ttype == E_VAR || op1->ttype == E_LOCAL ) &&
+         ( ( op1->ttype == E_VAR || op1->ttype == E_LOCAL ) ||
          ( op2->ttype == E_VAR || op2->ttype == E_LOCAL ) ) )
     {
         /* overit platnost premennych */
@@ -836,6 +845,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         return E_OK;
     }
     /* optimalizacia */
+    
     switch(operation)
     {
         case E_PLUS:
@@ -1109,12 +1119,13 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
 E_ERROR_TYPE assign(T_token *op1)
 /* nastavuje globalnu premennu */
 {
+    PRINTD("%s()\n", __func__ );
     if ( op1 != NULL )
     {
-        PRINTD("assigning, name %.3s\n", op1->data._string);
+        PRINTD("assigning, name %.1s\n", op1->data._string);
         if ( BTlookup(SwitchSTable , op1->data._string, op1->length, &assignvar ) != E_OK )
             return E_INTERPRET_ERROR;
-        PRINTD("name %.3s got id %d\n", op1->data._string, assignvar->offset);
+        PRINTD("name %.1s got id %d\n", op1->data._string, assignvar->offset);
     }
     else
     {
