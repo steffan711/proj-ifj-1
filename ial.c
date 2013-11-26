@@ -7,6 +7,8 @@
 
 
 #include "ial.h"
+#include <stdlib.h>
+#include <string.h>
 
 
 /**
@@ -41,4 +43,40 @@ void quicksort( char *input, int beg, int end )
 	
 	if( beg < j ) quicksort( input, beg, j );
 	if( i < end ) quicksort( input, i, end );
+}
+
+
+int kmpmatch( const char *text, const char *pattern )
+{
+    int Fail[strlen( pattern ) + 1];
+    int i, j, result = -1;
+
+    if( pattern[0] == '\0' )
+        return 0;
+
+    Fail[0] = -1;
+    for ( i = 0; pattern[i] != 0; i++ )
+	{
+        Fail[i + 1] = Fail[i] + 1;
+        while( Fail[i + 1] > 0 && pattern[i] != pattern[Fail[i + 1] - 1] )
+            Fail[i + 1] = Fail[Fail[i + 1] - 1] + 1;
+    }
+
+	i = j = 0;
+    while( text[i] != 0 )
+	{
+        if( j < 0 || text[i] == pattern[j] )
+		{
+            ++i, ++j;
+            if( pattern[j] == '\0' )
+			{
+				result = i - j;
+                break;
+            }
+        }
+        else
+			j = Fail[j];
+    }
+
+    return result;
 }

@@ -325,8 +325,8 @@ E_ERROR_TYPE get_string( T_DVAR input[], int size, T_DVAR *result )
 {
     int c = getchar(), counter = 0, max = INIT_STRING_SIZE;
     
-	input;
-	size;
+	(void)input;
+	(void)size;
 	
     if( c == EOF || c == '\n' )
     {
@@ -381,7 +381,7 @@ E_ERROR_TYPE get_string( T_DVAR input[], int size, T_DVAR *result )
  */
 E_ERROR_TYPE put_string( T_DVAR input[], int size, T_DVAR *result )
 {
-	result;
+	(void) result;
 	
 	if( size < 1 )
 		return E_OTHER;
@@ -419,7 +419,7 @@ E_ERROR_TYPE get_substring( T_DVAR input[], int size, T_DVAR *result )
 		begpos = input[1].data._int,
 		endpos = input[2].data._int,
         counter = 0;
-    
+	
     if( begpos < 0 || endpos < 0 || begpos > endpos || begpos > inplen || endpos > inplen )
         return E_OTHER;
     
@@ -450,8 +450,12 @@ E_ERROR_TYPE get_substring( T_DVAR input[], int size, T_DVAR *result )
  */
 E_ERROR_TYPE find_string( T_DVAR input[], int size, T_DVAR *result )
 {
-	// !!!!!!!!!!!!!!!!!!!--TODO--!!!!!!!!!!!!!!!!!!
-
+	if( size != 2 )
+		return E_OTHER;
+	
+	result->type = VAR_INT;
+	result->data._int = kmpmatch( input[0].data._string, input[1].data._string );
+	
     return E_OK;
 }
 
@@ -476,9 +480,11 @@ E_ERROR_TYPE sort_string( T_DVAR input[], int size, T_DVAR *result )
     char *help = malloc( len * sizeof( char ) );
     help[len - 1] = 0;
     
-    strcpy( help, input[0].data._string );
-
-    quicksort( help, 0, len - 2 );
+	if( len > 1 )
+	{
+		strcpy( help, input[0].data._string );
+		quicksort( help, 0, len - 2 );
+	}
     
     result->type = VAR_STRING;
     result->size = len;
