@@ -46,6 +46,13 @@ void quicksort( char *input, int beg, int end )
 }
 
 
+/**
+ * Pomocna funkcia, implementacia Knuth Morris Prattovho algoritmu
+ *
+ * @param retazec v ktorom sa hlada
+ * @param hladany retazec
+ * @return pozicia, -1 -> nenajdene, ina chyba nemoze nastat
+ */
 int kmpmatch( const char *text, const char *pattern )
 {
     int Fail[strlen( pattern ) + 1];
