@@ -447,7 +447,6 @@ E_ERROR_TYPE addparam(T_token *token)
     {
         if ( param_counter <= actualfunction->param_count ) // (unsigned)-1 = max int
         {
-            
             actualfunction->param_count = param_counter;
             param_counter = 0;
         }
@@ -598,7 +597,7 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
     SwitchTape->opcode = CREATE;
     PRINTD( "CREATE ADDED\n" );
     
-    if ( func->state == E_UNKNOWN || actualfunction == func )
+    if ( func->state == E_UNKNOWN )
     {
         PRINTD("Calling unknown function %.1s \n", func->name );
         if ( func->param_count > (size) )
@@ -616,8 +615,22 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
         tmp->next = func->fix_list;
         tmp->instr = SwitchTape;
         func->fix_list = tmp;
-        
     }
+    else if( actualfunction == func )
+    {
+        /* nastavim fixlist na prvu instrukciu volania funkcie*/
+        InstructionList *tmp = malloc( sizeof ( InstructionList ));
+        if ( tmp == NULL )
+        {
+            for( unsigned int i = 1; i <= size; i++)
+                free(array[i]);
+            return E_INTERPRET_ERROR;
+        }
+        tmp->next = func->fix_list;
+        tmp->instr = SwitchTape;
+        func->fix_list = tmp;
+    }
+    
     /* pocet parametrov */
     if ( ( func->state == E_DEFINED || func->state == E_BUILTIN ) &&
          ( func->param_count > (size) ) && func->unlimited_param == 0 )
