@@ -34,14 +34,14 @@ typedef enum
     E_INT,          // integer
     E_DOUBLE,       // double
     E_LITER,        // literal
+    E_FALSE,    // ----
+    E_NULL,
+    E_TRUE, 
     E_WHILE,
     E_FUNCTION,
     E_IF,
     E_ELSE,
-    E_RETURN,
-    E_FALSE,
-    E_NULL,
-    E_TRUE, // ----
+    E_RETURN,   // ----
     E_EQ,           // =
     E_RABRACK,      // }
     E_INVLD,        // je to invalid

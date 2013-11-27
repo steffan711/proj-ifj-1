@@ -582,7 +582,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
 
     if ( ( actual_ttype = token->ttype ) > E_SEMICL )
     {
-        if ( actual_ttype <= E_LITER )
+        if ( actual_ttype <= E_TRUE )
         {
             actual_ttype = E_TERM;
             if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
@@ -659,7 +659,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 
                 if ( ( actual_ttype = token->ttype ) > E_SEMICL )
                 {
-                    if ( actual_ttype <= E_LITER )
+                    if ( actual_ttype <= E_TRUE )
                     {
                         actual_ttype = E_TERM;
                         if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
@@ -712,7 +712,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 
                 if ( ( actual_ttype = token->ttype ) > E_SEMICL )
                 {
-                    if ( actual_ttype <= E_LITER )
+                    if ( actual_ttype <= E_TRUE )
                     {
                         actual_ttype = E_TERM;
                         if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
