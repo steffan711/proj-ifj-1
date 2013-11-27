@@ -113,11 +113,7 @@ void scanner_get_token( T_token* token )
             else if( isalpha( znak ) || znak == '_' ) // A-Za-z_
                 next_state = T_ID;
             else if( isdigit( znak ) ) // 0-9
-            {
-                lex_length++;
-                token->ttype = E_INT;
                 next_state = T_INT;
-            }
             else
             {
                 switch( znak )
@@ -245,11 +241,13 @@ void scanner_get_token( T_token* token )
                 }
                 case T_INT: // cislo
                 {    
+                    lex_length++;
                     while( isdigit( znak ) )
                     {
                         lex_length++;
                         znak = getc( current_pos );
                     }
+                    
                     if( znak == '.' )
                     {
                         next_state = T_FLOAT;
