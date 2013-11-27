@@ -17,3 +17,4 @@ E_ERROR_TYPE evaluate_expr ( T_token * token, TOKEN_TYPE termination_ttype );
 void precedenceShutDown ( void );
 
 #endif //EXPRESSIONS_H
+
