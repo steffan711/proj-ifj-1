@@ -89,7 +89,7 @@ void print_token( T_token* token )
         case E_NOT_EQ:      printf( "\nToken -> ttype: E_NOT_EQ\n" );       break;
         case E_NULL:        printf( "\nToken -> ttype: E_NULL\n" );         break;
         case E_PLUS:        printf( "\nToken -> ttype: E_PLUS\n" );         break;
-        case E_RABRACK:     printf( "\nToken -> ttype: E_RABRACK\n" );     break;
+        case E_RABRACK:     printf( "\nToken -> ttype: E_RABRACK\n" );      break;
         case E_RETURN:      printf( "\nToken -> ttype: E_RETURN\n" );       break; 
         case E_RPARENTHESES:printf( "\nToken -> ttype: E_RPARENTHESES\n" ); break;
         case E_SEMICL:      printf( "\nToken -> ttype: E_SEMICL\n" );       break;
@@ -98,6 +98,7 @@ void print_token( T_token* token )
         case E_VAR:         printf( "\nToken -> ttype: E_VAR\n" );          break;
         case E_WHILE:       printf( "\nToken -> ttype: E_WHILE\n" );        break;
         case E_LOCAL:       printf( "\nToken -> ttype: E_LOCAL\n" );        break;
+        case E_ELSEIF:      printf( "\nToken -> ttype: E_ELSEIF\n" );       break;
         default:                                                            break;
     
     } // switch

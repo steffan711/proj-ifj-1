@@ -202,7 +202,9 @@ void scanner_get_token( T_token* token )
                     switch(*(current_pos - lex_length)) // prvy znak identifikatoru
                     {
                         case 'e':   if ( sstrcmp( current_pos - lex_length, "else", lex_length, 4 ) == 0 ) 
-                                        set_token( token, E_ELSE, 0, NULL);
+                                        set_token( token, E_ELSE, 0, NULL);     
+                                    else if ( sstrcmp( current_pos - lex_length, "elseif", lex_length, 6 ) == 0 )
+                                        set_token( token, E_ELSEIF, 0, NULL);                                                     
                                     return;
                         case 'n':   if ( sstrcmp( current_pos - lex_length, "null", lex_length, 4 ) == 0 )
                                         set_token( token, E_NULL, 0, NULL);

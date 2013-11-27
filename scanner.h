@@ -52,6 +52,7 @@ typedef enum
     R_N,            // prvok precedencnej tabulky no_rule
     R_P,            // prvok precedencnej tabulky =
     E_E,            // nonterminal, pouzivany v gramatike
+    E_ELSEIF,
     
 } TOKEN_TYPE;
 
