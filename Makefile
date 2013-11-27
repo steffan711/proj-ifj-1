@@ -38,8 +38,9 @@ main.o : main.c types.h file_io.h
     
 debug.o : debug.c scanner.h debug.h
 	$(CC) $(CFLAGS) -o $@ -c $<
-	
-main : main.o file_io.o scanner.o syntax.o expr.o ial.o built-in.o generator.o debug.o
+
+#generator.o debug.o	
+main : main.o file_io.o scanner.o syntax.o expr.o ial.o built-in.o generator.o debug.o	
 	$(CC) $(CFLAGS) -o $@ $^
     
 clean:
