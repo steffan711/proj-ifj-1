@@ -29,14 +29,14 @@ const char const *TOKEN_NAME[] =
  "E_INT" ,         
  "E_DOUBLE" ,      
  "E_LITER" ,       
+ "E_FALSE" ,
+ "E_NULL" ,
+ "E_TRUE" ,
  "E_WHILE" ,
  "E_FUNCTION" ,
  "E_IF" ,
  "E_ELSE" ,
  "E_RETURN" ,
- "E_FALSE" ,
- "E_NULL" ,
- "E_TRUE" , // ----
  "E_EQ" ,          
  "E_RABRACK" ,     
  "E_INVLD" ,       
@@ -46,7 +46,8 @@ const char const *TOKEN_NAME[] =
  "R_C" ,           
  "R_N" ,           
  "R_P" ,           
- "E_E" ,           
+ "E_E" ,  
+ "E_ELSEIF" 
 };
 
 const char const *OPCODE_NAME[] = 
