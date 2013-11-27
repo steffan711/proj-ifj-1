@@ -26,6 +26,7 @@ struct metadata_var {
     char *name;                     // KEY
     unsigned int name_size;         // dlzka retazca name
     unsigned int offset;            // poradie v taluble parametrov a lokalnych premennych
+    bool assigned;            
 };
 
 /**

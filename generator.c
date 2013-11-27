@@ -5,6 +5,7 @@
 #include "types.h"
 #include "generator.h"
 #include "scanner.h"
+#include "built-in.h"
 
 const int FLEXIBLE_ARRAY_MEMBER = 1;
 FTable FT;
@@ -183,6 +184,19 @@ E_ERROR_TYPE GeneratorInit()
     SwitchSTable = STableGlobal;
     State = S_DEFAULT;
     
+    if ( AddBuiltinFunction( "intval", 6, 1, false, boolval ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "get_string", 10, 0, false, boolval ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "put_string", 10, 0, true, boolval ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    
     return E_OK;
 }
 
@@ -223,10 +237,17 @@ void GeneratorErrorCleanup()
 
 void fixtape(FTableNode *ptr, Instruction* array[])
 {
+    PRINTD("%s()\n", __func__ );
     static unsigned int index = 1;
     if ( ptr == NULL )
         return;
-    
+    if( !ptr->metadata.tape )
+    {
+        fixtape( ptr->lptr, array );
+        fixtape( ptr->rptr, array );
+        free( ptr );
+        return;
+    }
     array[index++] = ptr->metadata.tape;
     
     struct instruction_list *fix = ptr->metadata.fix_list;
@@ -265,6 +286,7 @@ void fixtape(FTableNode *ptr, Instruction* array[])
 
 E_ERROR_TYPE GeneratorPrepareTape(struct InstructionTapeBuffer **ptr)
 {
+    PRINTD("%s()\n", __func__ );
     *ptr = malloc( sizeof(struct InstructionTapeBuffer) + sizeof(Instruction *) * (FT.count+1) );
     if ( *ptr == NULL )
     {
@@ -281,6 +303,7 @@ E_ERROR_TYPE GeneratorPrepareTape(struct InstructionTapeBuffer **ptr)
 
 void GeneratorDeleteTapes(struct InstructionTapeBuffer *ptr)
 {
+    PRINTD("%s()\n", __func__ );
     for( unsigned int i = 0; i < ptr->size; i++)
     {
         printf("delete array[%u] = %p\n", i, (void *)ptr->array[i]);
@@ -538,6 +561,7 @@ E_ERROR_TYPE addparam(T_token *token)
             ERROR("' already declared.\n");
             return E_SEM;
         }
+        ptr->assigned = true;
         param_counter++;
     }
     else
@@ -570,11 +594,11 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
         {
             PRINTD("predosla instrukcia bola 3adresna, typ %s\n", OPCODE_NAME[SwitchTape->opcode]);
             SwitchTape->attr.tac.dest = assignvar->offset;
+            assignvar->assigned = true;
             free(op);
             return E_OK;
         }
     }
-
     PRINTD("Generujem instrukciu termu\n");
     if ( AddInstruction( ) != E_OK )
     {
@@ -591,6 +615,7 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
             {
                 SwitchTape->opcode = MOV;
                 SwitchTape->attr.tac.dest = assignvar->offset;
+                //assignvar->assigned = true;
             }
             else
             {
@@ -627,7 +652,15 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
             {
                 free(op);
                 return retval;
-            }                
+            }
+            if (op_ptr->assigned == false)
+            {
+                ERROR( "Error on line %u: Variable '$", op->line );
+                print_char( stderr, op->data._string, op->length );
+                ERROR("' is not defined.\n");
+                free(op);
+                return E_UNDEF_VAR;
+            }
             ptr->type = VAR_LOCAL;
             ptr->data.offset = op_ptr->offset;
             break;
@@ -636,7 +669,11 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
             translate_token( op, ptr );
             break;
     };
-    assignvar = NULL;
+    if( assignvar != NULL )
+    {
+        assignvar->assigned = true;
+        assignvar = NULL;
+    }
     free(op);
     return E_OK;
 }
@@ -744,14 +781,13 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
     if( func->unlimited_param || func->state == E_UNKNOWN )
     {
         params = (size);
+        SwitchTape->attr.size = size;
     }
     else
     {
         params = func->param_count;
+        SwitchTape->attr.size = func->frame_count;
     }
-
-    /* create size */
-    SwitchTape->attr.size = func->frame_count;
     
     for( unsigned int i = 1; i <= params; i++)
     {
@@ -772,12 +808,45 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
                     free(array[i]);
                 return retval;
             }
+            if (var->assigned == false)
+            {
+                ERROR( "Error on line %u: Variable '$", array[i]->line );
+                print_char( stderr, array[i]->data._string, array[i]->length );
+                ERROR("' is not defined.\n");
+                for( unsigned int i = 1; i <= size; i++ )
+                    free(array[i]);
+                return E_UNDEF_VAR;
+            }
             SwitchTape->attr.tac.op1.type = VAR_LOCAL;
             SwitchTape->attr.tac.op1.data.offset = var->offset;
         }
         else
         {  
             translate_token( array[i], &( SwitchTape->attr.tac.op1 ) );
+        }
+    }
+    
+    /* otestovanie dalsich parametrov, aj ked sa nebudu pouzivat*/
+    for( unsigned int i = params+1; i <= size; i++)
+    {
+        if ( array[i]->ttype == E_VAR )
+        {
+            STableData *var;
+            if( ( retval = BTfind(SwitchSTable, array[i]->data._string, array[i]->length, &var) ) != E_OK )
+            {
+                for( unsigned int i = 1; i <= size; i++ )
+                    free(array[i]);
+                return retval;
+            }
+            if (var->assigned == false)
+            {
+                ERROR( "Error on line %u: Variable '$", array[i]->line );
+                print_char( stderr, array[i]->data._string, array[i]->length );
+                ERROR("' is not defined.\n");
+                for( unsigned int i = 1; i <= size; i++ )
+                    free(array[i]);
+                return E_UNDEF_VAR;
+            }
         }
     }
     
@@ -840,7 +909,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         if( op1->ttype == E_VAR )
         {
             int retval = BTfind(SwitchSTable, op1->data._string, op1->length, &op_ptr1);
-            if( retval != E_OK )
+            if( retval != E_OK || op_ptr1->assigned == false )
             {
                 ERROR( "Error on line %u: Undefined variable $", op1->line );
                 print_char( stderr, op1->data._string, op1->length );
@@ -848,11 +917,12 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 free(op2);
                 return retval;
             }
+            
         }
         if( op2->ttype == E_VAR )
         {
             int retval = BTfind(SwitchSTable, op2->data._string, op2->length, &op_ptr2);
-            if( retval != E_OK )
+            if( retval != E_OK || op_ptr2->assigned == false )
             {
                 ERROR( "Error on line %u: Undeclared variable '$", op2->line );
                 print_char( stderr, op2->data._string, op2->length );
@@ -1270,7 +1340,7 @@ E_ERROR_TYPE assign(T_token *op1)
         bool dummy;
         if ( BTlookup(SwitchSTable , op1->data._string, op1->length, &assignvar, &dummy ) != E_OK )
             return E_INTERPRET_ERROR;
-        PRINTD("name %.1s got id %d\n", op1->data._string, assignvar->offset);
+        PRINTD("name %.1s got id %d, defined = %d\n", op1->data._string, assignvar->offset, assignvar->assigned );
     }
     else
     {
@@ -1306,6 +1376,7 @@ E_ERROR_TYPE AddBuiltinFunction( char *name,
                                  E_ERROR_TYPE (*builtin_id)( T_DVAR[], int, T_DVAR *)
                                 )
 {
+    PRINTD("%s()\n", __func__ );
     FTableNode *ptr;
     ptr = malloc( sizeof( FTableNode ) );
     if ( ptr == NULL )
@@ -1316,8 +1387,11 @@ E_ERROR_TYPE AddBuiltinFunction( char *name,
     ptr->metadata.name_size = size;
     ptr->metadata.state = E_BUILTIN;
     ptr->metadata.param_count = param_count;
+    ptr->metadata.frame_count = param_count;
     ptr->metadata.unlimited_param = unlimited;
     ptr->metadata.builtin_id = builtin_id;
+    ptr->metadata.fix_list = NULL;
+    ptr->metadata.tape = NULL;
     ptr->lptr = ptr->rptr = NULL;
     
     if ( FT.btreeroot == NULL )
@@ -1366,7 +1440,7 @@ E_ERROR_TYPE AddBuiltinFunction( char *name,
  *  \details TODO
  */
 E_ERROR_TYPE LookupFunction(char *name, unsigned int size, unsigned int line, FTableData **ptr_out) {
-
+    PRINTD("%s()\n", __func__ );
     FTableNode **ptr = &(FT.btreeroot);
     
     while( *ptr != NULL )
@@ -1432,6 +1506,7 @@ E_ERROR_TYPE LookupFunction(char *name, unsigned int size, unsigned int line, FT
  */
 void DeteteFunctionItem(FTableNode *ptr)
 {
+    PRINTD("%s()\n", __func__ );
     if ( ptr == NULL ) return;
     
     DeteteFunctionItem(ptr->lptr);
@@ -1479,6 +1554,7 @@ void DeteteFunctionItem(FTableNode *ptr)
  */
 void DeleteFT(void)
 {
+    PRINTD("%s()\n", __func__ );
     DeteteFunctionItem(FT.btreeroot);
     FT.btreeroot = NULL;
     /* uvolnit instrukcie hlavneho programu */
@@ -1509,6 +1585,7 @@ void DeleteFT(void)
  */
 void BTinit( STable  *tree )
 {
+    PRINTD("%s()\n", __func__ );
     tree->btreeroot = NULL;
     tree->counter = 0;
     return;
@@ -1532,6 +1609,7 @@ E_ERROR_TYPE BTfind( STable *tree,
                      STableData** ptr_out
                     )
 {
+    PRINTD("%s()\n", __func__ );
     int i;
     STableNode *Root = tree->btreeroot;
 
@@ -1574,6 +1652,7 @@ E_ERROR_TYPE BTlookup( STable *tree,
                        bool *added  
                       )
 {
+    PRINTD("%s()\n", __func__ );
     STableNode *help2 = tree->btreeroot;   //help2 kvoli zjednoduseniu pristupu do pamate
     if ( help2 == NULL )
     {
@@ -1587,6 +1666,7 @@ E_ERROR_TYPE BTlookup( STable *tree,
         help2->metadata.name = name;
         help2->metadata.name_size = name_size;
         help2->metadata.offset = tree->counter++;
+        help2->metadata.assigned = false;
         help2->rptr = help2->lptr = NULL;
         *ptr_out = &(help2->metadata);
         *added = true;
@@ -1616,6 +1696,7 @@ E_ERROR_TYPE BTlookup( STable *tree,
                                     //pointer na vyssiu uroven stromu
             help2->metadata.name = name;
             help2->metadata.name_size = name_size;
+            help2->metadata.assigned = false;
             help2->metadata.offset = tree->counter++;
             help2->rptr = help2->lptr = NULL;
 
@@ -1638,6 +1719,7 @@ E_ERROR_TYPE BTlookup( STable *tree,
             help2 = help1->lptr;   //pouzil som help2 ak by som este nieco potreboval dorabat aby som zachoval pointer na vyssiu uroven stromu
             help2->metadata.name = name;
             help2->metadata.name_size = name_size;
+            help2->metadata.assigned = false;
             help2->metadata.offset = tree->counter++;
             help2->rptr = help2->lptr = NULL;
 
@@ -1645,7 +1727,8 @@ E_ERROR_TYPE BTlookup( STable *tree,
             return E_OK;
         }
         else
-        {
+        {   
+            help2->metadata.assigned = true;
             *added = false;
             *ptr_out = &(help2->metadata);
             return E_OK;
@@ -1662,6 +1745,7 @@ E_ERROR_TYPE BTlookup( STable *tree,
  */
 void Delete( STableNode *Root )
 {
+    PRINTD("%s()\n", __func__ );
     if ( Root != NULL )
     {
         Delete( Root->lptr );
@@ -1679,6 +1763,7 @@ void Delete( STableNode *Root )
  */
 void DeleteBT( STable *tree )
 {
+    PRINTD("%s()\n", __func__ );
     Delete( tree->btreeroot );
     tree->btreeroot = NULL;
     tree->counter = 0;
@@ -1694,6 +1779,7 @@ void DeleteBT( STable *tree )
  */
 E_ERROR_TYPE PtrStackInit(PtrStack **ptr)
 {
+    PRINTD("%s()\n", __func__ );
     *ptr = malloc( sizeof(PtrStack)+
             FLEXIBLE_ARRAY_MEMBER * sizeof(Instruction*) );
     if (*ptr == NULL)
@@ -1714,6 +1800,7 @@ E_ERROR_TYPE PtrStackInit(PtrStack **ptr)
  */
 E_ERROR_TYPE PtrStackCheck(PtrStack **ptr)
 {
+    PRINTD("%s()\n", __func__ );
     if((*ptr)->size <= (*ptr)->top)
     {
         PtrStack *tmp = *ptr;
@@ -1738,6 +1825,7 @@ E_ERROR_TYPE PtrStackCheck(PtrStack **ptr)
  */
 E_ERROR_TYPE MapTableInit( MapTable **ptr )
 {
+    PRINTD("%s()\n", __func__ );
     *ptr = malloc( sizeof( MapTable ) + FLEXIBLE_ARRAY_MEMBER * sizeof( int ) );
     if (*ptr == NULL)
         return E_INTERPRET_ERROR;
@@ -1756,6 +1844,7 @@ E_ERROR_TYPE MapTableInit( MapTable **ptr )
  */
 E_ERROR_TYPE MapTableCheck(MapTable **ptr)
 {
+    PRINTD("%s()\n", __func__ );
     if((*ptr)->size <= (*ptr)->used_space)
     {
         MapTable *tmp = *ptr;
@@ -1815,6 +1904,7 @@ extern inline int lexsstrcmp( const char * str1, const char * str2, int str1_siz
 
 void FindUnknownFunctions(FTableNode *ptr)
 {
+    PRINTD("%s()\n", __func__ );
     if( ptr != NULL )
     {
         if( ptr->metadata.state == E_UNKNOWN )
