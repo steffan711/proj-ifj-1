@@ -109,10 +109,7 @@ void scanner_get_token( T_token* token )
             }
             
             if( znak == '$' )
-            {
                 next_state = T_VAR;
-                lex_length--; // $ nie je sucastou mena premennej
-            }
             else if( isalpha( znak ) || znak == '_' ) // A-Za-z_
                 next_state = T_ID;
             else if( isdigit( znak ) ) // 0-9
@@ -230,9 +227,7 @@ void scanner_get_token( T_token* token )
                 }
                 case T_VAR: // premenna
                 {
-                    if( isalpha( znak ) || znak == '_' )
-                        lex_length++;
-                    else // premenna bez mena / s neplatnym menom
+                    if( !( isalpha( znak ) || znak == '_' ) ) // premenna bez mena / s neplatnym menom
                     {
                         set_token( token, E_INVLD, 0, NULL); 
                         return;
