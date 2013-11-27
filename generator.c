@@ -91,8 +91,15 @@ void PrintTape( Instruction *ptr )
                 printf("Call ptr: %p\n", (void*)ptr->attr.jump.jmp);
                  break;
             case CALL_BUILTIN:
-                printf("Call index: %u\n", ptr->attr.builtin);
+            {
+                union {
+                    E_ERROR_TYPE (*fptr)( T_DVAR[], int, T_DVAR *);
+                    void * ptr;
+                } tmp;
+                tmp.fptr = ptr->attr.builtin;
+                printf("Call C ptr: %p\n", tmp.ptr);
                  break;
+            }
             case JMP:
                 printf("Jump ptr: %p\n", (void*)ptr->attr.jump.jmp);
                  break;
@@ -212,6 +219,82 @@ void GeneratorErrorCleanup()
     }
     SwitchSTable = NULL;
     DeleteFT();
+}
+
+void fixtape(FTableNode *ptr, Instruction* array[])
+{
+    static unsigned int index = 1;
+    if ( ptr == NULL )
+        return;
+    
+    array[index++] = ptr->metadata.tape;
+    
+    struct instruction_list *fix = ptr->metadata.fix_list;
+    struct instruction_list *fix_free;
+    while( fix != NULL )
+    {
+        Instruction *iptr = fix->instr;
+        /* iptr mieri na instrukciu create */
+        iptr->attr.size = ptr->metadata.frame_count;
+        for( unsigned int i = 0; i < ptr->metadata.param_count; i++ )
+            iptr = iptr->next;
+        /* ak som na instrukcii push tak ich uvolnim a prepojim zoznam */
+        Instruction *iptr_start = iptr;
+        
+        iptr = iptr->next;
+        Instruction *iptr_free = iptr;
+        
+        while( iptr->opcode != CALL )
+        {
+            iptr_free = iptr;
+            iptr = iptr->next;
+            free( iptr_free );
+        }
+        iptr_start->next = iptr;
+        fix_free = fix;
+        fix = fix->next;
+        free( fix_free );
+    }
+    
+    /*  rekurzivne uvolnenie */
+    fixtape( ptr->lptr, array );
+    fixtape( ptr->rptr, array );
+    free( ptr );
+
+}
+
+E_ERROR_TYPE GeneratorPrepareTape(struct InstructionTapeBuffer **ptr)
+{
+    *ptr = malloc( sizeof(struct InstructionTapeBuffer) + sizeof(Instruction *) * (FT.count+1) );
+    if ( *ptr == NULL )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    (*ptr)->size = FT.count+1;
+    (*ptr)->array[0] = FT.tape; // hlavna paska
+    fixtape(FT.btreeroot,(*ptr)->array );
+    FT.btreeroot = NULL;
+    FT.tape = NULL;
+    GeneratorErrorCleanup();
+    return E_OK; 
+}
+
+void GeneratorDeleteTapes(struct InstructionTapeBuffer *ptr)
+{
+    for( unsigned int i = 0; i < ptr->size; i++)
+    {
+        printf("delete array[%u] = %p\n", i, (void *)ptr->array[i]);
+        Instruction *iptr = ptr->array[i];
+        Instruction *iptr_free = iptr;
+        
+        while( iptr != NULL)
+        {
+            iptr_free = iptr;
+            iptr = iptr->next;
+            free(iptr_free);
+        }
+    }
+    free(ptr);
 }
 
 static inline double toDouble( T_token *token )
@@ -398,6 +481,11 @@ E_ERROR_TYPE setstate(enum gen_state state)
             /* nastavim velkost ramca prvej instrukcie */
             FT.tape->attr.size = SwitchSTable->counter;
             State = state;
+            if ( FT.unknown_count >0 )
+            {
+                FindUnknownFunctions(FT.btreeroot);
+                return E_SEM;
+            }
             break;
     }
     return E_OK;
@@ -407,7 +495,7 @@ E_ERROR_TYPE define(T_token *token)
 {
     PRINTD("%s()\n", __func__ );
     E_ERROR_TYPE retval;
-    if( ( retval = LookupFunction( token->data._string, token->length, &actualfunction ) ) != E_OK)
+    if( ( retval = LookupFunction( token->data._string, token->length, token->line, &actualfunction ) ) != E_OK)
     {   
         // chyba mallocu
         return E_INTERPRET_ERROR;
@@ -420,9 +508,9 @@ E_ERROR_TYPE define(T_token *token)
     }
     else
     {
-        ERROR("Error : Redefinition of function ");
+        ERROR("Error on line %u: Redefinition of function '", token->line );
         print_char( stderr, actualfunction->name, actualfunction->name_size );
-        ERROR("()\n");
+        ERROR("'.\n");
         return E_SEM;
     }
     SwitchContextToFunction();
@@ -437,9 +525,18 @@ E_ERROR_TYPE addparam(T_token *token)
     {
         E_ERROR_TYPE retval;
         STableData *ptr;
-        if ( ( retval = BTlookup( SwitchSTable, token->data._string, token->length, &ptr ) ) != E_OK )
+        bool new_param;
+        if ( ( retval = BTlookup( SwitchSTable, token->data._string, token->length, &ptr, &new_param ) ) != E_OK )
         {
             return retval;
+        }
+        
+        if( !new_param )
+        {
+            ERROR("Error on line %u: Parameter with the name '$", token->line );
+            print_char( stderr, token->data._string, token->length );
+            ERROR("' already declared.\n");
+            return E_SEM;
         }
         param_counter++;
     }
@@ -452,9 +549,9 @@ E_ERROR_TYPE addparam(T_token *token)
         }
         else
         {
-            ERROR("Error: function ");
+            ERROR( "Error on line %u: function '", token->line );
             print_char( stderr, actualfunction->name, actualfunction->name_size );
-            ERROR(" defined with %d parameters but called with %d parameters\n", param_counter, actualfunction->param_count);
+            ERROR("' defined with %d parameters but called with %d parameters.\n", param_counter, actualfunction->param_count);
             return E_PARAM;
         }
     }
@@ -581,7 +678,7 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
     PRINTD("%s()\n", __func__ );
     FTableData *func;
     E_ERROR_TYPE retval;
-    if( ( retval = LookupFunction( array[0]->data._string, array[0]->length, &func ) ) != E_OK)
+    if( ( retval = LookupFunction( array[0]->data._string, array[0]->length, array[0]->line, &func ) ) != E_OK)
     { // chyba mallocu
         for( unsigned int i = 1; i<= size; i++)
             free(array[i]);
@@ -635,9 +732,9 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
     if ( ( func->state == E_DEFINED || func->state == E_BUILTIN ) &&
          ( func->param_count > (size) ) && func->unlimited_param == 0 )
     {
-        ERROR("Error: Function ");
+        ERROR("Error on line %u: Function '", array[0]->line);
         print_char(stderr, func->name, func->name_size);
-        ERROR( " called with %d parameters, expecting %d.\n", (size), func->param_count );
+        ERROR( "' called with %d parameters, expecting %d.\n", (size), func->param_count );
         for( unsigned int i = 1; i <= size; i++)
             free(array[i]);
         return E_PARAM;
@@ -673,7 +770,7 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
             {
                 for( unsigned int i = 1; i <= size; i++ )
                     free(array[i]);
-                return E_INTERPRET_ERROR;
+                return retval;
             }
             SwitchTape->attr.tac.op1.type = VAR_LOCAL;
             SwitchTape->attr.tac.op1.data.offset = var->offset;
@@ -745,6 +842,9 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
             int retval = BTfind(SwitchSTable, op1->data._string, op1->length, &op_ptr1);
             if( retval != E_OK )
             {
+                ERROR( "Error on line %u: Undefined variable $", op1->line );
+                print_char( stderr, op1->data._string, op1->length );
+                ERROR( " used in expression.\n" );
                 free(op2);
                 return retval;
             }
@@ -754,6 +854,9 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
             int retval = BTfind(SwitchSTable, op2->data._string, op2->length, &op_ptr2);
             if( retval != E_OK )
             {
+                ERROR( "Error on line %u: Undeclared variable '$", op2->line );
+                print_char( stderr, op2->data._string, op2->length );
+                ERROR( "' used in expression.\n" );
                 free(op2);
                 return retval;
             }
@@ -821,6 +924,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 }
                 else
                 {
+                    ERROR("Error on line %u: Unable to do operation [%s] with given operands.\n", op1->line, TOKEN_NAME[operation]);
                     free(op2);
                     return E_SEM;
                 }
@@ -882,6 +986,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 }
                 else
                 {
+                   ERROR("Error on line %u: Unable to do operation [%s] with given operands.\n", op1->line, TOKEN_NAME[operation]);
                    free(op2);
                    return E_INCOMPATIBLE; 
                 }
@@ -902,6 +1007,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 }
                 else
                 {
+                    ERROR("Error on line %u: Unable to do operation [%s] with given operands.\n", op1->line, TOKEN_NAME[operation]);
                    free(op2);
                    return E_INCOMPATIBLE; 
                 }
@@ -922,8 +1028,9 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 }
                 else
                 {
-                   free(op2);
-                   return E_INCOMPATIBLE; 
+                    ERROR("Error on line %u: Unable to do operation [%s] with given operands.\n", op1->line, TOKEN_NAME[operation]);
+                    free(op2);
+                    return E_INCOMPATIBLE; 
                 }
                 free(op2);
                 break;   
@@ -933,11 +1040,21 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 if ( (op1->ttype == E_DOUBLE || op1->ttype == E_INT ) &&
                      (op2->ttype == E_DOUBLE || op2->ttype == E_INT )  )
                 {
+                    if( toDouble(op2) != 0.0 )
+                    {
                     op1->data._double = toDouble(op1) / toDouble(op2);
                     op1->ttype = E_DOUBLE;
+                    }
+                    else
+                    {
+                        ERROR("Error on line %u: Unable to do operation [%s] with given operands. Divide with zero\n", op1->line, TOKEN_NAME[operation]);
+                        free(op2);
+                        return E_ZERO_DIV; 
+                    }
                 }
                 else
                 {
+                    ERROR("Error on line %u: Unable to do operation [%s] with given operands.\n", op1->line, TOKEN_NAME[operation]);
                     free(op2);
                     return E_INCOMPATIBLE; 
                 }
@@ -974,6 +1091,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 }
                 else
                 {
+                    ERROR("Error on line %u: Unable to do operation [%s] with given operands.\n", op1->line, TOKEN_NAME[operation]);
                     free(op2);
                     return E_INCOMPATIBLE; 
                 }
@@ -1012,6 +1130,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 }
                 else
                 {
+                    ERROR("Error on line %u: Unable to do operation [%s] with given operands.\n", op1->line, TOKEN_NAME[operation]);
                     free(op2);
                     return E_INCOMPATIBLE; 
                 }
@@ -1052,6 +1171,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 }
                 else
                 {
+                    ERROR("Error on line %u: Unable to do operation [%s] with given operands.\n", op1->line, TOKEN_NAME[operation]);
                     free(op2);
                     return E_INCOMPATIBLE; 
                 }
@@ -1089,6 +1209,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 }
                 else
                 {
+                    ERROR("Error on line %u: Unable to do operation [%s] with given operands.\n", op1->line, TOKEN_NAME[operation]);
                     free(op2);
                     return E_INCOMPATIBLE; 
                 }
@@ -1146,7 +1267,8 @@ E_ERROR_TYPE assign(T_token *op1)
     if ( op1 != NULL )
     {
         PRINTD("assigning, name %.1s\n", op1->data._string);
-        if ( BTlookup(SwitchSTable , op1->data._string, op1->length, &assignvar ) != E_OK )
+        bool dummy;
+        if ( BTlookup(SwitchSTable , op1->data._string, op1->length, &assignvar, &dummy ) != E_OK )
             return E_INTERPRET_ERROR;
         PRINTD("name %.1s got id %d\n", op1->data._string, assignvar->offset);
     }
@@ -1181,7 +1303,7 @@ E_ERROR_TYPE AddBuiltinFunction( char *name,
                                  unsigned int size,
                                  unsigned int param_count,
                                  bool unlimited,
-                                 enum builtin_functions builtin_id
+                                 E_ERROR_TYPE (*builtin_id)( T_DVAR[], int, T_DVAR *)
                                 )
 {
     FTableNode *ptr;
@@ -1243,7 +1365,7 @@ E_ERROR_TYPE AddBuiltinFunction( char *name,
  *  
  *  \details TODO
  */
-E_ERROR_TYPE LookupFunction(char *name, unsigned int size,  FTableData **ptr_out) {
+E_ERROR_TYPE LookupFunction(char *name, unsigned int size, unsigned int line, FTableData **ptr_out) {
 
     FTableNode **ptr = &(FT.btreeroot);
     
@@ -1270,6 +1392,8 @@ E_ERROR_TYPE LookupFunction(char *name, unsigned int size,  FTableData **ptr_out
     
     /* pridam neznamu funkciu */
     FT.unknown_count++;
+    /* zaregistrujem dalsiu funkciu */
+    FT.count++;
     
     *ptr = malloc(sizeof( FTableNode ));
     if (*ptr == NULL)
@@ -1293,6 +1417,7 @@ E_ERROR_TYPE LookupFunction(char *name, unsigned int size,  FTableData **ptr_out
     (*ptr)->metadata.frame_count = 0;
     (*ptr)->metadata.unlimited_param = 0;
     (*ptr)->metadata.fix_list = NULL;
+    (*ptr)->metadata.first_line = line;
     (*ptr)->lptr = (*ptr)->rptr = NULL;
     *ptr_out = &((**ptr).metadata);
     return E_OK;
@@ -1445,11 +1570,11 @@ E_ERROR_TYPE BTfind( STable *tree,
 E_ERROR_TYPE BTlookup( STable *tree,
                        char *name,
                        int name_size,
-                       STableData **ptr_out  
+                       STableData **ptr_out,
+                       bool *added  
                       )
 {
     STableNode *help2 = tree->btreeroot;   //help2 kvoli zjednoduseniu pristupu do pamate
-
     if ( help2 == NULL )
     {
         if ( ( tree->btreeroot = malloc( sizeof( STableNode ) ) ) == NULL )
@@ -1464,6 +1589,7 @@ E_ERROR_TYPE BTlookup( STable *tree,
         help2->metadata.offset = tree->counter++;
         help2->rptr = help2->lptr = NULL;
         *ptr_out = &(help2->metadata);
+        *added = true;
         return E_OK;
     }
 
@@ -1484,6 +1610,7 @@ E_ERROR_TYPE BTlookup( STable *tree,
                 return E_INTERPRET_ERROR;
             }
 
+            *added = true;
             help2 = help1->rptr;    //pouzil som help2 ak by som este nieco 
                                     //potreboval dorabat aby som zachoval
                                     //pointer na vyssiu uroven stromu
@@ -1507,6 +1634,7 @@ E_ERROR_TYPE BTlookup( STable *tree,
                 return E_INTERPRET_ERROR;
             }
 
+            *added = true;
             help2 = help1->lptr;   //pouzil som help2 ak by som este nieco potreboval dorabat aby som zachoval pointer na vyssiu uroven stromu
             help2->metadata.name = name;
             help2->metadata.name_size = name_size;
@@ -1518,6 +1646,7 @@ E_ERROR_TYPE BTlookup( STable *tree,
         }
         else
         {
+            *added = false;
             *ptr_out = &(help2->metadata);
             return E_OK;
         }
@@ -1684,5 +1813,19 @@ extern inline int lexsstrcmp( const char * str1, const char * str2, int str1_siz
     return result;
 }
 
+void FindUnknownFunctions(FTableNode *ptr)
+{
+    if( ptr != NULL )
+    {
+        if( ptr->metadata.state == E_UNKNOWN )
+        {
+            ERROR("Error on line %u: Function '", ptr->metadata.first_line);
+            print_char(stderr, ptr->metadata.name, ptr->metadata.name_size );
+            ERROR("' called but never defined.\n");;
+        }
+        FindUnknownFunctions(ptr->lptr);
+        FindUnknownFunctions(ptr->rptr);
+    }
+}
 
 

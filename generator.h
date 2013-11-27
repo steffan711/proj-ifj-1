@@ -58,6 +58,63 @@ typedef struct metadata_var STableData;
 
 
 /* ********************************** */
+/* ************ Instrukcia ********** */
+/* ********************************** */
+
+enum vartype { VAR_UNDEF, VAR_INT, VAR_BOOL, VAR_DOUBLE, VAR_STRING, VAR_NULL, VAR_CONSTSTRING, VAR_LOCAL, VAR_NO_VAR };
+
+typedef struct variable
+{
+    enum vartype type;
+    union
+    {
+        int _int;
+        char* _string;
+        bool _bool;
+        double _double;
+        unsigned int offset;
+    } data;
+    unsigned int size;
+} T_DVAR;
+
+enum opcodes { DUMMY, START, CREATE, CALL, CALL_BUILTIN, MOV, RET, PUSH, COND, JMP,
+              MOVRET, CONCAT, EQUAL, NONEQUAL, PLUS, MINUS, DIV, MUL, LESS, GREATER, LESSEQ, GREATEREQ };
+
+struct instruction {
+    enum opcodes opcode;
+    union
+    {
+        unsigned int size;
+        E_ERROR_TYPE (*builtin)( T_DVAR[], int, T_DVAR *);
+        struct
+        {
+            struct instruction *jmp;
+            T_DVAR op1;
+        } jump;
+        struct 
+        {
+            unsigned int dest;
+            T_DVAR op1;
+            T_DVAR op2;
+        } tac; // Three Adress Code
+    } attr;
+    struct instruction *next;
+};
+
+struct instruction_list {
+    struct instruction *instr; // pointer na instrukciu
+    struct instruction_list *next; // nasledujuci pointer
+};
+
+typedef struct instruction Instruction;
+typedef enum opcodes Opcode;
+typedef struct instruction_list InstructionList;
+
+/* ************ Instrukcia ********** */
+/* ********        END       ******** */
+/* ********************************** */
+
+/* ********************************** */
 /* ******** Tabulka funkcii ********* */
 /* ********************************** */
 
@@ -92,8 +149,9 @@ struct metadata_function {          // informacie o funkcii
     unsigned int param_count;       // skutocny pocet
     unsigned int frame_count;       // velkost ramca premennych
     bool unlimited_param;           // funkcia bere neobmedzeny pocet parametrov - napr putchar
-    enum builtin_functions builtin_id; // enum zabudovanej funkcie
+    E_ERROR_TYPE (*builtin_id)( T_DVAR[], int, T_DVAR *); // enum zabudovanej funkcie
     struct instruction_list *fix_list; 
+    unsigned int first_line;        // prva referencia na funkciu, riadok
     struct instruction *tape;       // tape
 };
 
@@ -108,16 +166,16 @@ struct f_item {
 
 /**
  *  struct function_tree_handle - deskriptor binarneho stromu tabulky funkcii
+ *  count - pocet funkcii vsetkych
  *  unknown_count - pocet nedefinovanych funkcii
  *  *btreeroot - koren binarneho stromu
  *  *tape - instrukcna paska hlavneho programu
- *  *last_instr - ukazovatel na poslednu instrukciu
  */
 struct function_tree_handle {
-    int unknown_count;
+    unsigned count;
+    unsigned unknown_count;
     struct f_item *btreeroot;       // koren
     struct instruction *tape;       // ukazovatel na hlavnu pasku
-    struct instruction *last_instr; // ukazovatel na poslednu instrukciu
 };
 
 typedef struct function_tree_handle FTable;
@@ -125,64 +183,6 @@ typedef struct f_item FTableNode;
 typedef struct metadata_function FTableData;
 
 /* ******** Tabulka funkcii ********* */
-/* ********        END       ******** */
-/* ********************************** */
-
-
-/* ********************************** */
-/* ************ Instrukcia ********** */
-/* ********************************** */
-
-enum vartype { VAR_UNDEF, VAR_INT, VAR_BOOL, VAR_DOUBLE, VAR_STRING, VAR_NULL, VAR_CONSTSTRING, VAR_LOCAL, VAR_NO_VAR };
-
-typedef struct variable
-{
-    enum vartype type;
-    union
-    {
-        int _int;
-        char* _string;
-        bool _bool;
-        double _double;
-        unsigned int offset;
-    } data;
-    unsigned int size;
-} T_DVAR;
-
-enum opcodes { DUMMY, START, CREATE, CALL, CALL_BUILTIN, MOV, RET, PUSH, COND, JMP,
-              MOVRET, CONCAT, EQUAL, NONEQUAL, PLUS, MINUS, DIV, MUL, LESS, GREATER, LESSEQ, GREATEREQ };
-
-struct instruction {
-    enum opcodes opcode;
-    union
-    {
-        unsigned int size;
-        enum builtin_functions builtin;
-        struct
-        {
-            struct instruction *jmp;
-            T_DVAR op1;
-        } jump;
-        struct 
-        {
-            unsigned int dest;
-            T_DVAR op1;
-            T_DVAR op2;
-        } tac; // Three Adress Code
-    } attr;
-    struct instruction *next;
-};
-
-struct instruction_list {
-    struct instruction *instr; // pointer na instrukciu
-    struct instruction_list *next; // nasledujuci pointer
-};
-
-typedef struct instruction Instruction;
-typedef enum opcodes Opcode;
-typedef struct instruction_list InstructionList;
-
-/* ************ Instrukcia ********** */
 /* ********        END       ******** */
 /* ********************************** */
 
@@ -221,6 +221,12 @@ typedef struct ptr_stack PtrStack;
 /* ********        END       ******** */
 /* ********************************** */
 
+struct InstructionTapeBuffer
+{
+    unsigned int size;
+    Instruction* array[];
+};
+
 /* Nastavovanie stavu generatora */
 enum gen_state { S_DEFAULT = 0, S_IF_BEGIN, S_IF_ELSE, S_IF_END,
                  S_WHILE_BEGIN, S_WHILE_END, S_FUNCTION_END, S_FILE_END };
@@ -248,10 +254,10 @@ E_ERROR_TYPE AddBuiltinFunction( char *name,
                                  unsigned int size,
                                  unsigned int param_count,
                                  bool unlimited,
-                                 enum builtin_functions builtin_id
+                                 E_ERROR_TYPE (*builtin_id)( T_DVAR[], int, T_DVAR *)
                                 );
                                 
-E_ERROR_TYPE LookupFunction(char *name, unsigned int size,  FTableData **ptr_out);
+E_ERROR_TYPE LookupFunction(char *name, unsigned int size, unsigned int line, FTableData **ptr_out);
 
 void DeleteFT(void);    
 
@@ -266,11 +272,12 @@ E_ERROR_TYPE BTfind( STable *tree,
 E_ERROR_TYPE BTlookup( STable *tree,
                        char *name,
                        int name_size,
-                       STableData **ptr_out  
+                       STableData **ptr_out,
+                       bool *added  
                       );
                       
 void DeleteBT( STable *tree );
-
+void FindUnknownFunctions(FTableNode *ptr);
 E_ERROR_TYPE PtrStackInit(PtrStack **ptr);
 E_ERROR_TYPE PtrStackCheck(PtrStack **ptr);
 E_ERROR_TYPE MapTableInit(MapTable **ptr);
@@ -280,6 +287,8 @@ int lexsstrcmp( const char * str1, const char * str2, int str1_size, int str2_si
 
 void PrintTape( Instruction *ptr );
 
+void GeneratorDeleteTapes(struct InstructionTapeBuffer *ptr);
+E_ERROR_TYPE GeneratorPrepareTape(struct InstructionTapeBuffer **ptr);
 void GeneratorErrorCleanup(void);
 E_ERROR_TYPE GeneratorInit();
 E_ERROR_TYPE define(T_token *token);
