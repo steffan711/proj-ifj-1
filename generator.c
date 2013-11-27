@@ -184,7 +184,15 @@ E_ERROR_TYPE GeneratorInit()
     SwitchSTable = STableGlobal;
     State = S_DEFAULT;
     
-    if ( AddBuiltinFunction( "boolval", 7, 1, false, boolval ) != E_OK )
+    if ( AddBuiltinFunction( "intval", 6, 1, false, boolval ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "get_string", 10, 0, false, boolval ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "put_string", 10, 0, true, boolval ) != E_OK )
     {
         return E_INTERPRET_ERROR;
     }
@@ -661,8 +669,11 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
             translate_token( op, ptr );
             break;
     };
-    assignvar->assigned = true;
-    assignvar = NULL;
+    if( assignvar != NULL )
+    {
+        assignvar->assigned = true;
+        assignvar = NULL;
+    }
     free(op);
     return E_OK;
 }
@@ -770,14 +781,13 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
     if( func->unlimited_param || func->state == E_UNKNOWN )
     {
         params = (size);
+        SwitchTape->attr.size = size;
     }
     else
     {
         params = func->param_count;
+        SwitchTape->attr.size = func->frame_count;
     }
-
-    /* create size */
-    SwitchTape->attr.size = func->frame_count;
     
     for( unsigned int i = 1; i <= params; i++)
     {
