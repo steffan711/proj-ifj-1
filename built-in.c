@@ -12,6 +12,7 @@
 #include <ctype.h>
 #include <string.h>
 #include "built-in.h"
+#include "debug.h"
 
 
 /**
@@ -41,16 +42,15 @@ E_ERROR_TYPE _strtod( char *input, double *result )
  * @param integer
  * @return Uspesnost
  */
-unsigned intNumSpaces( unsigned input )
+unsigned intNumSpaces( int input )
 {
-    unsigned n = 1, result = 0;
-    while( input >= n )
+    int result = 1;
+    while( (input = input / 10) != 0 )
     {
-        n *= 10;
         result++;
     }
     return result;
-}
+} //  upravene, dochadzalo k preteceniu
 
 
 /**
@@ -64,16 +64,16 @@ E_ERROR_TYPE boolval( T_DVAR input[], int size, T_DVAR *result )
 {
 	if( size != 1 )
 		return E_OTHER;
-
+        
+    result->type = VAR_BOOL;
+    
     switch( input[0].type )
     {
         case VAR_BOOL:
-			result->type = VAR_BOOL;
             result->data._bool = input[0].data._bool;
             break;
             
         case VAR_INT:
-			result->type = VAR_BOOL;
             if( input[0].data._int == 0 )
                 result->data._bool = false;
             else
@@ -81,7 +81,6 @@ E_ERROR_TYPE boolval( T_DVAR input[], int size, T_DVAR *result )
             break;
             
         case VAR_DOUBLE:
-			result->type = VAR_BOOL;
             if( input[0].data._double == 0.0 )
                 result->data._bool = false;
             else
@@ -89,15 +88,14 @@ E_ERROR_TYPE boolval( T_DVAR input[], int size, T_DVAR *result )
             break;
             
         case VAR_STRING:
-			result->type = VAR_BOOL;
-            if( input[0].data._string[0] == 0 )
+        case VAR_CONSTSTRING:
+            if( input[0].size > 0 )
                 result->data._bool = false;
             else
                 result->data._bool = true;
             break;
             
         case VAR_NULL:
-			result->type = VAR_BOOL;
             result->data._bool = false;
             break;
             
@@ -106,7 +104,7 @@ E_ERROR_TYPE boolval( T_DVAR input[], int size, T_DVAR *result )
     }
 
     return E_OK;
-}
+} // dorobene checkovanie dlzky
 
 
 /**
@@ -139,6 +137,7 @@ E_ERROR_TYPE doubleval( T_DVAR input[], int size, T_DVAR *result )
             break;
             
         case VAR_STRING:
+        case VAR_CONSTSTRING:
 			result->type = VAR_DOUBLE;
             return _strtod( input[0].data._string, &(result->data._double) );
             break;
@@ -184,13 +183,14 @@ E_ERROR_TYPE intval( T_DVAR input[], int size, T_DVAR *result )
             if( input[0].data._double < (double) UINT_MAX + 1 && input[0].data._double >= 0.0 )
 			{
 				result->type = VAR_INT;
-                result->data._int = (unsigned) input[0].data._double;
+                result->data._int = input[0].data._double;
 			}
             else
                 return E_INTERPRET_ERROR;
             break;
             
         case VAR_STRING:
+        case VAR_CONSTSTRING:
 			result->type = VAR_INT;
             result->data._int = atoi( input[0].data._string );
             break;
@@ -219,7 +219,6 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
 {
 	if( size != 1 )
 		return E_OTHER;
-		
     switch( input[0].type )
     {
         case VAR_BOOL:
@@ -250,23 +249,26 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
             if( input[0].data._int <= 0 )
             {
 				result->type = VAR_STRING;
-				result->data._string = malloc( 2 * sizeof( char ) );
-				result->size = 2;
+               printf("filipova funkcia crati %d, cislo je %d\n", intNumSpaces( input[0].data._int ), input[0].data._int);
+                int n = intNumSpaces( input[0].data._int );
+				result->data._string = malloc( n+2 );
+				result->size = n+1;
 				
                 if( result->data._string == NULL )
                     return E_INTERPRET_ERROR;
-                result->data._string[0] = '0';
-                result->data._string[1] = 0;
+                sprintf( result->data._string, "%d", input[0].data._int );
             }
             else
             {
 				result->type = VAR_STRING;
-				result->data._string = malloc( ( intNumSpaces( input[0].data._int ) + 1 ) * sizeof( char ) );
-				result->size = intNumSpaces( input[0].data._int ) + 1;
+                printf("filipova funkcia crati %d, cislo je %d\n", intNumSpaces( input[0].data._int ), input[0].data._int);
+                int n = intNumSpaces( input[0].data._int );
+				result->data._string = malloc( n+1 );
+				result->size = n;
 				
                 if( result->data._string == NULL )
                     return E_INTERPRET_ERROR;
-                sprintf( result->data._string, "%u", input[0].data._int );
+                sprintf( result->data._string, "%d", input[0].data._int );
             }
             break;
             
@@ -308,6 +310,7 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
             break;
             
         default:
+       
             return E_INTERPRET_ERROR;        /**< error! todo */
     }
 
@@ -381,21 +384,43 @@ E_ERROR_TYPE get_string( T_DVAR input[], int size, T_DVAR *result )
  */
 E_ERROR_TYPE put_string( T_DVAR input[], int size, T_DVAR *result )
 {
-	(void) result;
 	
 	if( size < 1 )
-		return E_OTHER;
-
+		return E_PARAM;
+        
+	result->type = VAR_INT;
+	result->data._int = size;
+    
 	for( int i = 0; i < size; i++ )
 	{
-		if( input[i].type == VAR_STRING && input[i].data._string != NULL )
-		{
-			printf( "%s", input[i].data._string );
-		}
-		else
-			return E_OTHER;
+        switch( input[i].type )
+        {
+            case VAR_STRING:
+            case VAR_CONSTSTRING:
+                print_char( stdout, input[i].data._string, input[i].size );
+                break;
+            case VAR_INT:
+                printf("%d", input[i].data._int );
+                 break;
+            case VAR_DOUBLE:
+                printf("%g", input[i].data._double );
+                break;
+            case VAR_NULL:
+                break;
+            case VAR_BOOL:
+                if( input[i].data._bool == true )
+                {
+                    putchar('1');
+                }
+                else
+                {
+                    /* printf("")*/
+                }
+            break;
+            default:
+                return E_OTHER;
+        }
 	}
-
     return E_OK;
 }
 
