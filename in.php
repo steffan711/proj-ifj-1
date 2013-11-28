@@ -1,19 +1,15 @@
 <?php
 
 $x = put_string("Zadejte cislo pro vypocet faktorialu\n");
-$a = get_string();
-$a = intval($a);
-if ($a < 0)
+$a = 1;
+
+while ($a !== 0)
 {
-    $x = put_string("Faktorial nelze spocitat\n");
-}
-else
-{
-    $vysl = 1;
-    while ($a > 0)
+    if($a === 10000000)
     {
-        $vysl = $vysl * $a;
-        $a = $a - 1;
+        $b = "hodnota \$a je ". $a ;
+        $x = put_string ( $b );
+        return 5;
     }
-    $x = put_string("Vysledek je: ", $vysl, "-\n");
+    $a = $a + 1;
 }
