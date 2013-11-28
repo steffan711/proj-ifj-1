@@ -423,10 +423,6 @@ E_ERROR_TYPE runtime_strlen( T_DVAR input[], int size, T_DVAR *result )
  */
 E_ERROR_TYPE put_string( T_DVAR input[], int size, T_DVAR *result )
 {
-	
-	if( size < 1 )
-		return E_PARAM;
-        
 	result->type = VAR_INT;
 	result->data._int = 0;
     
