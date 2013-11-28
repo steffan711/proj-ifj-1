@@ -39,7 +39,7 @@ int main( int argc, char *argv[] )
     }
  
     
-    scanner_init( subor, file_size - 6); // scanner dostava subor o 6 znakov mensi koli '<?php '
+    scanner_init( subor, file_size - 5); // scanner dostava subor o 5 znakov mensi koli '<?php'
     
     check_syntax();
     

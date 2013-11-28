@@ -27,6 +27,7 @@ E_ERROR_TYPE check_file_header( char **source_file )
     
     if ( !isspace( getc( *source_file ) ) )
         return E_OTHER;
+    (*source_file)--;
     return E_OK;
 } 
 

@@ -11,6 +11,7 @@
 #include "types.h"
 #include "scanner.h"
 #include "expressions.h"
+#include "debug.h"
 
 /** inicializacne velkosti zasobnikov, ktorych pamat sa pri naplneni linearne zvacsuje */
 #define SIZEOF_ESTACK 1
@@ -85,8 +86,7 @@ const TOKEN_TYPE prec_table [][18] = {
 
 const char *enums[] = { //iba na testovacie ucely
 ".", "!==", "===","+","*","-","/","<",">","<=",">=","(",")","E_IDENT","E_COMA","i","{",";","E_VAR","E_INT","E_DOUBLE",    
-"E_LITER","EVAL", "SHIFT", "x","PUSH","E","E_EQ","E_RABRACK","E_INVLD","E_WHILE",
- "E_FUNCTION","E_FALSE","E_NULL","E_TRUE","E_IF","E_ELSE","E_RETURN","E_MALLOC","E_EOF"
+"E_LITER","E_FALSE" ,  "E_NULL" , "E_TRUE" ,  "E_WHILE" ,  "E_FUNCTION" ,  "E_IF" ,  "E_ELSE" ,  "E_RETURN" ,  "E_EQ" , "E_RABRACK" ,"E_INVLD" ,"E_EOF" , "R_P" , "E_E" ,"E_ELSEIF" 
 };
 #ifdef TESTY
 E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
@@ -100,17 +100,16 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         }
         else
         {
+                printf("\x1b[32mResult is ");
                 switch (op1->ttype) { 
-                case E_FALSE: printf("FALSE\n");  break; 
-                case E_TRUE: printf("TRUE\n"); break; 
-                case E_NULL: printf("NULL\n"); break;
-                case E_INT: printf("%d\n", op1->data._int); break;
-                case E_DOUBLE: printf("%e\n", op1->data._double); break;
-                case E_LITER: printf("\"%s\"\n", op1->data._string); break;
-                case E_E: printf("L%d\n", op1->data._int); break;
+                case E_FALSE: printf("FALSE\x1b[0m\n");  break; 
+                case E_TRUE: printf("TRUE\x1b[0m\n"); break; 
+                case E_NULL: printf("NULL\x1b[0m\n"); break;
+                case E_INT: printf("%d\x1b[0m\n", op1->data._int); break;
+                case E_DOUBLE: printf("%e\x1b[0m\n", op1->data._double); break;
+                case E_LITER: printf("\"%s\"\x1b[0m\n", op1->data._string); break;
                 default: break;
             }
-            //printf("\x1b[31mFATAL ERROR - RESULT IS NOT ON STACK\n\x1b[0m");
         }
         free(op1);
         return E_OK;
@@ -571,14 +570,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
         return E_INTERPRET_ERROR;
     }
     
-    if ( termination_ttype == E_RPARENTHESES )  //token obsahuje terminal lavu zatvorku, ktora oznacuje zaciatok vyrazu v podmienke
-    {
-        scanner_get_token( token ); //mozem to tu testovat na prazdny vyraz ak by som chcel vypisat chybu
-    }
-    else
-    {
-        copy_token( token, start_token ); //aby nevznikali konflikty pri uvolnovani pamate
-    }
+    copy_token( token, start_token ); //aby nevznikali konflikty pri uvolnovani pamate
 
     if ( ( actual_ttype = token->ttype ) > E_SEMICL )
     {
@@ -601,10 +593,12 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
         {
             if ( actual_ttype == E_INVLD )
             {
+                fprintf( stderr, "Error on line %u: lexical error\n", token->line );
                 free( token );
                 return E_LEX;
             }
             free( token );
+            fprintf( stderr, "Error near line %u: invalid input for expression got %s\n", token->line, TOKEN_NAME[token->ttype] );
             return E_SYNTAX; //chybny vstupny token
         }
     }
@@ -638,6 +632,17 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
             case R_E:
                 if ( ( error_code = estackPop( ) ) != E_OK )
                 {
+                    if ( error_code == E_SYNTAX )
+                    {
+                        if ( actual_ttype == E_TERM || actual_ttype == E_IDENT )
+                        {
+                            fprintf( stderr, "Error near line %u: bad syntax of expression\n", PFXStackTop()->line );
+                        }
+                        else
+                        {
+                            fprintf( stderr, "Error near line %u: bad syntax of expression\n", token->line );
+                        }
+                    }
                     PFXdispose( ); free( token );
                     return error_code;   //najskor neexistuje pravidlo v gramatike
                 }
@@ -678,9 +683,11 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                     {
                         if ( actual_ttype == E_INVLD )
                         {
+                            fprintf( stderr, "Error on line %u: lexical error\n", token->line );
                             PFXdispose( ); free( token );
                             return E_LEX;
                         }
+                        fprintf( stderr, "Error near line %u: invalid input for expression got %s\n", token->line, TOKEN_NAME[token->ttype] );
                         PFXdispose( ); free( token );
                         return E_SYNTAX; //chybny vstupny token
                     }
@@ -731,9 +738,11 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                     {
                         if ( actual_ttype == E_INVLD )
                         {
+                            fprintf( stderr, "Error on line %u: lexical error\n", token->line );
                             PFXdispose( ); free( token );
                             return E_LEX;
                         }
+                        fprintf( stderr, "Error near line %u: invalid input for expression got %s\n", token->line, TOKEN_NAME[token->ttype] );
                         PFXdispose( ); free( token );
                         return E_SYNTAX; //chybny vstupny token
                     }
@@ -755,6 +764,14 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 break;
                 
             default:
+                if ( actual_ttype == E_TERM || actual_ttype == E_IDENT )
+                {
+                    fprintf( stderr, "Error near line %u: bad syntax of expression\n", PFXStackTop()->line );
+                }
+                else
+                {
+                    fprintf( stderr, "Error near line %u: bad syntax of expression\n", token->line );
+                }
                 PFXdispose( ); free(token); 
                 return E_SYNTAX;  //chyba neexistuje pravidlo v tabulke
         }    
