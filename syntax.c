@@ -609,39 +609,8 @@ bool par_list( void )
 E_ERROR_TYPE check_syntax ( void )
 {
     precedenceInit( );
-    #ifndef TESTY
-        error_code = GeneratorInit( );
-        if ( error_code != E_OK )
-            return error_code;
-    #endif
     scanner_get_token( &token );
-    ZACIATOK_MERANIA();
     while ( !termination_control ) st_list();
-    if ( error_code == E_OK )
-    {
-        struct InstructionTapeBuffer *ptr;
-        //PrintTape( FT.tape );
-        GeneratorPrepareTape(&ptr);
-        //printf("pocet pasiek %u\n", ptr->size);
-        //PrintTape( ptr->array[01] );
-        E_ERROR_TYPE n = InterpretCode( ptr->array[0] );
-            printf("navrat je %d\n", n);
-        
-        //printf("/////////////////////////\n");
-        //PrintTape( ptr->array[1] );
-        //InterpretCode( ptr->array[0] );
-        GeneratorDeleteTapes(ptr);
-        PRINT_DEBUG("\x1b[36mje to panske\x1b[0m\n");
-    }
-    else
-    {
-        //obsluha toho ze sa stala chyba
-    }
-    KONIEC_MERANIA();
-    //todo
-    #ifndef TESTY
-        GeneratorErrorCleanup( );
-    #endif
     precedenceShutDown ( );
     return error_code;
 }
