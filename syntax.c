@@ -637,8 +637,8 @@ E_ERROR_TYPE check_syntax ( void )
     {
         //obsluha toho ze sa stala chyba
     }
-    PRINTD("Ahoj");
     KONIEC_MERANIA();
+
     //todo
     #ifndef TESTY
         GeneratorErrorCleanup( );
