@@ -4,6 +4,7 @@
 #include <stdio.h> // printf
 #include "scanner.h"
 #include <stdarg.h>
+#include "debug.h"
 
 const char const *TOKEN_NAME[] = 
 {
@@ -54,6 +55,11 @@ const char const *OPCODE_NAME[] =
 {
 "DUMMY", "START", "CREATE", "CALL", "CALL_BUILTIN", "MOV", "RET", "PUSH", "COND", "JMP", "MOVRET", "CONCAT", "EQUAL", "NONEQUAL", "PLUS","MINUS", "DIV", "MUL", "LESS", "GREATER", "LESSEQ", "GREATEREQ" 
 };
+
+int pocet_tikov_za_sekundu;
+struct tms casova_struktura;
+clock_t zaciatok_merania_tikov;
+clock_t koniec_merania_tikov;
 
 /**
  * Vypise strukturu token na stdout

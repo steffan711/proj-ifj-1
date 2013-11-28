@@ -614,6 +614,7 @@ E_ERROR_TYPE check_syntax ( void )
             return error_code;
     #endif
     scanner_get_token( &token );
+    ZACIATOK_MERANIA();
     while ( !termination_control ) st_list();
     if ( error_code == E_OK )
     {
@@ -633,7 +634,8 @@ E_ERROR_TYPE check_syntax ( void )
     {
         //obsluha toho ze sa stala chyba
     }
-    
+    PRINTD("Ahoj");
+    KONIEC_MERANIA();
     //todo
     #ifndef TESTY
         GeneratorErrorCleanup( );
