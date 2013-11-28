@@ -435,6 +435,22 @@ E_ERROR_TYPE put_string( T_DVAR input[], int size, T_DVAR *result )
                 print_char( stdout, input[i].data._string, input[i].size );
 				result->data._int++;
                 break;
+			case VAR_INT:
+                printf("%d", input[i].data._int );
+				result->data._int++;
+                break;
+            case VAR_DOUBLE:
+                printf("%g", input[i].data._double );
+				result->data._int++;
+                break;
+            case VAR_NULL:
+				result->data._int++;
+                break;
+            case VAR_BOOL:
+				result->data._int++;
+                if( input[i].data._bool == true )
+                    putchar('1');
+            break;
             default:
                 return E_OTHER;
         }
