@@ -38,13 +38,16 @@ int main( int argc, char *argv[] )
         return E_OTHER;
     }
  
-    
     scanner_init( subor, file_size - 5); // scanner dostava subor o 5 znakov mensi koli '<?php'
     
-    check_syntax();
+    if ( ( ret_val = check_syntax() ) != E_OK )
+    {   
+        
+        return ret_val;
+    }
     
     free( handle_subor );
-    return 0;
+    return ret_val;
 }
 
 
