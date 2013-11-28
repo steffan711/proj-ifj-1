@@ -529,17 +529,18 @@ E_ERROR_TYPE sort_string( T_DVAR input[], int size, T_DVAR *result )
 	if( size != 1 || input[0].type != VAR_STRING )
 		return E_OTHER;
     
-    char *help = malloc( input[0].size );
-    
-	if( input[0].size > 1 )
-	{
-		memcpy( help, input[0].data._string, input[0].size );
-		quicksort( help, 0, input[0].size - 1 );
-	}
-    
-    result->type = VAR_STRING;
+	char *help;
+	result->type = VAR_STRING;
     result->size = input[0].size;
-	result->data._string = help;
+	
+	if( input[0].size >= 1 )
+	{
+		help = malloc( input[0].size );
+		memcpy( help, input[0].data._string, input[0].size );
+		if( input[0].size > 1 )
+			quicksort( help, 0, input[0].size - 1 );
+		result->data._string = help;
+	}
     
     return E_OK;
 }
