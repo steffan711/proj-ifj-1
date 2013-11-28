@@ -184,15 +184,27 @@ E_ERROR_TYPE GeneratorInit()
     SwitchSTable = STableGlobal;
     State = S_DEFAULT;
     
-    if ( AddBuiltinFunction( "intval", 6, 1, false, boolval ) != E_OK )
+    if ( AddBuiltinFunction( "intval", 6, 1, false, intval ) != E_OK )
     {
         return E_INTERPRET_ERROR;
     }
-    if ( AddBuiltinFunction( "get_string", 10, 0, false, boolval ) != E_OK )
+    if ( AddBuiltinFunction( "get_string", 10, 0, false, get_string ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "boolval", 7, 1, false, boolval ) != E_OK )
     {
         return E_INTERPRET_ERROR;
     }
     if ( AddBuiltinFunction( "put_string", 10, 0, true, put_string ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "doubleval", 9, 1, false, doubleval ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "strval", 6, 1, false, strval ) != E_OK )
     {
         return E_INTERPRET_ERROR;
     }

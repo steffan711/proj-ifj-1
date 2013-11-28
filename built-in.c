@@ -152,7 +152,7 @@ E_ERROR_TYPE doubleval( T_DVAR input[], int size, T_DVAR *result )
     }
 
     return E_OK;
-}
+} // moze byt, otestujem
 
 
 /**
@@ -180,19 +180,31 @@ E_ERROR_TYPE intval( T_DVAR input[], int size, T_DVAR *result )
             break;
             
         case VAR_DOUBLE:
-            if( input[0].data._double < (double) UINT_MAX + 1 && input[0].data._double >= 0.0 )
+            //if( input[0].data._double < (double) UINT_MAX + 1 && input[0].data._double >= 0.0 )
 			{
 				result->type = VAR_INT;
-                result->data._int = input[0].data._double;
+                result->data._int = (int) input[0].data._double;
 			}
-            else
-                return E_INTERPRET_ERROR;
+            /*else
+                return E_INTERPRET_ERROR;*/
             break;
             
         case VAR_STRING:
         case VAR_CONSTSTRING:
 			result->type = VAR_INT;
-            result->data._int = atoi( input[0].data._string );
+            if ( input[0].size > 0 )
+            {
+                //result->data._int = atoi( input[0].data._string ); // TODO, retazec nie je ukonceny nulou
+                
+                char tmp[input[0].size+1];
+                memcpy(tmp, input[0].data._string, input[0].size);
+                tmp[input[0].size] = 0;
+                result->data._int = atoi( tmp );
+            }
+            else
+            {
+                result->data._int = 0;
+            }
             break;
             
         case VAR_NULL:
@@ -205,7 +217,7 @@ E_ERROR_TYPE intval( T_DVAR input[], int size, T_DVAR *result )
     }
 
     return E_OK;
-}
+} // moze byt
 
 
 /**
@@ -225,88 +237,74 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
             if( input[0].data._bool == true )
             {
 				result->type = VAR_STRING;
-				result->data._string = malloc( 2 * sizeof( char ) );
-				result->size = 2;
-				
-                if( result->data._string == NULL )
-                    return E_INTERPRET_ERROR;
-                result->data._string[0] = '1';
-                result->data._string[1] = 0;
-            }
-            else
-            {
-				result->type = VAR_STRING;
-				result->data._string = malloc( 1 * sizeof( char ) );
+				result->data._string = malloc( 1 );
 				result->size = 1;
 				
                 if( result->data._string == NULL )
                     return E_INTERPRET_ERROR;
-                result->data._string[0] = 0;
-            }
-            break;
-            
-        case VAR_INT:
-            if( input[0].data._int <= 0 )
-            {
-				result->type = VAR_STRING;
-               printf("filipova funkcia crati %d, cislo je %d\n", intNumSpaces( input[0].data._int ), input[0].data._int);
-                int n = intNumSpaces( input[0].data._int );
-				result->data._string = malloc( n+2 );
-				result->size = n+1;
-				
-                if( result->data._string == NULL )
-                    return E_INTERPRET_ERROR;
-                sprintf( result->data._string, "%d", input[0].data._int );
+                result->data._string[0] = '1';
             }
             else
             {
 				result->type = VAR_STRING;
-                printf("filipova funkcia crati %d, cislo je %d\n", intNumSpaces( input[0].data._int ), input[0].data._int);
+				//result->data._string = malloc( 0 );
+				result->size = 0;
+				
+                /*if( result->data._string == NULL )
+                    return E_INTERPRET_ERROR;*/
+                //result->data._string[0] = 0;
+            }
+            break;
+            
+        case VAR_INT:
+				result->type = VAR_STRING;
                 int n = intNumSpaces( input[0].data._int );
-				result->data._string = malloc( n+1 );
+				result->data._string = malloc( n+2 );
+                if ( input[0].data._int <= 0 )
+                    result->size = n+1;
+                else 
+                    result->size = n;
+				
+                if( result->data._string == NULL )
+                    return E_INTERPRET_ERROR;
+                    
+                sprintf( result->data._string, "%d", input[0].data._int );
+            break;
+            
+        case VAR_DOUBLE:
+            {
+                char temp[MAX_DBL_DIGITS] = { 0, };
+                int n = sprintf( temp, "%g", input[0].data._double );
+                //if( temp[MAX_DBL_DIGITS - 1] != 0 )
+                if( n < 0 )
+                    return E_INTERPRET_ERROR;
+					
+				result->type = VAR_STRING;
+                result->data._string = malloc( n );
 				result->size = n;
 				
                 if( result->data._string == NULL )
                     return E_INTERPRET_ERROR;
-                sprintf( result->data._string, "%d", input[0].data._int );
-            }
-            break;
-            
-        case VAR_DOUBLE:
-            if( 1 )
-            {
-                char temp[MAX_DBL_DIGITS] = { 0, };
-                sprintf( temp, "%g", input[0].data._double );
-                if( temp[MAX_DBL_DIGITS - 1] != 0 )
-                    return E_INTERPRET_ERROR;
-					
-				result->type = VAR_STRING;
-                result->data._string = malloc( ( strlen( temp ) + 1 ) * sizeof( char ) );
-				result->size = strlen( temp ) + 1;
-				
-                if( result->data._string == NULL )
-                    return E_INTERPRET_ERROR;
-                strcpy( result->data._string, temp );
+                memcpy( result->data._string, temp, n );
             }
             break;
             
         case VAR_STRING:
 			result->type = VAR_STRING;
-            result->data._string = malloc( ( strlen( input[0].data._string ) + 1 ) * sizeof( char ) );
-			result->size = strlen( input[0].data._string ) + 1;
+            result->data._string = malloc( input[0].size );
+			result->size = input[0].size;
 			
             if( result->data._string == NULL )
                 return E_INTERPRET_ERROR;
-            strcpy( result->data._string, input[0].data._string );
+            
+            memcpy( result->data._string, input[0].data._string, input[0].size );
+            //strcpy( result->data._string, input[0].data._string );
             break;
             
         case VAR_NULL:
 			result->type = VAR_STRING;
-            result->data._string = malloc( 1 * sizeof( char ) );
-			result->size = 1;
-            if( result->data._string == NULL )
-                return E_INTERPRET_ERROR;
-            result->data._string[0] = 0;
+            result->data._string = malloc( 0 );
+			result->size = 0;
             break;
             
         default:
@@ -315,7 +313,7 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
     }
 
     return E_OK;
-}
+} // moze byt
 
 
 /**
@@ -364,11 +362,11 @@ E_ERROR_TYPE get_string( T_DVAR input[], int size, T_DVAR *result )
         c = getchar();
     }
     
-    help[counter] = 0;
+    //help[counter] = 0;
     
 	result->type = VAR_STRING;
     result->data._string = help;
-	result->size = counter + 1;
+	result->size = counter;
     
     return E_OK;
 }
