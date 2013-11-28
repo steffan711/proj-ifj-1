@@ -142,6 +142,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
     
     while(1)
     {
+        /*printf("EIP = %p\n", (void*) EIP);*/
         switch( EIP->opcode )
         {
             case MOV:
@@ -484,10 +485,20 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if ( ptr2->type == VAR_INT )
                     {
+                        if( ptr2->data._int == 0)
+                        {
+                            ERROR("runtime.c:%lu: Runtime error: Divide with zero.\n", __LINE__ );
+                            return E_ZERO_DIV;
+                        }
                         temp.data._double = (double)ptr1->data._int / (double)ptr2->data._int;
                     }
                     else if ( ptr2->type == VAR_DOUBLE )
                     {
+                        if( ptr2->data._double == 0)
+                        {
+                            ERROR("runtime.c:%lu: Runtime error: Divide with zero.\n", __LINE__ );
+                            return E_ZERO_DIV;
+                        }
                         temp.data._double = (double)ptr1->data._int / ptr2->data._double;
                     }
                     else
@@ -505,10 +516,20 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if ( ptr2->type == VAR_INT )
                     {
+                        if( ptr2->data._int == 0)
+                        {
+                            ERROR("runtime.c:%lu: Runtime error: Divide with zero.\n", __LINE__ );
+                            return E_ZERO_DIV;
+                        }
                         temp.data._double = ptr1->data._double / (double)ptr2->data._int;
                     }
                     else if ( ptr2->type == VAR_DOUBLE )
                     {
+                        if( ptr2->data._double == 0)
+                        {
+                            ERROR("runtime.c:%lu: Runtime error: Divide with zero.\n", __LINE__ );
+                            return E_ZERO_DIV;
+                        }
                         temp.data._double = (double)ptr1->data._double / ptr2->data._double;
                     }
                     else
@@ -1158,6 +1179,11 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 if( EIP->attr.jump.op1.type == VAR_LOCAL )
                 {
                     ptr1 = &top->local[EIP->attr.jump.op1.data.offset];
+                    if( ptr1->type == VAR_UNDEF )
+                    {
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
+                        return E_UNDEF_VAR;
+                    }
                     retval = *ptr1;
                     ptr1->type = VAR_UNDEF;
                 }
@@ -1166,12 +1192,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ptr1 = &EIP->attr.jump.op1;
                     retval = *ptr1;
                 }
-                
-                if( ptr1->type == VAR_UNDEF )
-                {
-                    ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
-                    return E_UNDEF_VAR;
-                }
+               
                 
                 for( unsigned int i = 0; i < top->size; i++ )
                 {
