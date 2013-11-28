@@ -32,6 +32,9 @@ expr.o: expressions.c types.h expressions.h scanner.h generator.h
     
 generator.o : generator.c generator.h types.h
 	$(CC) $(CFLAGS) -o $@ -c $<
+
+runtime.o : runtime.c runtime.h types.h generator.h
+	$(CC) $(CFLAGS) -o $@ -c $<
 	
 main.o : main.c types.h file_io.h
 	$(CC) $(CFLAGS) -o $@ -c $<
@@ -39,7 +42,7 @@ main.o : main.c types.h file_io.h
 debug.o : debug.c scanner.h debug.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 	
-main : main.o file_io.o scanner.o syntax.o expr.o ial.o built-in.o generator.o debug.o
+main : main.o file_io.o scanner.o syntax.o expr.o ial.o built-in.o generator.o debug.o runtime.o
 	$(CC) $(CFLAGS) -o $@ $^
     
 clean:
