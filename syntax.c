@@ -623,10 +623,10 @@ E_ERROR_TYPE check_syntax ( void )
         //PrintTape( FT.tape );
         GeneratorPrepareTape(&ptr);
         //printf("pocet pasiek %u\n", ptr->size);
+        //PrintTape( ptr->array[01] );
+        E_ERROR_TYPE n = InterpretCode( ptr->array[0] );
+            printf("navrat je %d\n", n);
         
-        InterpretCode( ptr->array[0] );
-        
-        //PrintTape( ptr->array[0] );
         //printf("/////////////////////////\n");
         //PrintTape( ptr->array[1] );
         //InterpretCode( ptr->array[0] );
@@ -638,7 +638,6 @@ E_ERROR_TYPE check_syntax ( void )
         //obsluha toho ze sa stala chyba
     }
     KONIEC_MERANIA();
-
     //todo
     #ifndef TESTY
         GeneratorErrorCleanup( );

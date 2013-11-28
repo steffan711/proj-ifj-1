@@ -42,6 +42,7 @@ E_ERROR_TYPE StackInit()
     stack.array = malloc( MALLOC_SIZE * sizeof(Instruction*) );
     if ( stack.array == NULL )
     {
+        ERROR(" Interpret error: malloc() failed on line %lu, level %d, ptrs available %d.\n", __LINE__, stack.top, stack.size );
         return E_INTERPRET_ERROR;
     }
     return E_OK;
@@ -61,6 +62,7 @@ E_ERROR_TYPE AddFrame( unsigned int size )
     Context * tmp = malloc ( sizeof( Context ) +  sizeof(T_DVAR) * size );
     if ( tmp == NULL )
     {
+        ERROR(" Interpret error: malloc() failed on line %lu, level %d, ptrs available %d.\n", __LINE__, stack.top, stack.size );
         return E_INTERPRET_ERROR;
     }
     
@@ -147,6 +149,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     top->local[dest].data._string = malloc( ptr1->size );
                     if( top->local[dest].data._string == NULL )
                     {
+                        ERROR(" Interpret error: malloc() failed on line %lu, level %d, ptrs available %d.\n", __LINE__, stack.top, stack.size );
                         return E_INTERPRET_ERROR;
                     }
                     memcpy( top->local[dest].data._string, ptr1->data._string, ptr1->size );
@@ -199,7 +202,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     {
                         if( ptr2->type == VAR_UNDEF )
                         {
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                         }
                         ERROR("Runtime error: Unsupported operation [+] with given operands.\n");
@@ -222,7 +225,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     {
                         if( ptr2->type == VAR_UNDEF )
                         {
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                         }
                         ERROR("Runtime error: Unsupported operation [+] with given operands.\n");
@@ -233,7 +236,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if( ptr1->type == VAR_UNDEF )
                     {
-                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                         return E_UNDEF_VAR;
                     }
                     ERROR("Runtime error: Unsupported operation [+] with given operands.\n");
@@ -288,7 +291,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     {
                         if( ptr2->type == VAR_UNDEF )
                         {
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                         }
                         ERROR("Runtime error: Unsupported operation [-] with given operands.\n");
@@ -311,7 +314,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     {
                         if( ptr2->type == VAR_UNDEF )
                         {
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                         }
                         ERROR("Runtime error: Unsupported operation [-] with given operands.\n");
@@ -322,7 +325,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if( ptr1->type == VAR_UNDEF )
                     {
-                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                         return E_UNDEF_VAR;
                     }
                     ERROR("Runtime error: Unsupported operation [-] with given operands.\n");
@@ -377,7 +380,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     {
                         if( ptr2->type == VAR_UNDEF )
                         {
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                         }
                         ERROR("Runtime error: Unsupported operation [*] with given operands.\n");
@@ -400,7 +403,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     {
                         if( ptr2->type == VAR_UNDEF )
                         {
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                         }
                         ERROR("Runtime error: Unsupported operation [*] with given operands.\n");
@@ -411,7 +414,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if( ptr1->type == VAR_UNDEF )
                     {
-                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                         return E_UNDEF_VAR;
                     }
                     ERROR("Runtime error: Unsupported operation [*] with given operands.\n");
@@ -464,7 +467,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     {
                         if( ptr2->type == VAR_UNDEF )
                         {
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                         }
                         ERROR("Runtime error: Unsupported operation [/] with given operands.\n");
@@ -485,7 +488,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     {
                         if( ptr2->type == VAR_UNDEF )
                         {
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                         }
                         ERROR("Runtime error: Unsupported operation [/] with given operands.\n");
@@ -496,7 +499,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if( ptr1->type == VAR_UNDEF )
                     {
-                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                         return E_UNDEF_VAR;
                     }
                     ERROR("Runtime error: Unsupported operation [/] with given operands.\n");
@@ -563,7 +566,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.data._bool = false;
                             break;
                         default:
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                     }
                 }
@@ -571,7 +574,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
                     {
-                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                         return E_UNDEF_VAR;
                     }
                     ERROR("Runtime Error: Incompatible types for operation <.\n");
@@ -636,7 +639,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.data._bool = false;
                             break;
                         default:
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                     }
                 }
@@ -644,7 +647,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
                     {
-                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                         return E_UNDEF_VAR;
                     }
                     ERROR("Runtime Error: Incompatible types for operation >.\n");
@@ -709,7 +712,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.data._bool = true;
                             break;
                         default:
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                     }
                 }
@@ -717,7 +720,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
                     {
-                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                         return E_UNDEF_VAR;
                     }
                     ERROR("Runtime Error: Incompatible types for operation <=.\n");
@@ -782,7 +785,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.data._bool = true;
                             break;
                         default:
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                     }
                 }
@@ -790,7 +793,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
                     {
-                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                         return E_UNDEF_VAR;
                     }
                     ERROR("Runtime Error: Incompatible types for operation >=.\n");
@@ -854,7 +857,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                         case VAR_NULL:
                             temp.data._bool = false;
                         default:
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                     }
                 }
@@ -862,7 +865,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
                     {
-                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                         return E_UNDEF_VAR;
                     }
                     temp.data._bool = false;
@@ -926,7 +929,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                         case VAR_NULL:
                             temp.data._bool = true;
                         default:
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                     }
                 }
@@ -934,7 +937,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
                     {
-                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                         return E_UNDEF_VAR;
                     }
                     temp.data._bool = false;
@@ -980,6 +983,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                         temp.data._string = malloc( ptr1->size + ptr2->size );
                         if ( temp.data._string == NULL )
                         {
+                            ERROR(" Interpret error: malloc() failed on line %lu, level %d, ptrs available %d.\n", __LINE__, stack.top, stack.size );
                             return E_INTERPRET_ERROR;
                         }
                         temp.size = ptr1->size + ptr2->size;
@@ -994,7 +998,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                         {
                             if( ptr2->type == VAR_UNDEF )
                             {
-                                ERROR("Runtime error: Variable used, but undefined.\n");
+                                ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                                 return E_UNDEF_VAR;
                             }
                             return retval;
@@ -1003,6 +1007,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                         temp.data._string = malloc( ptr1->size + str.size );
                         if ( temp.data._string == NULL )
                         {
+                            ERROR(" Interpret error: malloc() failed on line %lu, level %d, ptrs available %d.\n", __LINE__, stack.top, stack.size );
                             free(str.data._string);
                             return E_INTERPRET_ERROR;
                         }
@@ -1017,7 +1022,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if( ptr1->type == VAR_UNDEF )
                     {
-                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                         return E_UNDEF_VAR;
                     }
                     ERROR("Runtime Error: Incompatible types for operation Concatenate.\n");
@@ -1037,7 +1042,6 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     free( top->local[dest].data._string );
                 }
-                dest = EIP->attr.tac.dest;
                 top->local[dest] = retval;
                 retval.type = VAR_UNDEF;
                 break;
@@ -1061,7 +1065,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     {   
                         if( ptr1->type == VAR_UNDEF )
                         {
-                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                         }
                         return retval;
@@ -1098,6 +1102,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     top->local[EIP->attr.tac.dest].type = VAR_STRING;
                     if( ( top->local[EIP->attr.tac.dest].data._string = malloc( ptr1->size ) ) == NULL )
                     {
+                        ERROR(" Interpret error: malloc() failed on line %lu, level %d, ptrs available %d.\n", __LINE__, stack.top, stack.size );
                         return E_INTERPRET_ERROR;
                     }
                     memcpy( top->local[EIP->attr.tac.dest].data._string, ptr1->data._string, ptr1->size );
@@ -1107,7 +1112,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if( ptr1->type == VAR_UNDEF )
                     {
-                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                         return E_UNDEF_VAR;
                     }
                     top->local[EIP->attr.tac.dest] = *ptr1;
@@ -1122,21 +1127,24 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
 
                 
             case RET:
+                
                 if( EIP->attr.jump.op1.type == VAR_LOCAL )
                 {
                     ptr1 = &top->local[EIP->attr.jump.op1.data.offset];
+                    retval = *ptr1;
+                    ptr1->type = VAR_UNDEF;
                 }
                 else
                 {
                     ptr1 = &EIP->attr.jump.op1;
+                    retval = *ptr1;
                 }
+                
                 if( ptr1->type == VAR_UNDEF )
                 {
-                    ERROR("Runtime error: Variable used, but undefined.\n");
+                    ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                     return E_UNDEF_VAR;
                 }
-                retval = *ptr1;
-                ptr1->type = VAR_UNDEF;
                 
                 for( unsigned int i = 0; i < top->size; i++ )
                 {
@@ -1168,6 +1176,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 
                 if ( ( ret = EIP->attr.builtin( top->local, top->size, &retval ) ) != E_OK )
                 {
+                    retval.type = VAR_UNDEF;
                     ERROR("Runtime error: Built-in function failed.\n");
                     return ret;
                 }

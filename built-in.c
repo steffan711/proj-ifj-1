@@ -101,7 +101,7 @@ E_ERROR_TYPE boolval( T_DVAR input[], int size, T_DVAR *result )
             break;
             
         default:
-            return E_INTERPRET_ERROR;
+            return E_UNDEF_VAR;
     }
 
     return E_OK;
@@ -236,23 +236,23 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
         case VAR_BOOL:
             if( input[0].data._bool == true )
             {
-				result->type = VAR_STRING;
 				result->data._string = malloc( 1 );
 				result->size = 1;
 				
                 if( result->data._string == NULL )
                     return E_INTERPRET_ERROR;
+                result->type = VAR_STRING;
                 result->data._string[0] = '1';
             }
             else
             {
-				result->type = VAR_STRING;
+				result->type = VAR_CONSTSTRING;
 				result->size = 0;
             }
             break;
             
         case VAR_INT:
-				result->type = VAR_STRING;
+				{
                 int n = intNumSpaces( input[0].data._int );
 				result->data._string = malloc( n + 2 );
                 if ( input[0].data._int <= 0 )
@@ -262,10 +262,10 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
 				
                 if( result->data._string == NULL )
                     return E_INTERPRET_ERROR;
-                    
+                result->type = VAR_STRING;    
                 sprintf( result->data._string, "%d", input[0].data._int );
             break;
-            
+            }
         case VAR_DOUBLE:
             {
                 char temp[MAX_DBL_DIGITS] = { 0, };
@@ -273,36 +273,28 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
                 if( n < 0 )
                     return E_INTERPRET_ERROR;
 				
-				result->type = VAR_STRING;
                 result->data._string = malloc( n );
 				result->size = n;
 				
                 if( result->data._string == NULL )
                     return E_INTERPRET_ERROR;
+                result->type = VAR_STRING;
                 memcpy( result->data._string, temp, n );
             }
             break;
             
         case VAR_STRING:
-			result->type = VAR_STRING;
-            result->data._string = malloc( input[0].size );
-			result->size = input[0].size;
-			
-            if( result->data._string == NULL )
-                return E_INTERPRET_ERROR;
-            
-            memcpy( result->data._string, input[0].data._string, input[0].size );
+			*result = input[0];
+            input[0].type = VAR_UNDEF; // optimalizacia, parametre su nanovo mallocovane, takze sa nestane konflikt
             break;
             
         case VAR_NULL:
-			result->type = VAR_STRING;
-            result->data._string = malloc( 0 );
+			result->type = VAR_CONSTSTRING;
 			result->size = 0;
             break;
             
         default:
-       
-            return E_INTERPRET_ERROR;
+            return E_OTHER;
     }
 
     return E_OK;
@@ -326,7 +318,7 @@ E_ERROR_TYPE get_string( T_DVAR input[], int size, T_DVAR *result )
 	
     if( c == EOF || c == '\n' )
     {
-		result->type = VAR_STRING;
+		result->type = VAR_CONSTSTRING;
 		result->size = 0;
         return E_OK;
     }
@@ -342,9 +334,13 @@ E_ERROR_TYPE get_string( T_DVAR input[], int size, T_DVAR *result )
         else
         {
             max *= 2;
+            char *tmp = help;
             help = realloc( help, max );
             if( help == NULL )
+            {
+                free( tmp ); // realloc pri chybe neuvolni
                 return E_INTERPRET_ERROR;
+            }
             help[counter] = c;
         }
         
@@ -419,7 +415,7 @@ E_ERROR_TYPE runtime_strlen( T_DVAR input[], int size, T_DVAR *result )
 E_ERROR_TYPE put_string( T_DVAR input[], int size, T_DVAR *result )
 {
 	result->type = VAR_INT;
-	result->data._int = 0;
+	result->data._int = size;
     
 	for( int i = 0; i < size; i++ )
 	{
@@ -428,24 +424,19 @@ E_ERROR_TYPE put_string( T_DVAR input[], int size, T_DVAR *result )
             case VAR_STRING:
             case VAR_CONSTSTRING:
                 print_char( stdout, input[i].data._string, input[i].size );
-				result->data._int++;
                 break;
 			case VAR_INT:
                 printf("%d", input[i].data._int );
-				result->data._int++;
                 break;
             case VAR_DOUBLE:
                 printf("%g", input[i].data._double );
-				result->data._int++;
                 break;
             case VAR_NULL:
-				result->data._int++;
                 break;
             case VAR_BOOL:
-				result->data._int++;
                 if( input[i].data._bool == true )
                     putchar('1');
-            break;
+                break;
             default:
                 return E_OTHER;
         }
@@ -466,7 +457,16 @@ E_ERROR_TYPE get_substring( T_DVAR input[], int size, T_DVAR *result )
 {
 	if( size != 3 )
 		return E_OTHER;
-		
+	// TODO kontrola typov
+    if( input[0].type != VAR_STRING && input[0].type != VAR_CONSTSTRING )
+    {
+        return E_OTHER;
+    }
+    if( input[1].type != VAR_INT && input[2].type != VAR_INT )
+    {
+        return E_OTHER;
+    }
+	
     int inplen = input[0].size,
         sublen = ( input[2].data._int - input[1].data._int ),
 		begpos = input[1].data._int,
@@ -503,7 +503,15 @@ E_ERROR_TYPE find_string( T_DVAR input[], int size, T_DVAR *result )
 {
 	if( size != 2 )
 		return E_OTHER;
-	
+	if( input[0].type != VAR_STRING && input[0].type != VAR_CONSTSTRING )
+    {
+        return E_OTHER;
+    }
+    if( input[1].type != VAR_STRING && input[1].type != VAR_CONSTSTRING )
+    {
+        return E_OTHER;
+    }
+    
 	result->type = VAR_INT;
 	result->data._int = kmpmatch( input[0].data._string, input[1].data._string );
 	
@@ -521,21 +529,25 @@ E_ERROR_TYPE find_string( T_DVAR input[], int size, T_DVAR *result )
  */
 E_ERROR_TYPE sort_string( T_DVAR input[], int size, T_DVAR *result )
 {
-	if( size != 1 || input[0].type != VAR_STRING )
+	if( size != 1 || ( input[0].type != VAR_STRING && input[0].type != VAR_CONSTSTRING) )
 		return E_OTHER;
     
 	char *help;
-	result->type = VAR_STRING;
     result->size = input[0].size;
 	
 	if( input[0].size >= 1 )
 	{
+        result->type = VAR_STRING;
 		help = malloc( input[0].size );
 		memcpy( help, input[0].data._string, input[0].size );
 		if( input[0].size > 1 )
 			quicksort( help, 0, input[0].size - 1 );
 		result->data._string = help;
 	}
+    else
+    {
+        result->type = VAR_CONSTSTRING;
+    }
     
     return E_OK;
 }
