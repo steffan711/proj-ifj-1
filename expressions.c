@@ -14,8 +14,8 @@
 #include "debug.h"
 
 /** inicializacne velkosti zasobnikov, ktorych pamat sa pri naplneni linearne zvacsuje */
-#define SIZEOF_ESTACK 1
-#define SIZEOF_PFXSTACK 1
+#define SIZEOF_ESTACK 32
+#define SIZEOF_PFXSTACK 32
 
 //#define TESTY
 //#define TESTY2
