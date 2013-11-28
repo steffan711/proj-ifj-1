@@ -27,6 +27,8 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result );
 E_ERROR_TYPE get_string( T_DVAR input[], int size, T_DVAR *result );
 E_ERROR_TYPE put_string( T_DVAR input[], int size, T_DVAR *result );
 
+E_ERROR_TYPE runtime_strlen( T_DVAR input[], int size, T_DVAR *result );
+
 E_ERROR_TYPE get_substring( T_DVAR input[], int size, T_DVAR *result );
 E_ERROR_TYPE find_string( T_DVAR input[], int size, T_DVAR *result );
 E_ERROR_TYPE sort_string( T_DVAR input[], int size, T_DVAR *result );
