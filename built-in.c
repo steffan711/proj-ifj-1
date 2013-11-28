@@ -327,12 +327,7 @@ E_ERROR_TYPE get_string( T_DVAR input[], int size, T_DVAR *result )
     if( c == EOF || c == '\n' )
     {
 		result->type = VAR_STRING;
-		result->data._string = malloc( sizeof( char ) );;
-		result->size = 1;
-		
-        if( result->data._string == NULL )
-            return E_INTERPRET_ERROR;
-        result->data._string[0] = 0;
+		result->size = 0;
         return E_OK;
     }
 
