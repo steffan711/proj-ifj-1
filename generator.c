@@ -585,7 +585,7 @@ E_ERROR_TYPE addparam(T_token *token)
             ERROR("Error on line %u: Parameter with the name '$", token->line );
             print_char( stderr, token->data._string, token->length );
             ERROR("' already declared.\n");
-            return E_SEM;
+            return E_OTHER;
         }
         ptr->assigned = true;
         param_counter++;
@@ -1337,7 +1337,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                                 val = false;
                             break;
                         case E_LITER:
-                            if ( sstrcmp( op1->data._string, op2->data._string, op1->length, op2->length ) != 0 )
+                            if ( lexsstrcmp( op1->data._string, op2->data._string, op1->length, op2->length ) != 0 )
                                 val = false;
                             break;
                         default:
@@ -1924,6 +1924,10 @@ extern inline int lexsstrcmp( const char * str1, const char * str2, int str1_siz
     }
     else
     {
+        if ( str1_size == 0 )
+        {
+            return 0;
+        }
         offset = str1 + str1_size;
        
         do {

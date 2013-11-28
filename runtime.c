@@ -119,41 +119,44 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             {
                 dest = EIP->attr.tac.dest;
                 op1 = EIP->attr.tac.op1.data.offset;
-                if( EIP->attr.tac.op1.type == VAR_LOCAL && dest == op1 )
+                
+                if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
-                    break;
+                    ptr1 = &top->local[op1];
+                    if (ptr1->type == VAR_UNDEF )
+                    {
+                        ERROR("Runtime error: Using undefined variable.\n");
+                        return E_UNDEF_VAR;
+                    }
+                    if ( op1 == dest )
+                        break;              // $a = $a;
                 }
-                if ( top->local[dest].type == VAR_STRING )
+                else
+                {
+                    ptr1 = &EIP->attr.tac.op1;
+                }
+                
+                if( top->local[dest].type == VAR_STRING )
                 {
                     free( top->local[dest].data._string );
                     top->local[dest].type = VAR_UNDEF;
                 }
-                /* imm parameter */
-                if ( EIP->attr.tac.op1.type != VAR_LOCAL )
+                
+                if( ptr1->type == VAR_STRING )
                 {
-                    top->local[dest] = EIP->attr.tac.op1;
+                    top->local[dest].data._string = malloc( ptr1->size );
+                    if( top->local[dest].data._string == NULL )
+                    {
+                        return E_INTERPRET_ERROR;
+                    }
+                    memcpy( top->local[dest].data._string, ptr1->data._string, ptr1->size );
+                    top->local[dest].type = VAR_STRING;
+                    top->local[dest].size = ptr1->size;
                 }
                 else
                 {
-                    /* presun medzi lokalnymi premennymi */
-                    if ( top->local[op1].type == VAR_STRING )
-                    {
-                        /* kopirujem string */
-                        
-                        top->local[dest].data._string = malloc( top->local[op1].size );
-                        if( top->local[dest].data._string == NULL )
-                        {
-                            return E_INTERPRET_ERROR;
-                        }
-                        memcpy( top->local[dest].data._string, top->local[op1].data._string, top->local[op1].size );
-                        top->local[dest].type = VAR_STRING;
-                        top->local[dest].size = top->local[op1].size;
-                    }
-                    else
-                    {
-                    top->local[EIP->attr.tac.dest] = top->local[EIP->attr.tac.op1.data.offset];
-                    }
-                }
+                    top->local[dest] = *ptr1;
+                }                
                 break;
             }
             case PLUS:
@@ -162,89 +165,78 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 op1 = EIP->attr.tac.op1.data.offset;
                 op2 = EIP->attr.tac.op2.data.offset;
                 
-                T_DVAR temp;
-                
-                /* operand 1*/
-                if( EIP->attr.tac.op1.type == VAR_LOCAL )
+                if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
-                    if( top->local[op1].type == VAR_INT || top->local[op1].type == VAR_DOUBLE)
-                    {
-                        temp = top->local[op1];
-                    }
-                    else
-                    {
-                        ERROR("Runtime Error: Incompatible types for operation PLUS.\n");
-                        return E_INCOMPATIBLE;
-                    }
-                }
-                else if( EIP->attr.tac.op1.type == VAR_INT ||  EIP->attr.tac.op1.type == VAR_DOUBLE)
-                {
-                    temp = top->local[op1];
+                    ptr1 = &top->local[op1];
                 }
                 else
                 {
-                    ERROR("Runtime Error: Incompatible types for operation PLUS.\n");
-                    return E_INCOMPATIBLE;
+                    ptr1 = &EIP->attr.tac.op1;
                 }
+                if ( EIP->attr.tac.op2.type == VAR_LOCAL )
+                {
+                    ptr2 = &top->local[op2];
+                }
+                else
+                {
+                    ptr2 = &EIP->attr.tac.op2;
+                }
+                T_DVAR temp;
                 
-                /* operand 2*/                 
-                if( EIP->attr.tac.op2.type == VAR_LOCAL )
+                if( ptr1->type == VAR_INT )
                 {
-                    if( top->local[op2].type == VAR_INT )
+                    if ( ptr2->type == VAR_INT )
                     {
-                        if( temp.type == VAR_INT )
-                        {
-                            temp.data._int += top->local[op2].data._int;
-                        }
-                        else
-                        {
-                            temp.data._double += (double)top->local[op2].data._int;
-                        }
+                        temp.data._int = ptr1->data._int + ptr2->data._int;
+                        temp.type = VAR_INT;
                     }
-                    else if ( top->local[op2].type == VAR_DOUBLE )
+                    else if ( ptr2->type == VAR_DOUBLE )
                     {
-                        if( temp.type == VAR_DOUBLE )
-                        {
-                            temp.data._double += top->local[op2].data._double;
-                        }
-                        else
-                        {
-                            temp.data._double = (double)temp.data._int + top->local[op2].data._double;
-                            temp.type = VAR_DOUBLE;
-                        }
-                    }
-                    else
-                    {
-                        ERROR("Runtime Error: Incompatible types for operation PLUS.\n");
-                        return E_INCOMPATIBLE;
-                    }
-                }
-                else if( EIP->attr.tac.op2.type == VAR_INT )
-                {
-                    if( temp.type == VAR_INT )
-                    {
-                        temp.data._int += EIP->attr.tac.op2.data._int;
-                    }
-                    else
-                    {
-                        temp.data._double += (double) EIP->attr.tac.op2.data._int;
-                    }
-                }
-                else if( EIP->attr.tac.op2.type == VAR_DOUBLE )
-                {
-                    if( temp.type == VAR_INT )
-                    {
-                        temp.data._double = (double)temp.data._int + EIP->attr.tac.op2.data._double;
+                        temp.data._double = (double)ptr1->data._int + ptr2->data._double;
                         temp.type = VAR_DOUBLE;
                     }
                     else
                     {
-                        temp.data._double += EIP->attr.tac.op2.data._double;
+                        if( ptr2->type == VAR_UNDEF )
+                        {
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
+                        }
+                        ERROR("Runtime error: Unsupported operation [+] with given operands.\n");
+                        return E_INCOMPATIBLE;
+                    } 
+                }
+                else if( ptr1->type == VAR_DOUBLE )
+                {
+                    if ( ptr2->type == VAR_INT )
+                    {
+                        temp.data._double = ptr1->data._double + (double)ptr2->data._int;
+                        temp.type = VAR_DOUBLE;
                     }
+                    else if ( ptr2->type == VAR_DOUBLE )
+                    {
+                        temp.data._double = (double)ptr1->data._double + ptr2->data._double;
+                        temp.type = VAR_DOUBLE;
+                    }
+                    else
+                    {
+                        if( ptr2->type == VAR_UNDEF )
+                        {
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
+                        }
+                        ERROR("Runtime error: Unsupported operation [+] with given operands.\n");
+                        return E_INCOMPATIBLE;
+                    } 
                 }
                 else
                 {
-                    ERROR("Runtime Error: Incompatible types for operation PLUS.\n");
+                    if( ptr1->type == VAR_UNDEF )
+                    {
+                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        return E_UNDEF_VAR;
+                    }
+                    ERROR("Runtime error: Unsupported operation [+] with given operands.\n");
                     return E_INCOMPATIBLE;
                 } 
                 
@@ -262,89 +254,78 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 op1 = EIP->attr.tac.op1.data.offset;
                 op2 = EIP->attr.tac.op2.data.offset;
                 
-                T_DVAR temp;
-                
-                /* operand 1*/
-                if( EIP->attr.tac.op1.type == VAR_LOCAL )
+                if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
-                    if( top->local[op1].type == VAR_INT || top->local[op1].type == VAR_DOUBLE)
-                    {
-                        temp = top->local[op1];
-                    }
-                    else
-                    {
-                        ERROR("Runtime Error: Incompatible types for operation MINUS.\n");
-                        return E_INCOMPATIBLE;
-                    }
-                }
-                else if( EIP->attr.tac.op1.type == VAR_INT ||  EIP->attr.tac.op1.type == VAR_DOUBLE)
-                {
-                    temp = top->local[op1];
+                    ptr1 = &top->local[op1];
                 }
                 else
                 {
-                    ERROR("Runtime Error: Incompatible types for operation MINUS.\n");
-                    return E_INCOMPATIBLE;
+                    ptr1 = &EIP->attr.tac.op1;
                 }
+                if ( EIP->attr.tac.op2.type == VAR_LOCAL )
+                {
+                    ptr2 = &top->local[op2];
+                }
+                else
+                {
+                    ptr2 = &EIP->attr.tac.op2;
+                }
+                T_DVAR temp;
                 
-                /* operand 2*/                 
-                if( EIP->attr.tac.op2.type == VAR_LOCAL )
+                if( ptr1->type == VAR_INT )
                 {
-                    if( top->local[op2].type == VAR_INT )
+                    if ( ptr2->type == VAR_INT )
                     {
-                        if( temp.type == VAR_INT )
-                        {
-                            temp.data._int -= top->local[op2].data._int;
-                        }
-                        else
-                        {
-                            temp.data._double -= (double)top->local[op2].data._int;
-                        }
+                        temp.data._int = ptr1->data._int - ptr2->data._int;
+                        temp.type = VAR_INT;
                     }
-                    else if ( top->local[op2].type == VAR_DOUBLE )
+                    else if ( ptr2->type == VAR_DOUBLE )
                     {
-                        if( temp.type == VAR_DOUBLE )
-                        {
-                            temp.data._double -= top->local[op2].data._double;
-                        }
-                        else
-                        {
-                            temp.data._double = (double)temp.data._int - top->local[op2].data._double;
-                            temp.type = VAR_DOUBLE;
-                        }
-                    }
-                    else
-                    {
-                        ERROR("Runtime Error: Incompatible types for operation MINUS.\n");
-                        return E_INCOMPATIBLE;
-                    }
-                }
-                else if( EIP->attr.tac.op2.type == VAR_INT )
-                {
-                    if( temp.type == VAR_INT )
-                    {
-                        temp.data._int -= EIP->attr.tac.op2.data._int;
-                    }
-                    else
-                    {
-                        temp.data._double -= (double) EIP->attr.tac.op2.data._int;
-                    }
-                }
-                else if( EIP->attr.tac.op2.type == VAR_DOUBLE )
-                {
-                    if( temp.type == VAR_INT )
-                    {
-                        temp.data._double = (double)temp.data._int - EIP->attr.tac.op2.data._double;
+                        temp.data._double = (double)ptr1->data._int - ptr2->data._double;
                         temp.type = VAR_DOUBLE;
                     }
                     else
                     {
-                        temp.data._double -= EIP->attr.tac.op2.data._double;
+                        if( ptr2->type == VAR_UNDEF )
+                        {
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
+                        }
+                        ERROR("Runtime error: Unsupported operation [-] with given operands.\n");
+                        return E_INCOMPATIBLE;
+                    } 
+                }
+                else if( ptr1->type == VAR_DOUBLE )
+                {
+                    if ( ptr2->type == VAR_INT )
+                    {
+                        temp.data._double = ptr1->data._double - (double)ptr2->data._int;
+                        temp.type = VAR_DOUBLE;
                     }
+                    else if ( ptr2->type == VAR_DOUBLE )
+                    {
+                        temp.data._double = (double)ptr1->data._double - ptr2->data._double;
+                        temp.type = VAR_DOUBLE;
+                    }
+                    else
+                    {
+                        if( ptr2->type == VAR_UNDEF )
+                        {
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
+                        }
+                        ERROR("Runtime error: Unsupported operation [-] with given operands.\n");
+                        return E_INCOMPATIBLE;
+                    } 
                 }
                 else
                 {
-                    ERROR("Runtime Error: Incompatible types for operation MINUS.\n");
+                    if( ptr1->type == VAR_UNDEF )
+                    {
+                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        return E_UNDEF_VAR;
+                    }
+                    ERROR("Runtime error: Unsupported operation [-] with given operands.\n");
                     return E_INCOMPATIBLE;
                 } 
                 
@@ -362,89 +343,78 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 op1 = EIP->attr.tac.op1.data.offset;
                 op2 = EIP->attr.tac.op2.data.offset;
                 
-                T_DVAR temp;
-                
-                /* operand 1*/
-                if( EIP->attr.tac.op1.type == VAR_LOCAL )
+                if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
-                    if( top->local[op1].type == VAR_INT || top->local[op1].type == VAR_DOUBLE)
-                    {
-                        temp = top->local[op1];
-                    }
-                    else
-                    {
-                        ERROR("Runtime Error: Incompatible types for operation MUL.\n");
-                        return E_INCOMPATIBLE;
-                    }
-                }
-                else if( EIP->attr.tac.op1.type == VAR_INT ||  EIP->attr.tac.op1.type == VAR_DOUBLE)
-                {
-                    temp = EIP->attr.tac.op1;
+                    ptr1 = &top->local[op1];
                 }
                 else
                 {
-                    ERROR("Runtime Error: Incompatible types for operation MUL.\n");
-                    return E_INCOMPATIBLE;
+                    ptr1 = &EIP->attr.tac.op1;
                 }
+                if ( EIP->attr.tac.op2.type == VAR_LOCAL )
+                {
+                    ptr2 = &top->local[op2];
+                }
+                else
+                {
+                    ptr2 = &EIP->attr.tac.op2;
+                }
+                T_DVAR temp;
                 
-                /* operand 2*/                 
-                if( EIP->attr.tac.op2.type == VAR_LOCAL )
+                if( ptr1->type == VAR_INT )
                 {
-                    if( top->local[op2].type == VAR_INT )
+                    if ( ptr2->type == VAR_INT )
                     {
-                        if( temp.type == VAR_INT )
-                        {
-                            temp.data._int *= top->local[op2].data._int;
-                        }
-                        else
-                        {
-                            temp.data._double *= (double)top->local[op2].data._int;
-                        }
+                        temp.data._int = ptr1->data._int * ptr2->data._int;
+                        temp.type = VAR_INT;
                     }
-                    else if ( top->local[op2].type == VAR_DOUBLE )
+                    else if ( ptr2->type == VAR_DOUBLE )
                     {
-                        if( temp.type == VAR_DOUBLE )
-                        {
-                            temp.data._double *= top->local[op2].data._double;
-                        }
-                        else
-                        {
-                            temp.data._double = (double)temp.data._int * top->local[op2].data._double;
-                            temp.type = VAR_DOUBLE;
-                        }
-                    }
-                    else
-                    {
-                        ERROR("Runtime Error: Incompatible types for operation MUL.\n");
-                        return E_INCOMPATIBLE;
-                    }
-                }
-                else if( EIP->attr.tac.op2.type == VAR_INT )
-                {
-                    if( temp.type == VAR_INT )
-                    {
-                        temp.data._int *= EIP->attr.tac.op2.data._int;
-                    }
-                    else
-                    {
-                        temp.data._double *= (double) EIP->attr.tac.op2.data._int;
-                    }
-                }
-                else if( EIP->attr.tac.op2.type == VAR_DOUBLE )
-                {
-                    if( temp.type == VAR_INT )
-                    {
-                        temp.data._double = (double)temp.data._int * EIP->attr.tac.op2.data._double;
+                        temp.data._double = (double)ptr1->data._int * ptr2->data._double;
                         temp.type = VAR_DOUBLE;
                     }
                     else
                     {
-                        temp.data._double *= EIP->attr.tac.op2.data._double;
+                        if( ptr2->type == VAR_UNDEF )
+                        {
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
+                        }
+                        ERROR("Runtime error: Unsupported operation [*] with given operands.\n");
+                        return E_INCOMPATIBLE;
+                    } 
+                }
+                else if( ptr1->type == VAR_DOUBLE )
+                {
+                    if ( ptr2->type == VAR_INT )
+                    {
+                        temp.data._double = ptr1->data._double * (double)ptr2->data._int;
+                        temp.type = VAR_DOUBLE;
                     }
+                    else if ( ptr2->type == VAR_DOUBLE )
+                    {
+                        temp.data._double = (double)ptr1->data._double * ptr2->data._double;
+                        temp.type = VAR_DOUBLE;
+                    }
+                    else
+                    {
+                        if( ptr2->type == VAR_UNDEF )
+                        {
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
+                        }
+                        ERROR("Runtime error: Unsupported operation [*] with given operands.\n");
+                        return E_INCOMPATIBLE;
+                    } 
                 }
                 else
                 {
-                    ERROR("Runtime Error: Incompatible types for operation MUL.\n");
+                    if( ptr1->type == VAR_UNDEF )
+                    {
+                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        return E_UNDEF_VAR;
+                    }
+                    ERROR("Runtime error: Unsupported operation [*] with given operands.\n");
                     return E_INCOMPATIBLE;
                 } 
                 
@@ -462,68 +432,74 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 op1 = EIP->attr.tac.op1.data.offset;
                 op2 = EIP->attr.tac.op2.data.offset;
                 
+                if ( EIP->attr.tac.op1.type == VAR_LOCAL )
+                {
+                    ptr1 = &top->local[op1];
+                }
+                else
+                {
+                    ptr1 = &EIP->attr.tac.op1;
+                }
+                if ( EIP->attr.tac.op2.type == VAR_LOCAL )
+                {
+                    ptr2 = &top->local[op2];
+                }
+                else
+                {
+                    ptr2 = &EIP->attr.tac.op2;
+                }
                 T_DVAR temp;
                 temp.type = VAR_DOUBLE;
-                
-                /* operand 1*/
-                if( EIP->attr.tac.op1.type == VAR_LOCAL )
+                if( ptr1->type == VAR_INT )
                 {
-                    if( top->local[op1].type == VAR_INT )
+                    if ( ptr2->type == VAR_INT )
                     {
-                        temp.data._double = top->local[op1].data._int;
+                        temp.data._double = (double)ptr1->data._int / (double)ptr2->data._int;
                     }
-                    else if ( top->local[op1].type == VAR_DOUBLE )
+                    else if ( ptr2->type == VAR_DOUBLE )
                     {
-                        temp.data._double = top->local[op1].data._double;
+                        temp.data._double = (double)ptr1->data._int / ptr2->data._double;
                     }
                     else
                     {
-                        ERROR("Runtime Error: Incompatible types for operation MUL.\n");
+                        if( ptr2->type == VAR_UNDEF )
+                        {
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
+                        }
+                        ERROR("Runtime error: Unsupported operation [/] with given operands.\n");
                         return E_INCOMPATIBLE;
-                    }
+                    } 
                 }
-                else if( EIP->attr.tac.op1.type == VAR_INT )
+                else if( ptr1->type == VAR_DOUBLE )
                 {
-                    temp.data._double = (double)EIP->attr.tac.op1.data._int;
-                }
-                else if ( EIP->attr.tac.op1.type == VAR_DOUBLE )
-                {
-                    temp.data._double = EIP->attr.tac.op1.data._double;
-                }
-                else
-                {
-                    ERROR("Runtime Error: Incompatible types for operation MUL.\n");
-                    return E_INCOMPATIBLE;
-                }
-                
-                /* operand 2*/                 
-                if( EIP->attr.tac.op2.type == VAR_LOCAL )
-                {
-                    if( top->local[op2].type == VAR_INT )
+                    if ( ptr2->type == VAR_INT )
                     {
-                        temp.data._double = temp.data._double / (double)top->local[op2].data._int;
+                        temp.data._double = ptr1->data._double / (double)ptr2->data._int;
                     }
-                    else if ( top->local[op2].type == VAR_DOUBLE )
+                    else if ( ptr2->type == VAR_DOUBLE )
                     {
-                        temp.data._double = temp.data._double / top->local[op2].data._double;
+                        temp.data._double = (double)ptr1->data._double / ptr2->data._double;
                     }
                     else
                     {
-                        ERROR("Runtime Error: Incompatible types for operation MUL.\n");
+                        if( ptr2->type == VAR_UNDEF )
+                        {
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
+                        }
+                        ERROR("Runtime error: Unsupported operation [/] with given operands.\n");
                         return E_INCOMPATIBLE;
-                    }
-                }
-                else if( EIP->attr.tac.op2.type == VAR_INT )
-                {
-                    temp.data._double = temp.data._double / (double)EIP->attr.tac.op2.data._int;
-                }
-                else if( EIP->attr.tac.op2.type == VAR_DOUBLE )
-                {
-                    temp.data._double = temp.data._double / EIP->attr.tac.op2.data._double;
+                    } 
                 }
                 else
                 {
-                    ERROR("Runtime Error: Incompatible types for operation MUL.\n");
+                    if( ptr1->type == VAR_UNDEF )
+                    {
+                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        return E_UNDEF_VAR;
+                    }
+                    ERROR("Runtime error: Unsupported operation [/] with given operands.\n");
                     return E_INCOMPATIBLE;
                 } 
                 
@@ -583,12 +559,21 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.data._bool = ( retval < 0 )? true : false;
                             break;
                             }
-                        default:
+                        case VAR_NULL:
                             temp.data._bool = false;
+                            break;
+                        default:
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
                     }
                 }
                 else
                 {
+                    if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
+                    {
+                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        return E_UNDEF_VAR;
+                    }
                     ERROR("Runtime Error: Incompatible types for operation <.\n");
                     return E_INCOMPATIBLE;
                 }
@@ -647,12 +632,21 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.data._bool = ( retval > 0 )? true : false;
                             break;
                             }
-                        default:
+                        case VAR_NULL:
                             temp.data._bool = false;
+                            break;
+                        default:
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
                     }
                 }
                 else
                 {
+                    if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
+                    {
+                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        return E_UNDEF_VAR;
+                    }
                     ERROR("Runtime Error: Incompatible types for operation >.\n");
                     return E_INCOMPATIBLE;
                 }
@@ -711,12 +705,21 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.data._bool = ( retval <= 0 )? true : false;
                             break;
                             }
-                        default:
+                        case VAR_NULL:
                             temp.data._bool = true;
+                            break;
+                        default:
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
                     }
                 }
                 else
                 {
+                    if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
+                    {
+                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        return E_UNDEF_VAR;
+                    }
                     ERROR("Runtime Error: Incompatible types for operation <=.\n");
                     return E_INCOMPATIBLE;
                 }
@@ -775,12 +778,21 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.data._bool = ( retval >= 0 )? true : false;
                             break;
                             }
-                        default:
+                        case VAR_NULL:
                             temp.data._bool = true;
+                            break;
+                        default:
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
                     }
                 }
                 else
                 {
+                    if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
+                    {
+                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        return E_UNDEF_VAR;
+                    }
                     ERROR("Runtime Error: Incompatible types for operation >=.\n");
                     return E_INCOMPATIBLE;
                 }
@@ -835,16 +847,24 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                         case VAR_CONSTSTRING:
                         case VAR_STRING:
                             {
-                                int retval = lexsstrcmp( ptr1->data._string,ptr2->data._string, ptr1->size, ptr2->size );
-                            temp.data._bool = ( retval != 0 )? true : false;
+                                int retval = lexsstrcmp( ptr1->data._string, ptr2->data._string, ptr1->size, ptr2->size );
+                                temp.data._bool = ( retval != 0 )? true : false;
                             break;
                             }
-                        default:
+                        case VAR_NULL:
                             temp.data._bool = false;
+                        default:
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
                     }
                 }
                 else
                 {
+                    if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
+                    {
+                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        return E_UNDEF_VAR;
+                    }
                     temp.data._bool = false;
                 }
                 if ( top->local[dest].type == VAR_STRING )
@@ -903,12 +923,20 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.data._bool = ( retval == 0 )? true : false;
                             break;
                             }
-                        default:
+                        case VAR_NULL:
                             temp.data._bool = true;
+                        default:
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
                     }
                 }
                 else
                 {
+                    if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
+                    {
+                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        return E_UNDEF_VAR;
+                    }
                     temp.data._bool = false;
                 }
                 if ( top->local[dest].type == VAR_STRING )
@@ -959,11 +987,16 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                         memcpy( temp.data._string + ptr1->size, ptr2->data._string, ptr2->size );
                     }
                     else
-                    {
+                    { 
                         T_DVAR str;
                         E_ERROR_TYPE retval = strval( ptr2, 1, &str );
                         if ( retval != E_OK )
                         {
+                            if( ptr2->type == VAR_UNDEF )
+                            {
+                                ERROR("Runtime error: Variable used, but undefined.\n");
+                                return E_UNDEF_VAR;
+                            }
                             return retval;
                         }
                         
@@ -982,6 +1015,11 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 else
                 {
+                    if( ptr1->type == VAR_UNDEF )
+                    {
+                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        return E_UNDEF_VAR;
+                    }
                     ERROR("Runtime Error: Incompatible types for operation Concatenate.\n");
                     return E_OTHER;
                 }
@@ -1020,7 +1058,12 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     T_DVAR temp;
                     E_ERROR_TYPE retval = boolval( ptr1, 1, &temp );
                     if( retval != E_OK )
-                    {
+                    {   
+                        if( ptr1->type == VAR_UNDEF )
+                        {
+                            ERROR("Runtime error: Variable used, but undefined.\n");
+                            return E_UNDEF_VAR;
+                        }
                         return retval;
                     }
                     if ( temp.data._bool == false )
@@ -1062,6 +1105,11 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 else
                 {
+                    if( ptr1->type == VAR_UNDEF )
+                    {
+                        ERROR("Runtime error: Variable used, but undefined.\n");
+                        return E_UNDEF_VAR;
+                    }
                     top->local[EIP->attr.tac.dest] = *ptr1;
                 }
                 break;
@@ -1081,6 +1129,11 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 else
                 {
                     ptr1 = &EIP->attr.jump.op1;
+                }
+                if( ptr1->type == VAR_UNDEF )
+                {
+                    ERROR("Runtime error: Variable used, but undefined.\n");
+                    return E_UNDEF_VAR;
                 }
                 retval = *ptr1;
                 ptr1->type = VAR_UNDEF;
@@ -1115,6 +1168,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 
                 if ( ( ret = EIP->attr.builtin( top->local, top->size, &retval ) ) != E_OK )
                 {
+                    ERROR("Runtime error: Built-in function failed.\n");
                     return ret;
                 }
                 
@@ -1128,8 +1182,11 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 free(top);
                 --stack.top;
                 top = stack.array[stack.top];
+                break;
             }
             default:
+                ERROR("Runtime error: Unexpected instrunction with id %d.\n", EIP->opcode);
+                return E_INTERPRET_ERROR;
             break;   
         }
         
