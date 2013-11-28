@@ -460,7 +460,7 @@ E_ERROR_TYPE get_substring( T_DVAR input[], int size, T_DVAR *result )
 	if( size != 3 )
 		return E_OTHER;
 		
-    int inplen = strlen( input[0].data._string ),
+    int inplen = input[0].size,
         sublen = ( input[2].data._int - input[1].data._int ),
 		begpos = input[1].data._int,
 		endpos = input[2].data._int,
