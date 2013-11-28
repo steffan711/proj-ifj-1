@@ -1,7 +1,7 @@
 /**
- * @file built_in.c
+ * @file ial.c
  *
- * @brief Vsetky vstavane funkcie, ktore musi interpret podporovat
+ * @brief Funkcie algoritmov pre predmet IAL
  * @author Filip
  */
 

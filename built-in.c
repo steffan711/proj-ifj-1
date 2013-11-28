@@ -40,7 +40,7 @@ E_ERROR_TYPE _strtod( char *input, double *result )
  * Pomocna funkcia, najrychlejsi sposob zistenia poctu cifier
  *
  * @param integer
- * @return Uspesnost
+ * @return integer
  */
 unsigned intNumSpaces( int input )
 {
@@ -56,8 +56,9 @@ unsigned intNumSpaces( int input )
 /**
  * Vstavana funkcia, vracia bool z T_DVAR
  *
- * @param T_DVAR
- * @param bool *( return )
+ * @param T_DVAR[] vstupne parametre
+ * @param integer pocet vstup parametrov
+ * @param T_DVAR vystup
  * @return Uspesnost
  */
 E_ERROR_TYPE boolval( T_DVAR input[], int size, T_DVAR *result )
@@ -100,7 +101,7 @@ E_ERROR_TYPE boolval( T_DVAR input[], int size, T_DVAR *result )
             break;
             
         default:
-            return E_INTERPRET_ERROR;        /**< error! todo */
+            return E_INTERPRET_ERROR;
     }
 
     return E_OK;
@@ -110,8 +111,9 @@ E_ERROR_TYPE boolval( T_DVAR input[], int size, T_DVAR *result )
 /**
  * Vstavana funkcia, vracia double z T_DVAR
  *
- * @param T_DVAR
- * @param double *( return )
+ * @param T_DVAR[] vstupne parametre
+ * @param integer pocet vstup parametrov
+ * @param T_DVAR vystup
  * @return Uspesnost
  */
 E_ERROR_TYPE doubleval( T_DVAR input[], int size, T_DVAR *result )
@@ -153,7 +155,7 @@ E_ERROR_TYPE doubleval( T_DVAR input[], int size, T_DVAR *result )
             break;
             
         default:
-            return E_INTERPRET_ERROR;        /**< error! todo */
+            return E_INTERPRET_ERROR;
     }
 
     return E_OK;
@@ -163,8 +165,9 @@ E_ERROR_TYPE doubleval( T_DVAR input[], int size, T_DVAR *result )
 /**
  * Vstavana funkcia, vracia int z T_DVAR
  *
- * @param T_DVAR
- * @param int *( return )
+ * @param T_DVAR[] vstupne parametre
+ * @param integer pocet vstup parametrov
+ * @param T_DVAR vystup
  * @return Uspesnost
  */
 E_ERROR_TYPE intval( T_DVAR input[], int size, T_DVAR *result )
@@ -209,7 +212,7 @@ E_ERROR_TYPE intval( T_DVAR input[], int size, T_DVAR *result )
             break;
             
         default:
-            return E_INTERPRET_ERROR;        /**< error! todo */
+            return E_INTERPRET_ERROR;
     }
 
     return E_OK;
@@ -219,8 +222,9 @@ E_ERROR_TYPE intval( T_DVAR input[], int size, T_DVAR *result )
 /**
  * Vstavana funkcia, vracia string z T_DVAR
  *
- * @param T_DVAR
- * @param char *( return )
+ * @param T_DVAR[] vstupne parametre
+ * @param integer pocet vstup parametrov
+ * @param T_DVAR vystup
  * @return Uspesnost
  */
 E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
@@ -298,17 +302,19 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
             
         default:
        
-            return E_INTERPRET_ERROR;        /**< error! todo */
+            return E_INTERPRET_ERROR;
     }
 
     return E_OK;
-} // moze byt
+}
 
 
 /**
  * Vstavana funkcia, nacitava string zo stdin
  *
- * @param char *( return )
+ * @param T_DVAR[] vstupne parametre
+ * @param integer pocet vstup parametrov
+ * @param T_DVAR vystup
  * @return Uspesnost
  */
 E_ERROR_TYPE get_string( T_DVAR input[], int size, T_DVAR *result )
@@ -360,11 +366,11 @@ E_ERROR_TYPE get_string( T_DVAR input[], int size, T_DVAR *result )
 
 
 /**
- * Vrátí délku (počet znaku) retezce zadaného prvním parametrem
+ * Vracia dlzku retazca zadaneho prvym parametrom
  *
- * @param [in] Vstupny retazec
- * @param [out] Vysledok
- 
+ * @param T_DVAR[] vstupne parametre
+ * @param integer pocet vstup parametrov
+ * @param T_DVAR vystup
  * @return Uspesnost
  */
 E_ERROR_TYPE runtime_strlen( T_DVAR input[], int size, T_DVAR *result )
@@ -408,11 +414,11 @@ E_ERROR_TYPE runtime_strlen( T_DVAR input[], int size, T_DVAR *result )
 
 
 /**
- * Vstavana funkcia, vypisuje vsetky vstupy na stdout
+ * Vstavana funkcia, vypisuje vsetky retazce na stdout
  *
- * @param *T_DVAR[] - ukazatel na pole dynamickych premennych
- * @param int - pocet poloziek v poli
- * @param int *( return ) - pocet uspesne vypisanych vstupov
+ * @param T_DVAR[] vstupne parametre
+ * @param integer pocet vstup parametrov
+ * @param T_DVAR vystup
  * @return Uspesnost
  */
 E_ERROR_TYPE put_string( T_DVAR input[], int size, T_DVAR *result )
@@ -444,10 +450,9 @@ E_ERROR_TYPE put_string( T_DVAR input[], int size, T_DVAR *result )
 /**
  * Vstavana funkcia, vracia podretazec zo vstupneho retazca v rozmedzi pozicii zadanych v parametroch
  *
- * @param vstupny string
- * @param zaciatocna pozicia
- * @param konecna pozicia
- * @param char *( return ) - string podla pozicii
+ * @param T_DVAR[] vstupne parametre
+ * @param integer pocet vstup parametrov
+ * @param T_DVAR vystup
  * @return Uspesnost
  */
 E_ERROR_TYPE get_substring( T_DVAR input[], int size, T_DVAR *result )
@@ -482,9 +487,9 @@ E_ERROR_TYPE get_substring( T_DVAR input[], int size, T_DVAR *result )
 /**
  * Vstavana funkcia, hlada retazec v retazci a vracia jeho poziciu
  *
- * @param retazec v ktorom funckia vyhladava
- * @param hladany retazec
- * @param int *( return ) - pozicia najdeneho retazca
+ * @param T_DVAR[] vstupne parametre
+ * @param integer pocet vstup parametrov
+ * @param T_DVAR vystup
  * @return Uspesnost
  */
 E_ERROR_TYPE find_string( T_DVAR input[], int size, T_DVAR *result )
@@ -502,8 +507,9 @@ E_ERROR_TYPE find_string( T_DVAR input[], int size, T_DVAR *result )
 /**
  * Vstavana funkcia, zoraduje znaky stringu podla ich ordinalnej hodnotyh od najnizsej po najvyssiu
  *
- * @param Vstupny retazec
- * @param Zoradeny retazec
+ * @param T_DVAR[] vstupne parametre
+ * @param integer pocet vstup parametrov
+ * @param T_DVAR vystup
  * @return Uspesnost
  */
 E_ERROR_TYPE sort_string( T_DVAR input[], int size, T_DVAR *result )
