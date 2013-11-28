@@ -12,9 +12,9 @@ Stack stack;
 T_DVAR retval;
 Context* top;
 
-const unsigned int MALLOC_SIZE = 1;
+const unsigned int MALLOC_SIZE = 1024;
 
-E_ERROR_TYPE StackCheck()
+static inline E_ERROR_TYPE StackCheck()
 {
     if ( (stack.top+1) < stack.size ) // prazdny zasobnik ma hodnotu top -1
     {   
@@ -37,14 +37,14 @@ E_ERROR_TYPE StackCheck()
 
 E_ERROR_TYPE StackInit()
 {
-    stack.size = MALLOC_SIZE;
     stack.top = -1;
     stack.array = malloc( MALLOC_SIZE * sizeof(Instruction*) );
     if ( stack.array == NULL )
     {
-        ERROR(" Interpret error: malloc() failed on line %lu, level %d, ptrs available %d.\n", __LINE__, stack.top, stack.size );
+        ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
         return E_INTERPRET_ERROR;
     }
+    stack.size = MALLOC_SIZE;
     return E_OK;
 }
 
@@ -53,7 +53,7 @@ static inline bool EndofProgram()
     return ( stack.top == -1 ) ? true : false;
 }
 
-E_ERROR_TYPE AddFrame( unsigned int size )
+static inline E_ERROR_TYPE AddFrame( unsigned int size )
 {
     if ( StackCheck() != E_OK )
     {
@@ -62,7 +62,7 @@ E_ERROR_TYPE AddFrame( unsigned int size )
     Context * tmp = malloc ( sizeof( Context ) +  sizeof(T_DVAR) * size );
     if ( tmp == NULL )
     {
-        ERROR(" Interpret error: malloc() failed on line %lu, level %d, ptrs available %d.\n", __LINE__, stack.top, stack.size );
+        ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
         return E_INTERPRET_ERROR;
     }
     
@@ -85,6 +85,33 @@ void print_local_var()
         printf( "[%u > ", i );
         print_DVAR( &top->local[i] );
         printf( "------------------\n" );
+    }
+}
+
+void RuntimeErrorCleanup(void)
+{
+    if ( retval.type == VAR_STRING )
+    {
+        free( retval.data._string );
+        retval.type = VAR_UNDEF;
+    }
+    Context *context;
+    if( stack.array )
+    {
+        for( int i = 0; i <= stack.top ; i++ )
+        {
+            context = stack.array[i];
+            for( unsigned int i = 0; i < context->size; i++ )
+            {
+                if( context->local[i].type == VAR_STRING )
+                {
+                    free( context->local[i].data._string );
+                }
+            }
+            free( context );
+        }
+        free( stack.array );
+        stack.array = NULL;
     }
 }
 
@@ -149,7 +176,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     top->local[dest].data._string = malloc( ptr1->size );
                     if( top->local[dest].data._string == NULL )
                     {
-                        ERROR(" Interpret error: malloc() failed on line %lu, level %d, ptrs available %d.\n", __LINE__, stack.top, stack.size );
+                        ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
                         return E_INTERPRET_ERROR;
                     }
                     memcpy( top->local[dest].data._string, ptr1->data._string, ptr1->size );
@@ -983,7 +1010,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                         temp.data._string = malloc( ptr1->size + ptr2->size );
                         if ( temp.data._string == NULL )
                         {
-                            ERROR(" Interpret error: malloc() failed on line %lu, level %d, ptrs available %d.\n", __LINE__, stack.top, stack.size );
+                            ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
                             return E_INTERPRET_ERROR;
                         }
                         temp.size = ptr1->size + ptr2->size;
@@ -1007,7 +1034,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                         temp.data._string = malloc( ptr1->size + str.size );
                         if ( temp.data._string == NULL )
                         {
-                            ERROR(" Interpret error: malloc() failed on line %lu, level %d, ptrs available %d.\n", __LINE__, stack.top, stack.size );
+                            ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
                             free(str.data._string);
                             return E_INTERPRET_ERROR;
                         }
@@ -1102,7 +1129,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     top->local[EIP->attr.tac.dest].type = VAR_STRING;
                     if( ( top->local[EIP->attr.tac.dest].data._string = malloc( ptr1->size ) ) == NULL )
                     {
-                        ERROR(" Interpret error: malloc() failed on line %lu, level %d, ptrs available %d.\n", __LINE__, stack.top, stack.size );
+                        ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
                         return E_INTERPRET_ERROR;
                     }
                     memcpy( top->local[EIP->attr.tac.dest].data._string, ptr1->data._string, ptr1->size );

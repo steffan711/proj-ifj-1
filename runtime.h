@@ -26,5 +26,6 @@ typedef struct stack_struct
 extern T_DVAR retval;
 
 E_ERROR_TYPE InterpretCode( Instruction *EntryPoint );
+void RuntimeErrorCleanup(void);
 
 #endif // RUNTIME_H
