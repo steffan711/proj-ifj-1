@@ -947,7 +947,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 print_char( stderr, op1->data._string, op1->length );
                 ERROR( " used in expression.\n" );
                 free(op2);
-                return retval;
+                return E_UNDEF_VAR;
             }
             
         }
@@ -960,7 +960,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 print_char( stderr, op2->data._string, op2->length );
                 ERROR( "' used in expression.\n" );
                 free(op2);
-                return retval;
+                return E_UNDEF_VAR;
             }
         }
         
