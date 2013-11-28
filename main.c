@@ -11,6 +11,8 @@
 #include "file_io.h"
 #include "scanner.h"
 #include "syntax.h"
+#include "generator.h"
+#include "runtime.h"
 
 int main( int argc, char *argv[] )
 {
@@ -40,11 +42,38 @@ int main( int argc, char *argv[] )
  
     scanner_init( subor, file_size - 5); // scanner dostava subor o 5 znakov mensi koli '<?php'
     
-    if ( ( ret_val = check_syntax() ) != E_OK )
-    {   
-        
+    if ( ( ret_val = GeneratorInit( ) ) != E_OK )
+    {
+        free( handle_subor );
         return ret_val;
     }
+    
+    if ( ( ret_val = check_syntax() ) != E_OK )
+    {   
+        GeneratorErrorCleanup( );
+        free( handle_subor );
+        return ret_val;
+    }
+    
+    struct InstructionTapeBuffer *ptr;
+    if ( ( ret_val = GeneratorPrepareTape( &ptr ) ) != E_OK )
+    {
+        GeneratorErrorCleanup( );
+        free( handle_subor );
+        return ret_val;
+    }
+    
+    /* Vsetko je pripravene na beh */
+    
+    if ( ( ret_val = InterpretCode( ptr->array[0] ) ) != E_OK  )
+    {
+        RuntimeErrorCleanup();
+        GeneratorDeleteTapes(ptr);
+        free( handle_subor );
+        return ret_val;
+    }
+    GeneratorDeleteTapes(ptr);
+    
     
     free( handle_subor );
     return ret_val;
