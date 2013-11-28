@@ -184,15 +184,27 @@ E_ERROR_TYPE GeneratorInit()
     SwitchSTable = STableGlobal;
     State = S_DEFAULT;
     
-    if ( AddBuiltinFunction( "intval", 6, 1, false, boolval ) != E_OK )
+    if ( AddBuiltinFunction( "intval", 6, 1, false, intval ) != E_OK )
     {
         return E_INTERPRET_ERROR;
     }
-    if ( AddBuiltinFunction( "get_string", 10, 0, false, boolval ) != E_OK )
+    if ( AddBuiltinFunction( "get_string", 10, 0, false, get_string ) != E_OK )
     {
         return E_INTERPRET_ERROR;
     }
-    if ( AddBuiltinFunction( "put_string", 10, 0, true, boolval ) != E_OK )
+    if ( AddBuiltinFunction( "boolval", 7, 1, false, boolval ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "put_string", 10, 0, true, put_string ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "doubleval", 9, 1, false, doubleval ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "strval", 6, 1, false, strval ) != E_OK )
     {
         return E_INTERPRET_ERROR;
     }
@@ -306,7 +318,6 @@ void GeneratorDeleteTapes(struct InstructionTapeBuffer *ptr)
     PRINTD("%s()\n", __func__ );
     for( unsigned int i = 0; i < ptr->size; i++)
     {
-        printf("delete array[%u] = %p\n", i, (void *)ptr->array[i]);
         Instruction *iptr = ptr->array[i];
         Instruction *iptr_free = iptr;
         
