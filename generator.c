@@ -208,7 +208,7 @@ E_ERROR_TYPE GeneratorInit()
     {
         return E_INTERPRET_ERROR;
     }
-    if ( AddBuiltinFunction( "strlen", 10, 0, false, runtime_strlen ) != E_OK )
+    if ( AddBuiltinFunction( "strlen", 6, 1, false, runtime_strlen ) != E_OK )
     {
         return E_INTERPRET_ERROR;
     }
