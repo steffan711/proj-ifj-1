@@ -10,6 +10,8 @@
 
 #include <stdarg.h>
 #include "scanner.h"
+#include "generator.h"
+
 
 /** Hlavicky funkcii **/
 
@@ -19,6 +21,7 @@ extern const char const *OPCODE_NAME[];
 void print_token( T_token* token );
 void ERROR( char *MSB, ... );
 void print_char( FILE *file, char *text, unsigned int size );
+void print_DVAR(T_DVAR *ptr);
 
 
 /* DEBUG */

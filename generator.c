@@ -192,7 +192,7 @@ E_ERROR_TYPE GeneratorInit()
     {
         return E_INTERPRET_ERROR;
     }
-    if ( AddBuiltinFunction( "put_string", 10, 0, true, boolval ) != E_OK )
+    if ( AddBuiltinFunction( "put_string", 10, 0, true, put_string ) != E_OK )
     {
         return E_INTERPRET_ERROR;
     }
@@ -306,7 +306,6 @@ void GeneratorDeleteTapes(struct InstructionTapeBuffer *ptr)
     PRINTD("%s()\n", __func__ );
     for( unsigned int i = 0; i < ptr->size; i++)
     {
-        printf("delete array[%u] = %p\n", i, (void *)ptr->array[i]);
         Instruction *iptr = ptr->array[i];
         Instruction *iptr_free = iptr;
         
