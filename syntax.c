@@ -13,6 +13,7 @@
 #include "expressions.h"
 #include "syntax.h"
 #include "generator.h"
+#include "runtime.h"
 #include "debug.h"
 
 //#define TESTY
@@ -617,17 +618,19 @@ E_ERROR_TYPE check_syntax ( void )
     while ( !termination_control ) st_list();
     if ( error_code == E_OK )
     {
-         /*struct InstructionTapeBuffer *ptr;
+        struct InstructionTapeBuffer *ptr;
         //PrintTape( FT.tape );
         GeneratorPrepareTape(&ptr);
-        printf("pocet pasiek %u\n", ptr->size);
+        //printf("pocet pasiek %u\n", ptr->size);
         
-        PrintTape( ptr->array[0] );
-        printf("/////////////////////////\n");
+        InterpretCode( ptr->array[0] );
+        
+        //PrintTape( ptr->array[0] );
+        //printf("/////////////////////////\n");
         //PrintTape( ptr->array[1] );
         //InterpretCode( ptr->array[0] );
         GeneratorDeleteTapes(ptr);
-        PRINT_DEBUG("\x1b[36mje to panske\x1b[0m\n");*/
+        PRINT_DEBUG("\x1b[36mje to panske\x1b[0m\n");
     }
     else
     {

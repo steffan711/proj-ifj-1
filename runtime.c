@@ -1115,10 +1115,6 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             case CALL_BUILTIN:
             {
                 E_ERROR_TYPE ret;
-                for (int i = 0; i < top->size; i++ )
-                {
-                    print_char( stdout, top->local[i].data._string, top->local[i].size );
-                }
                 
                 
                 if ( ( ret = EIP->attr.builtin( top->local, top->size, &retval ) ) != E_OK )
