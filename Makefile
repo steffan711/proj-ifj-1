@@ -49,7 +49,7 @@ clean:
 
 cleanall :
 	$(RM) *.o
-	$(RM) $(EXE) gentest test
+	$(RM) $(EXE) gentest test-built-in main lextest
     
 clear_screen:
 	clear
