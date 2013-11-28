@@ -184,19 +184,7 @@ E_ERROR_TYPE GeneratorInit()
     SwitchSTable = STableGlobal;
     State = S_DEFAULT;
     
-    if ( AddBuiltinFunction( "intval", 6, 1, false, intval ) != E_OK )
-    {
-        return E_INTERPRET_ERROR;
-    }
-    if ( AddBuiltinFunction( "get_string", 10, 0, false, get_string ) != E_OK )
-    {
-        return E_INTERPRET_ERROR;
-    }
     if ( AddBuiltinFunction( "boolval", 7, 1, false, boolval ) != E_OK )
-    {
-        return E_INTERPRET_ERROR;
-    }
-    if ( AddBuiltinFunction( "put_string", 10, 0, true, put_string ) != E_OK )
     {
         return E_INTERPRET_ERROR;
     }
@@ -204,11 +192,38 @@ E_ERROR_TYPE GeneratorInit()
     {
         return E_INTERPRET_ERROR;
     }
+    if ( AddBuiltinFunction( "intval", 6, 1, false, intval ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
     if ( AddBuiltinFunction( "strval", 6, 1, false, strval ) != E_OK )
     {
         return E_INTERPRET_ERROR;
     }
-    
+    if ( AddBuiltinFunction( "get_string", 10, 0, false, get_string ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "put_string", 10, 0, true, put_string ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "strlen", 10, 0, false, runtime_strlen ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "get_substring", 13, 3, false, get_substring ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "find_string", 11, 2, false, find_string ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
+    if ( AddBuiltinFunction( "sort_string", 11, 1, false, sort_string ) != E_OK )
+    {
+        return E_INTERPRET_ERROR;
+    }
     return E_OK;
 }
 
@@ -815,6 +830,12 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
             STableData *var;
             if( ( retval = BTfind(SwitchSTable, array[i]->data._string, array[i]->length, &var) ) != E_OK )
             {
+                if ( retval == E_UNDEF_VAR )
+                {
+                     ERROR( "Error on line %u: Variable '$", array[i]->line );
+                    print_char( stderr, array[i]->data._string, array[i]->length );
+                    ERROR("' is not defined.\n");
+                }
                 for( unsigned int i = 1; i <= size; i++ )
                     free(array[i]);
                 return retval;

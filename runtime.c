@@ -960,16 +960,12 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     }
                     else
                     {
-                        print_DVAR(ptr2);
                         T_DVAR str;
                         E_ERROR_TYPE retval = strval( ptr2, 1, &str );
-                        printf("TODO FILIP>>>\n");
                         if ( retval != E_OK )
                         {
-                            printf("chybaaaaa filiiiiiip\n");
                             return retval;
                         }
-                        printf("size %d\n",str.size );
                         
                         temp.data._string = malloc( ptr1->size + str.size );
                         if ( temp.data._string == NULL )
