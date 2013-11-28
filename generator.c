@@ -1898,15 +1898,16 @@ E_ERROR_TYPE MapTableCheck(MapTable **ptr)
 extern inline int lexsstrcmp( const char * str1, const char * str2, int str1_size, int str2_size )
 {
     const char * offset;
-    int result;
+    int result = 0;
    
     if ( str1_size > str2_size )
     {
         offset = str1 + str2_size;
-       
-        do {
+        
+        while ( ( result == 0 ) && ( str1 != offset ) )
+        {
             result = ( unsigned ) *str1++ - ( unsigned ) *str2++;
-        } while ( ( result == 0 ) && ( str1 != offset ) );
+        }
        
         if ( result == 0 )
             return 1;
@@ -1915,24 +1916,22 @@ extern inline int lexsstrcmp( const char * str1, const char * str2, int str1_siz
     {
         offset = str1 + str1_size;
        
-        do {
+        while ( ( result == 0 ) && ( str1 != offset ) )
+        {
             result = ( unsigned ) *str1++ - ( unsigned ) *str2++;
-        } while ( ( result == 0 ) && ( str1 != offset ) );
+        }
        
         if ( result == 0 )
             return -1;
     }
     else
     {
-        if ( str1_size == 0 )
-        {
-            return 0;
-        }
         offset = str1 + str1_size;
        
-        do {
+        while ( ( result == 0 ) && ( str1 != offset ) )
+        {
             result = ( unsigned ) *str1++ - ( unsigned ) *str2++;
-        } while ( ( result == 0 ) && ( str1 != offset ) );
+        }
     }
  
     return result;
