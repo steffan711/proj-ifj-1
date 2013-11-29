@@ -23,7 +23,7 @@ int main( int argc, char *argv[] )
     }
 
     E_ERROR_TYPE ret_val;
-    char *handle_subor;    /**< abstrakcia zdrojoveho handle_suboru */
+    char *handle_subor;    /**< abstrakcia zdrojoveho suboru */
     size_t file_size;       /**< velkost suboru */
     
     ret_val = mmap_file( argv[1], &handle_subor, &file_size );
@@ -33,7 +33,7 @@ int main( int argc, char *argv[] )
     
     char *subor = handle_subor;
     
-    if ( check_file_header( &subor ) != E_OK ) // kontrola '<?php' na zaciatku handle_suboru
+    if ( check_file_header( &subor ) != E_OK ) // kontrola '<?php' na zaciatku suboru
     {
         fprintf( stderr, "Invalid source file. Exiting ...\n" );
         free(handle_subor);
@@ -66,15 +66,9 @@ int main( int argc, char *argv[] )
     /* Vsetko je pripravene na beh */
     
     if ( ( ret_val = InterpretCode( ptr->array[0] ) ) != E_OK  )
-    {
         RuntimeErrorCleanup();
-        GeneratorDeleteTapes(ptr);
-        free( handle_subor );
-        return ret_val;
-    }
+    
     GeneratorDeleteTapes(ptr);
-    
-    
     free( handle_subor );
     return ret_val;
 }
