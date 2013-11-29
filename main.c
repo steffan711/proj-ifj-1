@@ -35,9 +35,9 @@ int main( int argc, char *argv[] )
     
     if ( check_file_header( &subor ) != E_OK ) // kontrola '<?php' na zaciatku suboru
     {
-        fprintf( stderr, "Invalid source file. Exiting ...\n" );
+        fprintf( stderr, "Error on line 1: Missing '<?php' inserted. \n" );
         free(handle_subor);
-        return E_OTHER;
+        return E_SYNTAX;
     }
  
     scanner_init( subor, file_size - 5); // scanner dostava subor o 5 znakov mensi koli '<?php'
