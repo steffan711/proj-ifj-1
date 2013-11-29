@@ -41,7 +41,8 @@ static inline int hex2int( char a, char b )
 
 /**
  * @brief inicializuje scanner pred jeho prvym pouzitim
- * @param ukazatel na subor
+ * @param [in] ukazatel na subor
+ * @param [in] velkost suboru
 */
 extern inline void scanner_init( char *file_start, size_t file_size )
 {
@@ -72,8 +73,10 @@ extern inline int sstrcmp( const char * str1, const char * str2, int str1_size, 
 /**
  * Funkcia naplni strukturu tokenu potrebnymi datami
  *
- * @param 1 ukazatel na token
- * @param 2 token type
+ * @param [out] ukazatel na token
+ * @param [in] token type
+ * @param [in] dlzka lexemy
+ * @param [in] atribut
  */
 static inline void set_token( T_token* token, TOKEN_TYPE type, unsigned dlzka, void* data )
 {
@@ -87,7 +90,7 @@ static inline void set_token( T_token* token, TOKEN_TYPE type, unsigned dlzka, v
 /**
  * Po zavolani obsahuje parameter token nasledujuci token
  *
- * @param ukazatel na token (return)
+ * @param [out] ukazatel na token
  */
 void scanner_get_token( T_token* token )
 {
@@ -333,7 +336,7 @@ void scanner_get_token( T_token* token )
                 }
                 case T_FRACTION:
                 {
-                    if( znak == '/' ) // token //
+                    if( znak == '/' ) // riadkovy komentar
                     {
                         while( (znak = getc( current_pos )) != '\n') // preskoc vsetko az do konca riadku
                         {  
@@ -370,7 +373,7 @@ void scanner_get_token( T_token* token )
                 }
                 case T_FLOAT:
                 {    //123.znak
-                    if(isdigit(znak)) // ak si cislo tak je to fresh
+                    if( isdigit(znak) ) // ak si cislo tak je to fresh
                     {
                         znak = getc( current_pos );
                         lex_length++;
@@ -522,7 +525,7 @@ void scanner_get_token( T_token* token )
     
                     int count = offset;
                     current_pos += offset;
-                    while(offset != -1)
+                    while(offset != -1) 
                     {
                         *current_pos++ = ' ';
                         lex_length--;
@@ -530,7 +533,7 @@ void scanner_get_token( T_token* token )
                     }
                     *current_pos = ' ';
                     current_pos += (count+1);
-                    *current_pos++ = '\0';
+                    *current_pos++ = '\0'; // ukoncenie retazca nulou
                     
                     set_token( token, E_LITER, lex_length-1, current_pos - lex_length);
                     return;
