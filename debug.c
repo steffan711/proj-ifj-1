@@ -56,10 +56,12 @@ const char const *OPCODE_NAME[] =
 "DUMMY", "START", "CREATE", "CALL", "CALL_BUILTIN", "MOV", "RET", "PUSH", "COND", "JMP", "MOVRET", "CONCAT", "EQUAL", "NONEQUAL", "PLUS","MINUS", "DIV", "MUL", "LESS", "GREATER", "LESSEQ", "GREATEREQ" 
 };
 
+#ifdef TIME_CHECKER
 int pocet_tikov_za_sekundu;
 struct tms casova_struktura;
 clock_t zaciatok_merania_tikov;
 clock_t koniec_merania_tikov;
+#endif
 
 /**
  * Vypise strukturu token na stdout
