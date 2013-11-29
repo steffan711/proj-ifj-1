@@ -39,6 +39,7 @@ void print_DVAR(T_DVAR *ptr);
         while(0)
 #endif
 
+#ifdef TIME_CHECKER
 #include <sys/times.h>
 #include <sys/unistd.h>
 
@@ -63,7 +64,7 @@ do {\
     printf("\x1b[32m DOBA BEHU DANEJ CASTI PROGRAMU BOLA:   \x1b[33m%f [sec]\x1b[0m\n",\
     (koniec_merania_tikov - zaciatok_merania_tikov) / (double) pocet_tikov_za_sekundu);\
 } while (0)
-
+#endif //TIME_CHECKER
 /* END DEBUG */
 #endif
 
