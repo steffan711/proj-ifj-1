@@ -424,6 +424,7 @@ void SwitchContextToFunction( void )
     GlobalTape = SwitchTape;
     SwitchTape = actualfunction->tape;
     State = S_DEFAULT;
+    assignvar = NULL;
 }
 void SwitchContextToGobal( void )
 {
@@ -435,6 +436,7 @@ void SwitchContextToGobal( void )
     SwitchTape = GlobalTape;
     actualfunction = NULL;
     State = S_DEFAULT;
+    assignvar = NULL;
 }
 
 E_ERROR_TYPE setstate(enum gen_state state)
