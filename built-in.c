@@ -513,7 +513,7 @@ E_ERROR_TYPE find_string( T_DVAR input[], int size, T_DVAR *result )
     }
     
 	result->type = VAR_INT;
-	result->data._int = kmpmatch( input[0].data._string, input[1].data._string );
+	result->data._int = kmpmatch( input[0].data._string, input[0].size, input[1].data._string, input[1].size );
 	
     return E_OK;
 }

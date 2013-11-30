@@ -53,16 +53,16 @@ void quicksort( char *input, int beg, int end )
  * @param hladany retazec
  * @return pozicia, -1 -> nenajdene, ina chyba nemoze nastat
  */
-int kmpmatch( const char *text, const char *pattern )
+int kmpmatch( const char *text, int text_size, const char *pattern, int pattern_size )
 {
-    int Fail[strlen( pattern ) + 1];
+    int Fail[pattern_size + 1];
     int i, j, result = -1;
 
-    if( pattern[0] == '\0' )
+    if( pattern_size == 0 )
         return 0;
 
     Fail[0] = -1;
-    for ( i = 0; pattern[i] != 0; i++ )
+    for ( i = 0; i != ( pattern_size - 1 ); i++ )
 	{
         Fail[i + 1] = Fail[i] + 1;
         while( Fail[i + 1] > 0 && pattern[i] != pattern[Fail[i + 1] - 1] )
@@ -70,12 +70,12 @@ int kmpmatch( const char *text, const char *pattern )
     }
 
 	i = j = 0;
-    while( text[i] != 0 )
+    while( i != text_size )
 	{
         if( j < 0 || text[i] == pattern[j] )
 		{
             ++i, ++j;
-            if( pattern[j] == '\0' )
+            if( j == ( pattern_size - 1 ) )
 			{
 				result = i - j;
                 break;
