@@ -14,11 +14,12 @@
 #include "debug.h"
 #define TRUE 1
 
+#define ishexa( x ) ( ( x >= '0' && x <= '9') || (x >= 'a' && x <= 'f') || (x >= 'A' && x <= 'F' ) )
 
  /** Globalne premenne **/
  char*          current_pos;    // aktualna pozicia scannera v subore
  unsigned       scanner_line;   // aktualne spracovavany riadok
- const char*    file_origin;    // zaciatok suboru v pamati
+ const char*    end_ptr;        // zaciatok suboru v pamati
  size_t         size;           // skutocna velkost suboru
 
 /**
@@ -27,29 +28,36 @@
 static inline int hex2int( char a, char b )
 {
     int c;
-    
-    if ( a >= '0' && a <= '9' )
-        c = (a-'0')*16;
+   
+    if ( a <= '9' )             // cislo
+        c = ( a-'0')*16;
+    else if ( a >= 'a' )        // male pismeno
+        c = ( a-'a'+10 )*16;
+    else                        // inak bolo velke pismeno
+        c = ( a-'A'+10 )*16;
+    /* druhy znak */
+    if ( b <= '9' )
+        c += ( b-'0');
+    else if ( b >= 'a' )
+        c += ( b-'a'+10 );
     else
-        c = (a-'A'+10)*16;
-    if ( b >= '0' && b <= '9' )
-        c = c+(b-'0');
-    else
-        c = c+(b-'A'+10);
+        c += ( b-'A'+10 );
     return c;
 }
+
+
+
 
 /**
  * @brief inicializuje scanner pred jeho prvym pouzitim
  * @param [in] ukazatel na subor
  * @param [in] velkost suboru
 */
-extern inline void scanner_init( char *file_start, size_t file_size )
+extern inline void scanner_init( char *file_start, unsigned file_size )
 {
     current_pos = file_start;
     scanner_line = 1;
-    file_origin = file_start;
-    size = file_size;
+    end_ptr = file_start + file_size + 1; 
 }
 
 
@@ -170,7 +178,7 @@ void scanner_get_token( T_token* token )
                     case ',':
                                     set_token( token, E_COMA, lex_length, NULL);
                                     return;	                                      
-                    case EOF:       if( ( (current_pos - 1) - (file_origin + size) ) == 0 ) // end of file check
+                    case EOF:       if ( current_pos == end_ptr ) // end of file check
                                        set_token( token, E_EOF, lex_length, NULL); 
                                     else
                                         set_token( token, E_INVLD, lex_length, NULL);
@@ -445,100 +453,77 @@ void scanner_get_token( T_token* token )
                     sscanf( current_pos - lex_length, "%lf", &token->data._double );
                     return;
                 } // T_EXP
+                // -----------------------------------------------------------
                 case T_LIT: // nacitavanie retazca
                 {
-                    int offset = -1;
-                    lex_length++;
+                    char * zapisovacia_hlava = current_pos - 1;
+                    char * pociatocna_pozicia = zapisovacia_hlava;
+                    char a, b;
+                    
                     while( znak != '"' ) // koniec retazca
                     {
-                        lex_length++;
-                        if(  znak < ' ' || znak == '$') // znaky ktore sa v retazci nesmu vyskytovat
+                        if( znak == '\\' ) // escape sekvencia
                         {
-                            set_token( token, E_INVLD, lex_length, NULL); // sposobia lexiklanu chybu
-                            return;
-                        }
-                        
-                        if( znak == '\\' ) // escape sekvencia 
-                        {
+                            *zapisovacia_hlava++ = znak; 
                             znak = getc( current_pos );
-                            lex_length++;
                             switch( znak )
                             {
-                                case EOF:     
-                                    ungetc(current_pos);
+                                case 'n':
+                                    *(zapisovacia_hlava - 1) = '\n';
+                                    znak = getc( current_pos );
                                     break;
-                                case '"' :
-                                case '$' :
+                                case 't':
+                                    *(zapisovacia_hlava - 1) = '\t';
+                                    znak = getc( current_pos );
+                                    break;
                                 case '\\':
-                                    offset--;
-                                    break;
-                                case 'n' :
-                                    offset--;
-                                    znak = '\n';
-                                    break;
-                                case 't' :
-                                    offset--;
-                                    znak = '\t';
+                                case '"':
+                                case '$':
+                                    *(zapisovacia_hlava - 1) = znak;
+                                    znak = getc( current_pos );
                                     break;
                                 case 'x':
-                                {
-                                    int n_a, n_b;
-                                    n_a = getc( current_pos );
-                                    lex_length++;
-                                    if( ( n_a >= '0' && n_a <= '9'  ) || ( n_a >= 'A' && n_a <= 'F' ) )
-                                        ; 
-                                    else if( n_a >= 'a' && n_a <= 'f') // prevod malych pismen na velke
-                                        n_a -= ' ';
-                                    else
+                                    *zapisovacia_hlava++ = znak; 
+                                    a = znak = getc( current_pos );
+                                    if ( ishexa(a) )
                                     {
-                                        ungetc(current_pos);
-                                        lex_length--;
-                                        break; 
-                                    }  
-                                    
-                                    n_b = getc( current_pos );
-                                    lex_length++;
-                                    
-                                    if( ( n_b >= '0' && n_b <= '9'  ) || ( n_b >= 'A' && n_b <= 'F' ) ) 
-                                        ;
-                                    else if( n_b >= 'a' && n_b <= 'f') // prevod malych pismen na velke
-                                        n_b -= ' ';
-                                    else // nie je to hexa cislo => string bez zmeny
-                                    {
-                                        ungetc(current_pos);
-                                        ungetc(current_pos);
-                                        lex_length -= 2;
-                                        break;
+                                        *zapisovacia_hlava++ = znak; 
+                                        b = znak = getc( current_pos );
+                                        if ( ishexa(b) )
+                                        {
+                                            zapisovacia_hlava -= 3;
+                                            *zapisovacia_hlava++ = hex2int( a, b );
+                                            znak = getc( current_pos );
+                                        }
                                     }
-                                    znak = hex2int(n_a, n_b);
-                                    offset -= 3;
                                     break;
-                                }
-                                default: // bez zmeny
-                                    *(current_pos + offset -1) = '\\';
+                                
+                                default:
+                                    if ( znak < ' ' || znak == '$' )
+                                    {
+                                        set_token( token, E_INVLD, lex_length, NULL ); 
+                                        return;
+                                    }
+                                    *zapisovacia_hlava++ = znak; 
+                                    znak = getc( current_pos );
                                     break;
                             }
-                        } // escape sekvencia
-                        *(current_pos + offset) = znak;
-                        znak = getc( current_pos );
-                    } //while
-    
-                    int count = offset;
-                    current_pos += offset;
-                    while(offset != -1) 
-                    {
-                        *current_pos++ = ' ';
-                        lex_length--;
-                        offset++;
+                        }
+                        else if ( znak < ' ' || znak == '$' ) // znaky, ktore nemozu byt sucastou retazca
+                        {
+                            set_token( token, E_INVLD, lex_length, NULL ); 
+                            return;
+                        }
+                        else
+                        {
+                            *zapisovacia_hlava++ = znak; 
+                            znak = getc( current_pos );
+                        }
                     }
-                    *current_pos = ' ';
-                    current_pos += (count+1);
-                    *current_pos++ = '\0'; // ukoncenie retazca nulou
-                    
-                    set_token( token, E_LITER, lex_length-1, current_pos - lex_length);
+                    set_token( token, E_LITER, zapisovacia_hlava - pociatocna_pozicia , pociatocna_pozicia);
                     return;
                 } // T_LIT
-    
+                // -----------------------------------------------------------
                 default:
                     break;
             } // switch next state

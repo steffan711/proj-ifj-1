@@ -88,7 +88,7 @@ typedef struct token
 
 
 /** Funkcie **/
-void scanner_init( char *file_start, size_t file_size );
+void scanner_init( char *file_start, unsigned file_size );
 void scanner_get_token( T_token* token );
 void print_token( T_token* token );
 
