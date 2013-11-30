@@ -20,7 +20,6 @@
  char*          current_pos;    // aktualna pozicia scannera v subore
  unsigned       scanner_line;   // aktualne spracovavany riadok
  const char*    end_ptr;        // zaciatok suboru v pamati
- size_t         size;           // skutocna velkost suboru
 
 /**
  * Funkcia realizuje prevod hexadecimalneho cisla na integer
@@ -244,7 +243,7 @@ void scanner_get_token( T_token* token )
                     {
                         znak = getc( current_pos );
                         lex_length++;
-                    }while( isalnum( znak ) || znak == '_' );
+                    } while( isalnum( znak ) || znak == '_' );
                     
                     ungetc( current_pos );
                     set_token( token, E_VAR, lex_length, current_pos-lex_length);
@@ -298,13 +297,7 @@ void scanner_get_token( T_token* token )
                 case T_BLOCK_C: // komentar
                 {
                     do{
-                        if( znak == EOF )
-                        {
-                            ungetc(current_pos);
-                            next_state = INIT;
-                            break;
-                        }
-                        else if( znak == '*' )
+                        if( znak == '*' )
                         {
                             znak = getc( current_pos );
                             if( znak == '/' )
@@ -314,6 +307,12 @@ void scanner_get_token( T_token* token )
                         }
                         else if( znak == '\n' )
                             scanner_line++;
+                        else if( znak == EOF )
+                        {
+                            ungetc(current_pos);
+                            next_state = INIT;
+                            break;
+                        } 
                         znak = getc( current_pos );
                     }while(TRUE);
     
@@ -374,7 +373,7 @@ void scanner_get_token( T_token* token )
                 case T_EXCLAM:
                 {
                     if( znak == '=' && getc( current_pos ) == '=')
-                        set_token( token, E_NOT_EQ, lex_length, NULL);
+                        set_token( token, E_NOT_EQ, lex_length, NULL); // !==
                     else
                         set_token( token, E_INVLD, lex_length, NULL);
                     return;
@@ -390,13 +389,6 @@ void scanner_get_token( T_token* token )
                     {
                         set_token( token, E_INVLD, lex_length, NULL);
                         return;
-                    }
-                    //123.4znak
-                    if( znak == 'e' || znak == 'E' )
-                    {
-                        lex_length++;
-                        next_state = T_EXP;
-                        break;
                     }
                     
                     while( isdigit( znak ) )
