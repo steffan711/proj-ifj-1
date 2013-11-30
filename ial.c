@@ -58,7 +58,7 @@ int kmpmatch( const char *text, int text_size, const char *pattern, int pattern_
     int Fail[pattern_size + 1];
     int i, j, result = -1;
 
-    if( pattern[0] == '\0' )
+    if( pattern_size == 0 )
         return 0;
 
     Fail[0] = -1;
