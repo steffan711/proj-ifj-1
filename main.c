@@ -24,7 +24,7 @@ int main( int argc, char *argv[] )
 
     E_ERROR_TYPE ret_val;
     char *handle_subor;    /**< abstrakcia zdrojoveho suboru */
-    size_t file_size;       /**< velkost suboru */
+    unsigned file_size;       /**< velkost suboru */
     
     ret_val = mmap_file( argv[1], &handle_subor, &file_size );
 
