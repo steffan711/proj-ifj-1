@@ -2,18 +2,12 @@
  * Projekt: IFJ13
  * Riesitelia: xcillo00, xnemcek03, xilavsk01, xmarti61
  * Subor scanner.c Modul lexikalneho analyzatoru
- *
- * @brief Modul lexikalneho analyzatoru
  * @author Vladimír Čillo, xcillo00
  */
-
 
 #include <ctype.h> // isdigit, isspace, isalnum
 #include "file_io.h"
 #include "scanner.h"
-#include "debug.h"
-#define TRUE 1
-
 #define ishexa( x ) ( ( x >= '0' && x <= '9') || (x >= 'a' && x <= 'f') || (x >= 'A' && x <= 'F' ) )
 
  /** Globalne premenne **/
@@ -44,9 +38,6 @@ static inline int hex2int( char a, char b )
     return c;
 }
 
-
-
-
 /**
  * @brief inicializuje scanner pred jeho prvym pouzitim
  * @param [in] ukazatel na subor
@@ -58,7 +49,6 @@ extern inline void scanner_init( char *file_start, unsigned file_size )
     scanner_line = 1;
     end_ptr = file_start + file_size + 1; 
 }
-
 
 extern inline int sstrcmp( const char * str1, const char * str2, int str1_size, int str2_size )
 {
@@ -76,7 +66,6 @@ extern inline int sstrcmp( const char * str1, const char * str2, int str1_size, 
     return result;
 }
 
-
 /**
  * Funkcia naplni strukturu tokenu potrebnymi datami
  *
@@ -93,21 +82,18 @@ static inline void set_token( T_token* token, TOKEN_TYPE type, unsigned dlzka, v
     token->data._string = data;
 }
 
-
 /**
  * Po zavolani obsahuje parameter token nasledujuci token
- *
  * @param [out] ukazatel na token
  */
 void scanner_get_token( T_token* token )
-{
-    // inicializacia :
+{ 
+    // inicializacia:
     FSM_STATE next_state = INIT; 
     unsigned lex_length = 0;
     int znak;
-
-    do
-    {    
+    
+    do {    
         znak = getc( current_pos );
         if( next_state == INIT )
         {
@@ -125,26 +111,24 @@ void scanner_get_token( T_token* token )
             else if( isdigit( znak ) ) // 0-9
                 next_state = T_INT;
             else
-            {
                 switch( znak )
                 {        
-                    case '/':
-                                    next_state = T_FRACTION;
+                    case '/':       next_state = T_FRACTION;
                                     break;
                     case ';':
-                                    set_token( token, E_SEMICL, lex_length, NULL);
+                                    set_token( token, E_SEMICL, 0, NULL);
                                     return;	                                          
                     case '=':
                                     next_state = T_ASS;
                                     break;
                     case '+':
-                                    set_token( token, E_PLUS, lex_length, NULL);
+                                    set_token( token, E_PLUS, 0, NULL);
                                     return;
                     case '-':
-                                    set_token( token, E_MINUS, lex_length, NULL);
+                                    set_token( token, E_MINUS, 0, NULL);
                                     return;
                     case '*':
-                                    set_token( token, E_MULT, lex_length, NULL);
+                                    set_token( token, E_MULT, 0, NULL);
                                     return;
                     case '<':
                                     next_state = T_LESS;
@@ -157,35 +141,36 @@ void scanner_get_token( T_token* token )
                                     next_state = T_LIT;
                                     break;
                     case '.':
-                                    set_token( token, E_CONCAT, lex_length, NULL);
+                                    set_token( token, E_CONCAT, 0, NULL);
                                     return;
                     case '(':
-                                    set_token( token, E_LPARENTHESES, lex_length, NULL);
+                                    set_token( token, E_LPARENTHESES, 0, NULL);
                                     return;
                     case ')':
-                                    set_token( token, E_RPARENTHESES, lex_length, NULL);
+                                    set_token( token, E_RPARENTHESES, 0, NULL);
                                     return;
                     case '{':
-                                    set_token( token, E_LABRACK, lex_length, NULL);
+                                    set_token( token, E_LABRACK, 0, NULL);
                                     return;
                     case '}':
-                                    set_token( token, E_RABRACK, lex_length, NULL);
+                                    set_token( token, E_RABRACK, 0, NULL);
                                     return;
                     case '!':
                                     next_state = T_EXCLAM;
                                     break;
                     case ',':
-                                    set_token( token, E_COMA, lex_length, NULL);
+                                    set_token( token, E_COMA, 0, NULL);
                                     return;	                                      
-                    case EOF:       if ( current_pos == end_ptr ) // end of file check
-                                       set_token( token, E_EOF, lex_length, NULL); 
+                    case EOF:       
+                                    if ( current_pos == end_ptr ) // end of file check
+                                       set_token( token, E_EOF, 0, NULL); 
                                     else
-                                        set_token( token, E_INVLD, lex_length, NULL);
+                                        set_token( token, E_INVLD, 0, NULL);
                                     return;
-                    default:        set_token( token, E_INVLD, lex_length, NULL);
+                                    
+                    default:        set_token( token, E_INVLD, 0, NULL);
                                     return;
                 } // switch znak
-            }
         } // init
         else
             switch( next_state )
@@ -239,8 +224,7 @@ void scanner_get_token( T_token* token )
                         return;
                     }            
                         
-                    do
-                    {
+                    do {
                         znak = getc( current_pos );
                         lex_length++;
                     } while( isalnum( znak ) || znak == '_' );
@@ -283,20 +267,19 @@ void scanner_get_token( T_token* token )
                     if ( znak == '=' )  // ==
                     {
                         if( ( znak = getc( current_pos ) ) == '=' ) // === ?
-                             set_token( token, E_TRIPLEEQ, lex_length, NULL);
+                             set_token( token, E_TRIPLEEQ, 0, NULL);
                         else // nie je to token ===
-                            set_token( token, E_INVLD, lex_length, NULL);
+                            set_token( token, E_INVLD, 0, NULL);
+                        return;
                     }
                     else 
-                    {   
                         ungetc( current_pos );
-                        set_token( token, E_EQ, lex_length, NULL);
-                    }
+                    set_token( token, E_EQ, 0, NULL);
                     return;
                 }
                 case T_BLOCK_C: // komentar
                 {
-                    do{
+                    do {
                         if( znak == '*' )
                         {
                             znak = getc( current_pos );
@@ -314,7 +297,7 @@ void scanner_get_token( T_token* token )
                             break;
                         } 
                         znak = getc( current_pos );
-                    }while(TRUE);
+                    }while(1);
     
                     next_state = INIT;
                     break;
@@ -322,22 +305,22 @@ void scanner_get_token( T_token* token )
                 case T_GREATER: 
                 {
                     if( znak == '=' )
-                        set_token( token, E_GREATEREQ, lex_length, NULL);
+                        set_token( token, E_GREATEREQ, 0, NULL);
                     else 
                     {
                         ungetc( current_pos );
-                        set_token( token, E_GREATER, lex_length, NULL);
+                        set_token( token, E_GREATER, 0, NULL);
                     }
                     return;
                 }
                 case T_LESS:
                 {
                     if( znak == '=' ) // <=
-                            set_token( token, E_LESSEQ, lex_length, NULL);
+                            set_token( token, E_LESSEQ, 0, NULL);
                     else
                     {
                         ungetc( current_pos );
-                        set_token( token, E_LESS, lex_length, NULL);
+                        set_token( token, E_LESS, 0, NULL);
                     }
                     return;
                 }
@@ -375,7 +358,7 @@ void scanner_get_token( T_token* token )
                     if( znak == '=' && getc( current_pos ) == '=')
                         set_token( token, E_NOT_EQ, lex_length, NULL); // !==
                     else
-                        set_token( token, E_INVLD, lex_length, NULL);
+                        set_token( token, E_INVLD, 0, NULL);
                     return;
                 }
                 case T_FLOAT:
@@ -387,7 +370,7 @@ void scanner_get_token( T_token* token )
                     }
                     else // inak je to lexikalna chyba
                     {
-                        set_token( token, E_INVLD, lex_length, NULL);
+                        set_token( token, E_INVLD, 0, NULL);
                         return;
                     }
                     
@@ -410,7 +393,7 @@ void scanner_get_token( T_token* token )
                         sscanf( current_pos - lex_length, "%lf", &token->data._double );
                         return;
                     }
-                }
+                } // T_FLOAT
                 case T_EXP: // nacitavanie exponentu
                 {
                     if( znak == '+' || znak == '-' ) // optional +/-
@@ -421,31 +404,27 @@ void scanner_get_token( T_token* token )
                     
                     if( isdigit(znak) )
                         lex_length++;
-                        
                     else // exponent bez akehokolvek cisla
                     {        
-                        set_token( token, E_INVLD, lex_length, NULL ); 
+                        set_token( token, E_INVLD, 0, NULL ); 
                         return;
                     }
                     
-                    do // cisla exponentu :
-                    {
-                        if( isdigit( znak ) )
+                    do { 
+                        if( isdigit( znak ) ) // cisla exponentu
                         {
                             lex_length++;
                             znak = getc( current_pos );
                         }
                         else
                             break;
-                    } while(TRUE);
+                    } while(1);
                     
-                    // koniec exponentu:
                     ungetc( current_pos );
                     set_token( token, E_DOUBLE, lex_length, NULL ); 
                     sscanf( current_pos - lex_length, "%lf", &token->data._double );
                     return;
                 } // T_EXP
-                // -----------------------------------------------------------
                 case T_LIT: // nacitavanie retazca
                 {
                     char * zapisovacia_hlava = current_pos - 1;
@@ -489,11 +468,10 @@ void scanner_get_token( T_token* token )
                                         }
                                     }
                                     break;
-                                
                                 default:
                                     if ( znak < ' ' || znak == '$' )
                                     {
-                                        set_token( token, E_INVLD, lex_length, NULL ); 
+                                        set_token( token, E_INVLD, 0, NULL ); 
                                         return;
                                     }
                                     *zapisovacia_hlava++ = znak; 
@@ -503,7 +481,7 @@ void scanner_get_token( T_token* token )
                         }
                         else if ( znak < ' ' || znak == '$' ) // znaky, ktore nemozu byt sucastou retazca
                         {
-                            set_token( token, E_INVLD, lex_length, NULL ); 
+                            set_token( token, E_INVLD, 0, NULL ); 
                             return;
                         }
                         else
@@ -515,9 +493,7 @@ void scanner_get_token( T_token* token )
                     set_token( token, E_LITER, zapisovacia_hlava - pociatocna_pozicia , pociatocna_pozicia);
                     return;
                 } // T_LIT
-                // -----------------------------------------------------------
-                default:
-                    break;
+                default: break;
             } // switch next state
-    }while( TRUE );
+    }while( 1 );
 }
