@@ -426,9 +426,9 @@ void scanner_get_token( T_token* token )
                 } // T_EXP
                 case T_LIT: // nacitavanie retazca
                 {
-                    char * zapisovacia_hlava = current_pos - 1;
-                    char * pociatocna_pozicia = zapisovacia_hlava;
                     char a, b;
+                    char *zapisovacia_hlava, *pociatocna_pozicia;
+                    zapisovacia_hlava = pociatocna_pozicia = current_pos - 1;
                     
                     while( znak != '"' ) // koniec retazca
                     {
