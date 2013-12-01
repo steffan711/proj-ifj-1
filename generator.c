@@ -710,8 +710,8 @@ E_ERROR_TYPE get_local_var(unsigned int *dest)
 {
     PRINTD("%s(actual usage = %d)\n", __func__ , actual_usage);
     PRINTD("-------------------\n");
-    for (unsigned int i = 0; i < SwitchMap->used_space; i++)
-        PRINTD("[%d/%d]:%d\n", i, SwitchMap->size, SwitchMap->map[i] );
+    //for (unsigned int i = 0; i < SwitchMap->used_space; i++)
+        //PRINTD("[%d/%d]:%d\n", i, SwitchMap->size, SwitchMap->map[i] );
     PRINTD("-------------------\n");
     if ( actual_usage >= SwitchMap->used_space ) // nova premenna
     {
