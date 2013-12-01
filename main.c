@@ -44,6 +44,7 @@ int main( int argc, char *argv[] )
     
     if ( ( ret_val = GeneratorInit( ) ) != E_OK )
     {
+        GeneratorErrorCleanup( );
         free( handle_subor );
         return ret_val;
     }
