@@ -62,7 +62,7 @@ typedef struct metadata_var STableData;
 /* ************ Instrukcia ********** */
 /* ********************************** */
 
-enum vartype { VAR_UNDEF, VAR_INT, VAR_BOOL, VAR_DOUBLE, VAR_STRING, VAR_NULL, VAR_CONSTSTRING, VAR_LOCAL, VAR_NO_VAR };
+enum vartype { VAR_UNDEF = 0, VAR_INT, VAR_BOOL, VAR_DOUBLE, VAR_STRING, VAR_NULL, VAR_CONSTSTRING, VAR_LOCAL, VAR_NO_VAR };
 
 typedef struct variable
 {

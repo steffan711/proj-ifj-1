@@ -12,7 +12,7 @@ Stack stack;
 T_DVAR retval;
 Context* top;
 
-const unsigned int MALLOC_SIZE = 1024;
+const unsigned int MALLOC_SIZE = 32;
 
 static inline E_ERROR_TYPE StackCheck()
 {
@@ -35,7 +35,7 @@ static inline E_ERROR_TYPE StackCheck()
     return E_OK;
 }
 
-E_ERROR_TYPE StackInit()
+static inline E_ERROR_TYPE StackInit()
 {
     stack.top = -1;
     stack.array = malloc( MALLOC_SIZE * sizeof(Instruction*) );
@@ -55,6 +55,7 @@ static inline bool EndofProgram()
 
 static inline E_ERROR_TYPE AddFrame( unsigned int size )
 {
+    
     if ( StackCheck() != E_OK )
     {
         return E_INTERPRET_ERROR;
@@ -73,8 +74,8 @@ static inline E_ERROR_TYPE AddFrame( unsigned int size )
     for( unsigned int i = 0; i< size; i++ )
     {
         tmp->local[i].type = VAR_UNDEF;
-        tmp->local[i].size = 0;
-    } 
+        //tmp->local[i].size = 0;
+    }
     return E_OK;
 }
 
@@ -1102,26 +1103,56 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     if( EIP->attr.jump.op1.type == VAR_LOCAL )
                     {
                         ptr1 = &top->local[EIP->attr.jump.op1.data.offset];
-                    }
-                    else
-                    {
-                        ptr1 = &EIP->attr.jump.op1;
-                    }
-                    T_DVAR temp;
-                    E_ERROR_TYPE retval = boolval( ptr1, 1, &temp );
-                    if( retval != E_OK )
-                    {   
                         if( ptr1->type == VAR_UNDEF )
                         {
                             ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
                         }
-                        return retval;
                     }
-                    if ( temp.data._bool == false )
+                    else
                     {
-                        EIP = EIP->attr.jump.jmp;
-                        continue;
+                        ptr1 = &EIP->attr.jump.op1;
+                    }
+                    
+                    switch ( ptr1->type )
+                    {
+                        case VAR_BOOL:
+                            if ( ptr1->data._bool == false )
+                            {
+                                EIP = EIP->attr.jump.jmp;
+                                continue;
+                            }
+                            break;
+                        case VAR_INT:
+                            if ( ptr1->data._int == 0 )
+                            {
+                                EIP = EIP->attr.jump.jmp;
+                                continue;
+                            }
+                            break;
+                        case VAR_STRING:
+                        case VAR_CONSTSTRING:
+                            if ( ptr1->size == 0 )
+                            {
+                                EIP = EIP->attr.jump.jmp;
+                                continue;
+                            }
+                            break;
+                        case VAR_DOUBLE:
+                            if ( ptr1->data._double == 0.0 )
+                            {
+                                EIP = EIP->attr.jump.jmp;
+                                continue;
+                            }
+                            break;
+                        case VAR_NULL:
+                            {
+                                EIP = EIP->attr.jump.jmp;
+                                continue;
+                                break;
+                            }
+                        default:
+                            break;
                     }
                     break;   
                 }
@@ -1145,25 +1176,15 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ptr1 = &EIP->attr.tac.op1;
                 }
                 
+                if( ptr1->type == VAR_UNDEF )
+                {
+                    ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
+                    return E_UNDEF_VAR;
+                }
+                top->local[EIP->attr.tac.dest] = *ptr1;
                 if ( ptr1->type == VAR_STRING )
                 {
-                    top->local[EIP->attr.tac.dest].type = VAR_STRING;
-                    if( ( top->local[EIP->attr.tac.dest].data._string = malloc( ptr1->size ) ) == NULL )
-                    {
-                        ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
-                        return E_INTERPRET_ERROR;
-                    }
-                    memcpy( top->local[EIP->attr.tac.dest].data._string, ptr1->data._string, ptr1->size );
-                    top->local[EIP->attr.tac.dest].size = ptr1->size;
-                }
-                else
-                {
-                    if( ptr1->type == VAR_UNDEF )
-                    {
-                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
-                        return E_UNDEF_VAR;
-                    }
-                    top->local[EIP->attr.tac.dest] = *ptr1;
+                    top->local[EIP->attr.tac.dest].type = VAR_CONSTSTRING;
                 }
                 break;
             }
