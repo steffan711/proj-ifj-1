@@ -1029,15 +1029,23 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 {
                     if ( ptr2->type == VAR_CONSTSTRING || ptr2->type == VAR_STRING )
                     {
-                        temp.data._string = malloc( ptr1->size + ptr2->size );
-                        if ( temp.data._string == NULL )
+                        if ( ptr1->size + ptr2->size > 0 )
                         {
-                            ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
-                            return E_INTERPRET_ERROR;
+                            temp.data._string = malloc( ptr1->size + ptr2->size );
+                            if ( temp.data._string == NULL )
+                            {
+                                ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
+                                return E_INTERPRET_ERROR;
+                            }
+                            temp.size = ptr1->size + ptr2->size;
+                            memcpy( temp.data._string, ptr1->data._string, ptr1->size );
+                            memcpy( temp.data._string + ptr1->size, ptr2->data._string, ptr2->size );
                         }
-                        temp.size = ptr1->size + ptr2->size;
-                        memcpy( temp.data._string, ptr1->data._string, ptr1->size );
-                        memcpy( temp.data._string + ptr1->size, ptr2->data._string, ptr2->size );
+                        else
+                        {
+                            temp.type = VAR_CONSTSTRING;
+                            temp.size = 0;
+                        }
                     }
                     else
                     { 
@@ -1052,19 +1060,26 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             }
                             return retval;
                         }
-                        
-                        temp.data._string = malloc( ptr1->size + str.size );
-                        if ( temp.data._string == NULL )
+                        if ( ptr1->size + str.size > 0 )
                         {
-                            ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
+                            temp.data._string = malloc( ptr1->size + str.size );
+                            if ( temp.data._string == NULL )
+                            {
+                                ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
+                                free(str.data._string);
+                                return E_INTERPRET_ERROR;
+                            }
+                            
+                            temp.size = ptr1->size + str.size;
+                            memcpy( temp.data._string, ptr1->data._string, ptr1->size );
+                            memcpy( temp.data._string + ptr1->size, str.data._string, str.size );
                             free(str.data._string);
-                            return E_INTERPRET_ERROR;
                         }
-                        
-                        temp.size = ptr1->size + str.size;
-                        memcpy( temp.data._string, ptr1->data._string, ptr1->size );
-                        memcpy( temp.data._string + ptr1->size, str.data._string, str.size );
-                        free(str.data._string);
+                        else
+                        {
+                            temp.type = VAR_CONSTSTRING;
+                            temp.size = 0;
+                        }
                     }
                 }
                 else
@@ -1170,16 +1185,15 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 if( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
                     ptr1 = &(stack.array[stack.top-1])->local[EIP->attr.tac.op1.data.offset];
+                    if( ptr1->type == VAR_UNDEF )
+                    {
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
+                        return E_UNDEF_VAR;
+                    }
                 }
                 else
                 {
                     ptr1 = &EIP->attr.tac.op1;
-                }
-                
-                if( ptr1->type == VAR_UNDEF )
-                {
-                    ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
-                    return E_UNDEF_VAR;
                 }
                 top->local[EIP->attr.tac.dest] = *ptr1;
                 if ( ptr1->type == VAR_STRING )
@@ -1206,7 +1220,22 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                         return E_UNDEF_VAR;
                     }
                     retval = *ptr1;
-                    ptr1->type = VAR_UNDEF;
+                    if ( retval.type == VAR_STRING || retval.type == VAR_CONSTSTRING )
+                    {
+                        if ( retval.size > 0 )
+                        {
+                            char *tmp = malloc( retval.size );
+                            if ( tmp == NULL )
+                            {
+                                retval.type = VAR_UNDEF; // zneplatnim aby sa uvolnil len raz cez kontrolu ramcov
+                                ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
+                                return E_INTERPRET_ERROR;
+                            }
+                            retval.type = VAR_STRING;
+                            memcpy( tmp, retval.data._string, retval.size );
+                            retval.data._string = tmp;
+                        }
+                    }
                 }
                 else
                 {
