@@ -33,10 +33,9 @@ typedef enum
     E_VAR,          // premenna
     E_INT,          // integer
     E_DOUBLE,       // double
-    E_LITER,        // literal
-    E_FALSE,    // ----
-    E_NULL,
-    E_TRUE, 
+    E_LITER,        // literal   
+    E_BOOL,
+    E_NULL,     // ----
     E_WHILE,
     E_FUNCTION,
     E_IF,
