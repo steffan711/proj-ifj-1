@@ -12,20 +12,11 @@
 #include "scanner.h"
 #include "expressions.h"
 #include "debug.h"
+#include "generator.h"
 
 /** inicializacne velkosti zasobnikov, ktorych pamat sa pri naplneni linearne zvacsuje */
 #define SIZEOF_ESTACK 32
 #define SIZEOF_PFXSTACK 32
-
-//#define TESTY
-//#define TESTY2
-#ifndef TESTY
-#include "generator.h"
-#endif
-
-#ifdef TESTY
-#include <string.h>
-#endif
 
 /** struktura eStack zasobnik pre precedencnu analyzu (e - enum stack)*/
 static struct {
@@ -84,131 +75,6 @@ const TOKEN_TYPE prec_table [][18] = {
 /*  {  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_N,  R_C,  R_N,  R_C,  R_N,  R_N},
 };
 
-const char *enums[] = { //iba na testovacie ucely
-".", "!==", "===","+","*","-","/","<",">","<=",">=","(",")","E_IDENT","E_COMA","i","{",";","E_VAR","E_INT","E_DOUBLE",    
-"E_LITER","E_FALSE" ,  "E_NULL" , "E_TRUE" ,  "E_WHILE" ,  "E_FUNCTION" ,  "E_IF" ,  "E_ELSE" ,  "E_RETURN" ,  "E_EQ" , "E_RABRACK" ,"E_INVLD" ,"E_EOF" , "R_P" , "E_E" ,"E_ELSEIF" 
-};
-#ifdef TESTY
-E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
-{
-    static int counter = 0;
-    if (op2 == NULL)
-    {
-        if (op1->ttype == E_E)
-        {
-            printf("\x1b[32mResult is in L%d\x1b[0m\n", op1->data._int);
-        }
-        else
-        {
-                printf("\x1b[32mResult is ");
-                switch (op1->ttype) { 
-                case E_FALSE: printf("FALSE\x1b[0m\n");  break; 
-                case E_TRUE: printf("TRUE\x1b[0m\n"); break; 
-                case E_NULL: printf("NULL\x1b[0m\n"); break;
-                case E_INT: printf("%d\x1b[0m\n", op1->data._int); break;
-                case E_DOUBLE: printf("%e\x1b[0m\n", op1->data._double); break;
-                case E_LITER: printf("\"%s\"\x1b[0m\n", op1->data._string); break;
-                default: break;
-            }
-        }
-        free(op1);
-        return E_OK;
-    }
-    printf("\x1b[31mINSTRUCTION NUMBER %d:\x1b[0m    ", counter);
-    if (op1->ttype == E_VAR)
-    {
-        for (unsigned i = 0; i < op1->length; putchar(op1->data._string[i]), i++); putchar(' ');
-    }
-    else 
-    {
-        switch (op1->ttype) { 
-            case E_FALSE: printf("FALSE ");  break; 
-            case E_TRUE: printf("TRUE "); break; 
-            case E_NULL: printf("NULL "); break;
-            case E_INT: printf("%d ", op1->data._int); break;
-            case E_DOUBLE: printf("%e ", op1->data._double); break;
-            case E_LITER: printf("\"%s\" ", op1->data._string); break;
-            case E_E: printf("L%d ", op1->data._int); break;
-            default: break;
-        }
-    }
-    printf("\x1b[32m%s\x1b[0m ", enums[operation]);
-    if (op2->ttype == E_VAR)
-    {
-        for (unsigned i = 0; i < op2->length; putchar(op2->data._string[i]), i++); putchar('\n');
-    }
-    else 
-    {
-        switch (op2->ttype) { 
-            case E_FALSE: printf("FALSE\n");  break; 
-            case E_TRUE: printf("TRUE\n"); break; 
-            case E_NULL: printf("NULL\n"); break;
-            case E_INT: printf("%d\n", op2->data._int); break;
-            case E_DOUBLE: printf("%e\n", op2->data._double); break;
-            case E_LITER: printf("\"%s\"\n", op2->data._string); break;
-            case E_E: printf("L%d\n", op2->data._int); break;
-            default: break;
-        }
-    }
-    op1->ttype = E_E;
-    op1->data._int = counter;
-    counter++;
-    free(op2);
-    return E_OK;
-}
-
-E_ERROR_TYPE evalf( T_token **array, int counter )
-{
-    static int c = 0;
-    printf("\x1b[35mFUNCTION CALL NUMBER %d:\x1b[0m    \x1b[33m", c);
-    for (unsigned i = 0; i < array[0]->length; putchar(array[0]->data._string[i]), i++);
-    printf("(\x1b[0m");
-    if (counter != 0) printf("\x1b[33m \x1b[0m");
-    for (int i = 1; i < counter; i++)
-    {
-        switch (array[i]->ttype) { 
-        case E_FALSE: printf("\x1b[33mFALSE, \x1b[0m");  break; 
-        case E_TRUE: printf("\x1b[33mTRUE, \x1b[0m"); break; 
-        case E_NULL: printf("\x1b[33mNULL, \x1b[0m"); break;
-        case E_INT: printf("\x1b[33m%d, \x1b[0m", array[i]->data._int); break;
-        case E_DOUBLE: printf("\x1b[33m%e, \x1b[0m", array[i]->data._double); break;
-        case E_LITER: printf("\x1b[33m\"%s\", \x1b[0m", array[i]->data._string); break;
-        case E_E: printf("\x1b[33mL%d, \x1b[0m", array[i]->data._int); break;
-        case E_VAR: printf("\x1b[33m"); 
-            for (unsigned j = 0; j < array[i]->length; putchar(array[i]->data._string[j]), j++); 
-            printf(", \x1b[0m");
-        default: break;
-        }
-        free(array[i]);
-    }
-    if (counter != 0)
-    {
-        switch (array[counter]->ttype) { 
-        case E_FALSE: printf("\x1b[33mFALSE )\n\x1b[0m");  break; 
-        case E_TRUE: printf("\x1b[33mTRUE )\n\x1b[0m"); break; 
-        case E_NULL: printf("\x1b[33mNULL )\n\x1b[0m"); break;
-        case E_INT: printf("\x1b[33m%d )\n\x1b[0m", array[counter]->data._int); break;
-        case E_DOUBLE: printf("\x1b[33m%e )\n\x1b[0m", array[counter]->data._double); break;
-        case E_LITER: printf("\x1b[33m\"%s\" )\n\x1b[0m", array[counter]->data._string); break;
-        case E_E: printf("\x1b[33mL%d )\n\x1b[0m", array[counter]->data._int); break;
-        case E_VAR: printf("\x1b[33m"); 
-            for (unsigned j = 0; j < array[counter]->length; putchar(array[counter]->data._string[j]), j++); 
-            printf(" )\n\x1b[0m");
-        default: break;
-        }
-        free(array[counter]);
-    }
-    else
-    {
-        printf("\x1b[33m)\n\x1b[0m");
-    }
-    array[0]->ttype = E_E;
-    array[0]->data._int = c;
-    c++;
-    return E_OK;
-}
-#endif
-
 /**
  * Funkcia alokuje pamat zasobnika PFXStack
  *
@@ -218,9 +84,7 @@ E_ERROR_TYPE evalf( T_token **array, int counter )
 extern inline E_ERROR_TYPE PFXInit ( void )
 {
 	if ( ( PFXStack.postfix = malloc( sizeof( T_token * ) * SIZEOF_PFXSTACK ) ) == NULL )
-	{
 	    return E_INTERPRET_ERROR;
-	}
 	return E_OK;
 }
 
@@ -237,9 +101,7 @@ extern inline E_ERROR_TYPE PFXStackPush ( T_token *token )
         PFXStack.max_size += SIZEOF_PFXSTACK;
         T_token **help;
         if ( ( help = realloc( PFXStack.postfix, PFXStack.max_size * sizeof( T_token ** ) ) ) == NULL )
-        {
             return E_INTERPRET_ERROR;
-        }
         PFXStack.postfix = help;
     }
     
@@ -299,9 +161,7 @@ extern inline void PFXfree ( void )
 extern inline E_ERROR_TYPE estackInit ( void )
 {
 	if ( ( eStack.data = malloc( sizeof( TOKEN_TYPE ) * SIZEOF_ESTACK ) ) == NULL )
-	{
 	    return E_INTERPRET_ERROR;
-	}
 
 	eStack.data[0] = E_LABRACK;
     
@@ -378,19 +238,7 @@ extern inline E_ERROR_TYPE estackPop ( void )
                         eStack.data[eStack.top] = E_E;
                         return evalf( &(PFXStack.postfix[PFXStack.size]), 0 );
                     }
-                    else
-                    {
-                        return E_SYNTAX;
-                    }
                 }
-                else 
-                {
-                    return E_SYNTAX;
-                }
-            }
-            else 
-            {
-                return E_SYNTAX;
             }
         }
     }
@@ -407,27 +255,11 @@ extern inline E_ERROR_TYPE estackPop ( void )
                     //pri chybe je navratovou hodnotou predana semanticka chyba, vyuziva sa tu vyhodnocovanie parametrov zprava dolava (_cdecl)
                     return eval( PFXStackTop( ), PFXStackTopPop( ), help );
                 }
-                else
-                {
-                    return E_SYNTAX;
-                }
-            }
-            else
-            {
-                return E_SYNTAX;
             }
         }
-        else
-        {
-            return E_SYNTAX;
-        }
-    }
-    else
-    {
-        return E_SYNTAX;
     }
 
-    return E_SYNTAX;    //len kvoli kompilatoru
+    return E_SYNTAX;
 }
 
 /**
@@ -442,16 +274,12 @@ extern inline E_ERROR_TYPE estackPush ( TOKEN_TYPE type )
         eStack.size = eStack.size + SIZEOF_ESTACK;
         TOKEN_TYPE *help;
         if ( ( help = realloc( eStack.data, eStack.size * sizeof( TOKEN_TYPE ) ) ) == NULL )
-        {
             return E_INTERPRET_ERROR;
-        }
         eStack.data = help;
     }
     
     eStack.data[eStack.top] = type;
-
     eStack.last_terminal = type;
-
     return E_OK;
 }
 
@@ -468,9 +296,7 @@ extern inline E_ERROR_TYPE estackChangeLT ( void )
         eStack.size = eStack.size + SIZEOF_ESTACK;
         TOKEN_TYPE *help;
         if ( ( help = realloc( eStack.data, eStack.size * sizeof( TOKEN_TYPE ) ) ) == NULL )
-        {
             return E_INTERPRET_ERROR;
-        }
         eStack.data = help;
     }
     
@@ -538,16 +364,9 @@ extern inline E_ERROR_TYPE function_analyze ( void )
                     PFXStack.size -= counter;
                     return evalf( &(PFXStack.postfix[PFXStack.size]), counter );
                 }
-                else
-                {
-                    return E_SYNTAX;
-                }
             }
         }
-        else 
-        {
-            return E_SYNTAX;
-        }
+        return E_SYNTAX;
     }
     
     return E_SYNTAX; //kvoli kompilatoru
@@ -566,9 +385,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
     T_token * token;
     
     if ( ( token = malloc( sizeof( T_token ) ) ) == NULL )
-    {
         return E_INTERPRET_ERROR;
-    }
     
     copy_token( token, start_token ); //aby nevznikali konflikty pri uvolnovani pamate
 
@@ -598,7 +415,8 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 return E_LEX;
             }
             free( token );
-            fprintf( stderr, "Error near line %u: invalid input for expression got %s\n", token->line, TOKEN_NAME[token->ttype] );
+            fprintf( stderr, "Error near line %u: this expression must be terminate with '%c' got %s\n",\
+            token->line, termination_ttype, TOKEN_NAME[token->ttype] );
             return E_SYNTAX; //chybny vstupny token
         }
     }
@@ -618,15 +436,6 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
     }
     
     do {
-        #ifdef TESTY2
-            printf("na vstupe je: \x1B[32m%s\x1B[0m\n", enums[actual_ttype]);
-            for (int i = 0; i <= eStack.top; i++) { printf("\x1B[34m-----\x1B[0m"); for(unsigned j = 0; j < strlen(enums[eStack.data[i]]); j++) printf("\x1B[34m-\x1B[0m");}
-            printf("\n");
-            for (int i = 0; i < eStack.top; i++) { printf(" %s  \x1B[34m|\x1B[0m ", enums[eStack.data[i]]);}
-            printf(" %s  \x1B[34m|\x1B[0m\n", enums[eStack.data[eStack.top]]);
-            for (int i = 0; i <= eStack.top; i++) { printf("\x1B[34m-----\x1B[0m"); for(unsigned j = 0; j < strlen(enums[eStack.data[i]]); j++) printf("\x1B[34m-\x1B[0m");}
-            printf("\n");
-        #endif
         switch ( prec_table[eStack.last_terminal][actual_ttype] )    //invariant - nikdy nepristupim na index mimo pola tabulky
         {
             case R_E:
@@ -687,7 +496,8 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                             PFXdispose( ); free( token );
                             return E_LEX;
                         }
-                        fprintf( stderr, "Error near line %u: invalid input for expression got %s\n", token->line, TOKEN_NAME[token->ttype] );
+                        fprintf( stderr, "Error near line %u: this expression must be terminate with '%c' got %s\n",\
+                        token->line, termination_ttype, TOKEN_NAME[token->ttype] );
                         PFXdispose( ); free( token );
                         return E_SYNTAX; //chybny vstupny token
                     }
@@ -742,7 +552,9 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                             PFXdispose( ); free( token );
                             return E_LEX;
                         }
-                        fprintf( stderr, "Error near line %u: invalid input for expression got %s\n", token->line, TOKEN_NAME[token->ttype] );
+                        fprintf( stderr, "Error near line %u: this expression must be terminate with '%c' got %s\n",\
+                        token->line, termination_ttype, TOKEN_NAME[token->ttype] );
+                        
                         PFXdispose( ); free( token );
                         return E_SYNTAX; //chybny vstupny token
                     }
@@ -776,16 +588,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 return E_SYNTAX;  //chyba neexistuje pravidlo v tabulke
         }    
     } while ( ( eStack.last_terminal != E_LABRACK ) || ( actual_ttype != termination_ttype ) );
-    
-    #ifdef TESTY2
-        printf("Ukoncil sa cyklus a na vstupe je: \x1B[31m%s\x1B[0m\n", enums[actual_ttype]);
-        for (int i = 0; i <= eStack.top; i++) { printf("\x1B[32m------\x1B[0m"); }
-        printf("\n");
-        for (int i = 0; i < eStack.top; i++) { printf(" %s  \x1B[32m|\x1B[0m ", enums[eStack.data[i]]);}
-        printf(" %s  \x1B[32m|\x1B[0m\n", enums[eStack.data[eStack.top]]);
-        for (int i = 0; i <= eStack.top; i++) { printf("\x1B[32m------\x1B[0m"); }
-        printf("\n");
-    #endif
+   
     //posledne volanie funkcie eval s s jedinou polozkou na vrchole zasobnika PFXStack, ktorou je vysledok vyhodnotenia vyrazu
     if ( ( error_code = eval( PFXStackTopPop( ), NULL, E_TERM ) ) != E_OK )
     {
@@ -806,9 +609,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
 E_ERROR_TYPE precedenceInit ( void )
 {
     if ( estackInit( ) != E_OK )
-    {
         return E_INTERPRET_ERROR;
-    }
     
     if ( PFXInit( ) != E_OK )
     {
