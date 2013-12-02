@@ -289,6 +289,9 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
             
             result->type = VAR_STRING;
             result->size = input[0].size;
+            result->data._string = malloc( input[0].size );
+            if( result->data._string == NULL )
+                return E_INTERPRET_ERROR;
             memcpy( result->data._string, input[0].data._string, input[0].size );
             break;
             
