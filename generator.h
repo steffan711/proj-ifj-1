@@ -78,18 +78,25 @@ typedef struct variable
     unsigned int size;
 } T_DVAR;
 
-enum opcodes { DUMMY, START, CREATE, CALL, CALL_BUILTIN, MOV, RET, PUSH, COND, JMP,
-              MOVRET, CONCAT, EQUAL, NONEQUAL, PLUS, MINUS, DIV, MUL, LESS, GREATER, LESSEQ, GREATEREQ };
+enum opcodes { DUMMY = 0, START, CREATE, MOV, RET, PUSH, COND, JMP,
+              CALL, CALL_BUILTIN,
+              CONCAT, EQUAL, NONEQUAL, PLUS, MINUS, DIV, MUL, LESS, GREATER, LESSEQ, GREATEREQ 
+              };
 
 struct instruction {
     enum opcodes opcode;
     union
     {
         unsigned int size;
-        E_ERROR_TYPE (*builtin)( T_DVAR[], int, T_DVAR *);
+        struct
+        {
+            E_ERROR_TYPE (*func)( T_DVAR[], int, T_DVAR *);
+            unsigned int dest;
+        } builtin;
         struct
         {
             struct instruction *jmp;
+            unsigned int dest;
             T_DVAR op1;
         } jump;
         struct 

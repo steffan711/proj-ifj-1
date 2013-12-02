@@ -1100,15 +1100,6 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 break;
             }
             
-            case MOVRET:
-                dest = EIP->attr.tac.dest;
-                if ( top->local[dest].type == VAR_STRING )
-                {
-                    free( top->local[dest].data._string );
-                }
-                top->local[dest] = retval;
-                retval.type = VAR_UNDEF;
-                break;
             case JMP:
                 EIP = EIP->attr.jump.jmp;
                 continue;
@@ -1204,6 +1195,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             }
             case CALL:
                 top->EIP = EIP->next;
+                top->dest = EIP->attr.jump.dest;
                 EIP = EIP->attr.jump.jmp;
                 continue;
                 break;
@@ -1251,6 +1243,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                         free( top->local[i].data._string );
                     }
                 }
+                dest = top->dest;
                 EIP = top->EIP;
                 free(top);
                 --stack.top;
@@ -1264,6 +1257,13 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     return E_OK;
                 }
                 top = stack.array[stack.top];
+                
+                if ( top->local[dest].type == VAR_STRING )
+                {
+                    free( top->local[dest].data._string );
+                }
+                top->local[dest] = retval;
+                retval.type = VAR_UNDEF;
                 continue;
                 break;
             
@@ -1271,24 +1271,31 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             {
                 E_ERROR_TYPE ret;
                 
-                
-                if ( ( ret = EIP->attr.builtin( top->local, top->size, &retval ) ) != E_OK )
+                if ( ( ret = EIP->attr.builtin.func( top->local, top->size, &retval ) ) != E_OK )
                 {
                     retval.type = VAR_UNDEF;
                     ERROR("Runtime error: Built-in function failed.\n");
                     return ret;
                 }
                 
-                for( unsigned int i = 0; i < top->size; i++ )
+                /*for( unsigned int i = 0; i < top->size; i++ )
                 {
                     if( top->local[i].type == VAR_STRING )
                     {
                         free( top->local[i].data._string );
                     }
-                }
+                }*/
                 free(top);
                 --stack.top;
                 top = stack.array[stack.top];
+                dest = EIP->attr.builtin.dest;
+                if ( top->local[dest].type == VAR_STRING )
+                {
+                    free( top->local[dest].data._string );
+                }
+                top->local[dest] = retval;
+                retval.type = VAR_UNDEF;
+                
                 break;
             }
             default:

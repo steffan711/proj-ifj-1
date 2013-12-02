@@ -90,6 +90,7 @@ void PrintTape( Instruction *ptr )
                 break;
             case CALL:
                 printf("Call ptr: %p\n", (void*)ptr->attr.jump.jmp);
+                printf("Dest: [%u]\n", ptr->attr.jump.dest);
                  break;
             case CALL_BUILTIN:
             {
@@ -97,8 +98,9 @@ void PrintTape( Instruction *ptr )
                     E_ERROR_TYPE (*fptr)( T_DVAR[], int, T_DVAR *);
                     void * ptr;
                 } tmp;
-                tmp.fptr = ptr->attr.builtin;
+                tmp.fptr = ptr->attr.builtin.func;
                 printf("Call C ptr: %p\n", tmp.ptr);
+                printf("Dest: [%u]\n", ptr->attr.builtin.dest);
                  break;
             }
             case JMP:
@@ -109,9 +111,9 @@ void PrintTape( Instruction *ptr )
                 printf("OP1: ");
                 print_DVAR( &( ptr->attr.tac.op1 ) );
                 break;
-            case MOVRET:
+            /*case MOVRET:
                 printf("Dest: [%u]\n", ptr->attr.tac.dest);
-                break;
+                break;*/
             case COND:
                 printf("Jump to: [%p]\n", (void*)ptr->attr.jump.jmp );
                 printf("OP1: ");
@@ -519,7 +521,7 @@ E_ERROR_TYPE setstate(enum gen_state state)
             if ( AddInstruction() != E_OK )
                 return E_INTERPRET_ERROR;
             SwitchTape->opcode = RET;
-            SwitchTape->attr.tac.op1.type = VAR_NULL;
+            SwitchTape->attr.jump.op1.type = VAR_NULL;
             State = state; // pridat return
             actualfunction->frame_count = SwitchSTable->counter;
             SwitchContextToGobal();
@@ -528,7 +530,7 @@ E_ERROR_TYPE setstate(enum gen_state state)
             if ( AddInstruction() != E_OK )
                 return E_INTERPRET_ERROR;
             SwitchTape->opcode = RET;
-            SwitchTape->attr.tac.op1.type = VAR_NULL;
+            SwitchTape->attr.jump.op1.type = VAR_NULL;
             /* nastavim velkost ramca prvej instrukcie */
             FT.tape->attr.size = SwitchSTable->counter;
             State = state;
@@ -614,11 +616,25 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
 {
     PRINTD("%s()\n", __func__ );
     
-    if ( State == S_DEFAULT && assignvar ) // zistim ci sa da optimalizovat
+    if ( State == S_DEFAULT && assignvar && op->ttype == E_LOCAL ) // zistim ci sa da optimalizovat
     {
-        if ( op->ttype == E_LOCAL && 
-            SwitchTape->opcode >= MOVRET && SwitchTape->opcode <= GREATEREQ && 
-            SwitchTape->attr.tac.dest == op->length)
+        if ( SwitchTape->opcode == CALL && SwitchTape->attr.jump.dest == op->length )
+        {
+            PRINTD( "predosla instrukcia bola CALL\n" );
+            SwitchTape->attr.jump.dest = assignvar->offset;
+            assignvar->assigned = true;
+            free(op);
+            return E_OK;
+        }
+        else if ( SwitchTape->opcode == CALL_BUILTIN && SwitchTape->attr.builtin.dest == op->length )
+        {
+            PRINTD( "predosla instrukcia bola CALL_BUILTIN\n" );
+            SwitchTape->attr.builtin.dest = assignvar->offset;
+            assignvar->assigned = true;
+            free(op);
+            return E_OK;
+        }
+        else if ( SwitchTape->opcode >= CONCAT && SwitchTape->attr.tac.dest == op->length )
         {
             PRINTD("predosla instrukcia bola 3adresna, typ %s\n", OPCODE_NAME[SwitchTape->opcode]);
             SwitchTape->attr.tac.dest = assignvar->offset;
@@ -627,6 +643,7 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
             return E_OK;
         }
     }
+    
     PRINTD("Generujem instrukciu termu\n");
     if ( AddInstruction( ) != E_OK )
     {
@@ -644,15 +661,17 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
                 SwitchTape->opcode = MOV;
                 SwitchTape->attr.tac.dest = assignvar->offset;
                 //assignvar->assigned = true;
+                SwitchTape->attr.tac.op2.type = VAR_NO_VAR;
+                ptr = &( SwitchTape->attr.tac.op1 );
             }
             else
             {
                 /* RETURN */
                 SwitchTape->opcode = RET;
-                SwitchTape->attr.tac.dest = 0;
+                SwitchTape->attr.jump.dest = 0;
+                PRINTD("RETURN INSTRUCTION \n");
+                 ptr = &( SwitchTape->attr.jump.op1 );
             }
-            SwitchTape->attr.tac.op2.type = VAR_NO_VAR;
-            ptr = &( SwitchTape->attr.tac.op1 );
             break;
         default:
             {
@@ -891,16 +910,19 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
             free(array[i]);
         return E_INTERPRET_ERROR;
     }
-    
+    unsigned int *dest;
     if( func->state == E_BUILTIN )
     {
         SwitchTape->opcode = CALL_BUILTIN;
-        SwitchTape->attr.builtin = func->builtin_id;
+        SwitchTape->attr.builtin.func = func->builtin_id;
+        dest = &( SwitchTape->attr.builtin.dest );
+        
     }
     else
     {
         SwitchTape->opcode = CALL;
         SwitchTape->attr.jump.jmp = func->tape;
+        dest = &( SwitchTape->attr.jump.dest );
     }
     
     /* uvolnim polozky*/
@@ -908,18 +930,18 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
             free(array[i]);
             
     /* retval instrukcia*/
+    /*
     if ( AddInstruction( ) != E_OK )
     {
         return E_INTERPRET_ERROR;
-    }
-    SwitchTape->opcode = MOVRET;
+    }*/
     
-    if( ( retval = get_local_var( &( SwitchTape->attr.tac.dest ) ) ) != E_OK)
+    if( ( retval = get_local_var( dest ) ) != E_OK)
     {
         return retval;
     }
     array[0]->ttype = E_LOCAL;
-    array[0]->length = SwitchTape->attr.tac.dest;
+    array[0]->length = *dest;
     
     return E_OK;
 }
