@@ -9,6 +9,7 @@
 #include "ial.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 
 /**
@@ -21,28 +22,28 @@
  */
 void quicksort( char *input, int beg, int end )
 {
-	int i = beg, j = end;
-	char pom, PM = input[( beg + end ) / 2];
-	
-	do
-	{
-		while( input[i] < PM )
-			i++;
-		while( input[j] > PM )
-			j--;
-		if( i <= j )
-		{
-			pom = input[i];
-			input[i] = input[j];
-			input[j] = pom;
-			i++;
-			j--;
-		}
-		
-	} while( i <= j );
-	
-	if( beg < j ) quicksort( input, beg, j );
-	if( i < end ) quicksort( input, i, end );
+    int i = beg, j = end;
+    char pom, PM = input[( beg + end ) / 2];
+    
+    do
+    {
+        while( input[i] < PM )
+            i++;
+        while( input[j] > PM )
+            j--;
+        if( i <= j )
+        {
+            pom = input[i];
+            input[i] = input[j];
+            input[j] = pom;
+            i++;
+            j--;
+        }
+        
+    } while( i <= j );
+    
+    if( beg < j ) quicksort( input, beg, j );
+    if( i < end ) quicksort( input, i, end );
 }
 
 
@@ -63,26 +64,26 @@ int kmpmatch( const char *text, int text_size, const char *pattern, int pattern_
 
     Fail[0] = -1;
     for ( i = 0; i != ( pattern_size - 1 ); i++ )
-	{
+    {
         Fail[i + 1] = Fail[i] + 1;
         while( Fail[i + 1] > 0 && pattern[i] != pattern[Fail[i + 1] - 1] )
             Fail[i + 1] = Fail[Fail[i + 1] - 1] + 1;
     }
-
-	i = j = 0;
+    
+    i = j = 0;
     while( i != text_size )
-	{
+    {
         if( j < 0 || text[i] == pattern[j] )
-		{
+        {
             ++i, ++j;
             if( j == ( pattern_size - 1 ) )
-			{
-				result = i - j;
+            {
+                result = i - j;
                 break;
             }
         }
         else
-			j = Fail[j];
+            j = Fail[j];
     }
 
     return result;
