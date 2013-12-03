@@ -91,10 +91,10 @@ static inline void set_token( T_token* token, TOKEN_TYPE type, unsigned dlzka, v
  */
 void scanner_get_token( T_token* token )
 { 
-    // inicializacia:
-    FSM_STATE next_state = INIT; 
-    unsigned lex_length = 0;
+
+    FSM_STATE next_state;
     int znak;
+    unsigned lex_length = 0;
     
     // inicializacny stav: 
     
@@ -192,7 +192,7 @@ void scanner_get_token( T_token* token )
                 set_token( token, E_IDENT, lex_length, current_pos-lex_length);
                 
                 /** Porovnanie s klucovymi slovami **/
-                switch(*(current_pos - lex_length)) // prvy znak identifikatoru
+                switch( *(current_pos - lex_length) ) // prvy znak identifikatoru
                 {
                     case 'e':   if ( sstrcmp( current_pos - lex_length, "else", lex_length, 4 ) == 0 ) 
                                     set_token( token, E_ELSE, 0, NULL);     
@@ -585,6 +585,6 @@ void scanner_get_token( T_token* token )
                 }                      
             }
             default: break;
-        }
+        } // switch next state
     }while( 1 );
 }
