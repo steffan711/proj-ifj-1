@@ -8,6 +8,8 @@
 #ifndef SCANNER_H
 #define SCANNER_H
 
+#include <stdbool.h>
+
 /** Typy tokenov + terminaly a nonterminaly + symboly do precedencnej tabulky,
  ** akekolvek zmeny su prisne zakazane (zavisi na tom funkcnost tabulky)**/ 
 typedef enum
@@ -82,6 +84,7 @@ typedef struct token
         int    _int;
         double _double;
         char*  _string;
+        bool   _bool;
     } data;
 } T_token;
 

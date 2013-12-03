@@ -8,7 +8,10 @@
 #include <ctype.h> // isdigit, isspace, isalnum
 #include "file_io.h"
 #include "scanner.h"
+#include <stdbool.h>
+
 #define ishexa( x ) ( ( x >= '0' && x <= '9') || (x >= 'a' && x <= 'f') || (x >= 'A' && x <= 'F' ) )
+
 
  /** Globalne premenne **/
  char*          current_pos;    // aktualna pozicia scannera v subore
@@ -106,10 +109,10 @@ void scanner_get_token( T_token* token )
     
     if( znak == '$' )
         next_state = T_VAR;
-    else if( isalpha( znak ) || znak == '_' ) // A-Za-z_
-        next_state = T_ID;
     else if( isdigit( znak ) ) // 0-9
         next_state = T_INT;
+    else if( isalpha( znak ) || znak == '_' ) // A-Za-z_
+        next_state = T_ID;
     else
        switch( znak )
        {        
@@ -200,7 +203,10 @@ void scanner_get_token( T_token* token )
                                     set_token( token, E_NULL, 0, NULL);
                                 return;
                     case 't':   if ( sstrcmp( current_pos - lex_length, "true", lex_length, 4 ) == 0 )
-                                    set_token( token, E_TRUE, 0, NULL);
+                                {
+                                    set_token( token, E_BOOL, 0, NULL);
+                                    token->data._bool = true;
+                                }
                                 return;
                     case 'i':   if ( sstrcmp( current_pos - lex_length, "if", lex_length, 2 ) == 0 )
                                     set_token( token, E_IF, 0, NULL);
@@ -212,7 +218,10 @@ void scanner_get_token( T_token* token )
                                     set_token( token, E_WHILE, 0, NULL);
                                 return;
                     case 'f':   if ( sstrcmp( current_pos - lex_length, "false", lex_length, 5 ) == 0 )
-                                    set_token( token, E_FALSE, 0, NULL);
+                                {
+                                    set_token( token, E_BOOL, 0, NULL);
+                                    token->data._bool = false;
+                                }
                                 else if ( sstrcmp( current_pos - lex_length, "function", lex_length, 8 ) == 0 )
                                     set_token( token, E_FUNCTION, 0, NULL);
                     default:    return;

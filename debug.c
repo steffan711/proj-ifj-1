@@ -73,6 +73,7 @@ void print_token( T_token* token )
     printf( "\nToken -> length: %u", token->length);
     switch( token->ttype ) 
     {
+        case E_BOOL:        printf( "\nToken -> ttype: E_BOOL\n" );         break;
         case E_COMA:        printf( "\nToken -> ttype: E_COMA\n" );         break;
         case E_CONCAT:      printf( "\nToken -> ttype: E_CONCAT\n" );       break;
         case E_DIV:         printf( "\nToken -> ttype: E_DIV\n" );          break;
@@ -80,7 +81,6 @@ void print_token( T_token* token )
         case E_ELSE:        printf( "\nToken -> ttype: E_ELSE\n" );         break;
         case E_EOF:         printf( "\nToken -> ttype: E_EOF\n" );          break;
         case E_EQ:          printf( "\nToken -> ttype: E_EQ\n" );           break;
-        case E_FALSE:       printf( "\nToken -> ttype: E_FALSE\n" );        break;
         case E_FUNCTION:    printf( "\nToken -> ttype: E_FUNCTION\n" );     break;
         case E_GREATEREQ:   printf( "\nToken -> ttype: E_GREATEREQ\n" );    break;
         case E_GREATER:     printf( "\nToken -> ttype: E_GREATER\n" );      break;
@@ -103,7 +103,6 @@ void print_token( T_token* token )
         case E_RPARENTHESES:printf( "\nToken -> ttype: E_RPARENTHESES\n" ); break;
         case E_SEMICL:      printf( "\nToken -> ttype: E_SEMICL\n" );       break;
         case E_TRIPLEEQ:    printf( "\nToken -> ttype: E_TRIPLEEQ\n" );     break;
-        case E_TRUE:        printf( "\nToken -> ttype: E_true\n" );         break;
         case E_VAR:         printf( "\nToken -> ttype: E_VAR\n" );          break;
         case E_WHILE:       printf( "\nToken -> ttype: E_WHILE\n" );        break;
         case E_LOCAL:       printf( "\nToken -> ttype: E_LOCAL\n" );        break;
