@@ -1070,7 +1070,10 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.size = ptr1->size + str.size;
                             memcpy( temp.data._string, ptr1->data._string, ptr1->size );
                             memcpy( temp.data._string + ptr1->size, str.data._string, str.size );
-                            free(str.data._string);
+                            if ( str.type != VAR_CONSTSTRING )
+                            {
+                                free(str.data._string);
+                            }
                         }
                         else
                         {
