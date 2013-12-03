@@ -118,8 +118,11 @@ void print_token( T_token* token )
         
     else if( token->ttype == E_DOUBLE )
         printf( "%e", token->data._double );
-        
-     else if( token->ttype == E_LOCAL )
+   
+    else if( token->ttype == E_BOOL )
+        printf("%s", token->data._bool ? "true" : "false");
+   
+    else if( token->ttype == E_LOCAL )
         printf( "LOCALVAR!!" );
 
     else if( token->data._string )
