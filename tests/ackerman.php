@@ -12,7 +12,7 @@ function ackermann( $m , $n )
     return ackermann( $m-1, ackermann( $m , $n-1 ) );
 }
  
-$p = put_string(ackermann( 3, 7 ), "\n");
+$p = put_string(ackermann( 4, 1 ), "\n");
 
 
 
