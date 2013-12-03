@@ -303,9 +303,11 @@ void scanner_get_token( T_token* token )
                         scanner_line++;
                     else if( znak == EOF )
                     {
-                        ungetc(current_pos);
-                        next_state = INIT;
-                        break;
+                        if ( current_pos == end_ptr ) // end of file check
+                        {
+                            set_token( token, E_INVLD, 0, NULL); // neukonceny komentar
+                            return;
+                        }
                     } 
                     znak = getc( current_pos );
                 }while(1);
