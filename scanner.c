@@ -379,9 +379,13 @@ void scanner_get_token( T_token* token )
                     znak = getc( current_pos );
                     lex_length++;
                 }
-                else // inak je to lexikalna chyba
+                else
                 {
-                    set_token( token, E_INVLD, 0, NULL);
+                    ungetc( current_pos ); // ungetc znak
+                    ungetc( current_pos ); // ungetc .
+                    lex_length--;
+                    set_token( token, E_INT, lex_length, NULL );
+                    sscanf( current_pos-lex_length, "%d", &token->data._int );
                     return;
                 }
                 
