@@ -149,10 +149,10 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             case MOV:
             {
                 dest = EIP->attr.tac.dest;
-                op1 = EIP->attr.tac.op1.data.offset;
                 
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
+                    op1 = EIP->attr.tac.op1.data.offset;
                     ptr1 = &top->local[op1];
                     if (ptr1->type == VAR_UNDEF )
                     {
@@ -193,12 +193,10 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             }
             case PLUS:
             {                
-                dest = EIP->attr.tac.dest;
-                op1 = EIP->attr.tac.op1.data.offset;
-                op2 = EIP->attr.tac.op2.data.offset;
                 
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
+                    op1 = EIP->attr.tac.op1.data.offset;
                     ptr1 = &top->local[op1];
                 }
                 else
@@ -207,6 +205,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 if ( EIP->attr.tac.op2.type == VAR_LOCAL )
                 {
+                    op2 = EIP->attr.tac.op2.data.offset;
                     ptr2 = &top->local[op2];
                 }
                 else
@@ -272,6 +271,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     return E_INCOMPATIBLE;
                 } 
                 
+            dest = EIP->attr.tac.dest;    
             if ( top->local[dest].type == VAR_STRING )
             {
                 free( top->local[dest].data._string );
@@ -282,12 +282,9 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             
             case MINUS:
             {                
-                dest = EIP->attr.tac.dest;
-                op1 = EIP->attr.tac.op1.data.offset;
-                op2 = EIP->attr.tac.op2.data.offset;
-                
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
+                    op1 = EIP->attr.tac.op1.data.offset;
                     ptr1 = &top->local[op1];
                 }
                 else
@@ -296,6 +293,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 if ( EIP->attr.tac.op2.type == VAR_LOCAL )
                 {
+                    op2 = EIP->attr.tac.op2.data.offset;
                     ptr2 = &top->local[op2];
                 }
                 else
@@ -360,7 +358,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ERROR("Runtime error: Unsupported operation [-] with given operands.\n");
                     return E_INCOMPATIBLE;
                 } 
-                
+            dest = EIP->attr.tac.dest;    
             if ( top->local[dest].type == VAR_STRING )
             {
                 free( top->local[dest].data._string );
@@ -929,15 +927,12 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             
             case EQUAL:
             {
-                dest = EIP->attr.tac.dest;
-                op1 = EIP->attr.tac.op1.data.offset;
-                op2 = EIP->attr.tac.op2.data.offset;
-                
                 T_DVAR temp;
                 temp.type = VAR_BOOL;
                 
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
+                    op1 = EIP->attr.tac.op1.data.offset;
                     ptr1 = &top->local[op1];
                 }
                 else
@@ -946,6 +941,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 if ( EIP->attr.tac.op2.type == VAR_LOCAL )
                 {
+                    op2 = EIP->attr.tac.op2.data.offset;
                     ptr2 = &top->local[op2];
                 }
                 else
@@ -991,6 +987,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     }
                     temp.data._bool = false;
                 }
+                dest = EIP->attr.tac.dest;
                 if ( top->local[dest].type == VAR_STRING )
                 {
                     free( top->local[dest].data._string );
@@ -1278,13 +1275,13 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     return ret;
                 }
                 
-                /*for( unsigned int i = 0; i < top->size; i++ )
+                for( unsigned int i = 0; i < top->size; i++ )
                 {
                     if( top->local[i].type == VAR_STRING )
                     {
                         free( top->local[i].data._string );
                     }
-                }*/
+                }
                 free(top);
                 --stack.top;
                 top = stack.array[stack.top];

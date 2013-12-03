@@ -385,13 +385,17 @@ void translate_token( T_token *token, T_DVAR *out )
             out->data._string = token->data._string;
             out->size = token->length;
             break;
-        case E_FALSE:
+        /*case E_FALSE:
             out->type = VAR_BOOL;
             out->data._bool = false;
             break;
         case E_TRUE:
             out->type = VAR_BOOL;
             out->data._bool = true;
+            break;*/
+        case E_BOOL:
+            out->type = VAR_BOOL;
+            out->data._bool = token->data._bool;
             break;
         case E_NULL:
             out->type = VAR_NULL;
@@ -1191,7 +1195,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
             {
                 if ( op1->ttype == op2->ttype )
                 {
-                    bool val = false;
+                    bool val;
                     
                     switch( op1->ttype )
                     {
@@ -1207,13 +1211,15 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                             val = ( retval < 0 ) ? true : false;
                             break;
                         }
+                        case E_BOOL:
+                            val = (op1->data._bool) < ( op2->data._bool );
+                            break;
                         default:
+                             val = false;
                             break;
                     }
-                    if( val )
-                        op1->ttype = E_TRUE;
-                    else
-                        op1->ttype = E_FALSE;
+                    op1->ttype = E_BOOL;
+                    op1->data._bool = val;
                 }
                 else
                 {
@@ -1229,7 +1235,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
             {
                 if ( op1->ttype == op2->ttype )
                 {
-                    bool val = false;
+                    bool val;
                     
                     switch( op1->ttype )
                     {
@@ -1245,14 +1251,15 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                             val = ( retval > 0 ) ? true : false;
                             break;
                         }
+                        case E_BOOL:
+                            val = (op1->data._bool) > ( op2->data._bool );
                             break;
                         default:
+                            val = false;
                             break;
                     }
-                    if( val )
-                        op1->ttype = E_TRUE;
-                    else
-                        op1->ttype = E_FALSE;
+                    op1->ttype = E_BOOL;
+                    op1->data._bool = val;
                 }
                 else
                 {
@@ -1267,9 +1274,8 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         case E_LESSEQ:
             {
                 if ( op1->ttype == op2->ttype )
-
                 {
-                    bool val = true;
+                    bool val;
                     
                     switch( op1->ttype )
                     {
@@ -1285,14 +1291,15 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                             val = ( retval <= 0 ) ? true : false;
                             break;
                         }
+                        case E_BOOL:
+                            val = (op1->data._bool) <= ( op2->data._bool );
+                            break;
                         default:
+                             val = true;
                             break;
                     }
-                    if( val )
-                        op1->ttype = E_TRUE;
-                    else
-                        op1->ttype = E_FALSE;
-
+                    op1->ttype = E_BOOL;
+                    op1->data._bool = val;
 
                 }
                 else
@@ -1309,7 +1316,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
             {
                 if ( op1->ttype == op2->ttype )
                 {
-                    bool val = true;
+                    bool val;
                     
                     switch( op1->ttype )
                     {
@@ -1325,13 +1332,15 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                             val = ( retval >= 0 ) ? true : false;
                             break;
                         }
+                        case E_BOOL:
+                            val = (op1->data._bool) >= ( op2->data._bool );
+                            break;
                         default:
+                             val = true;
                             break;
                     }
-                    if( val )
-                        op1->ttype = E_TRUE;
-                    else
-                        op1->ttype = E_FALSE;
+                    op1->ttype = E_BOOL;
+                    op1->data._bool = val;
                 }
                 else
                 {
@@ -1341,7 +1350,6 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 }
                 free(op2);
                 break;
-                
             }
         case E_TRIPLEEQ:
         case E_NOT_EQ:
@@ -1349,33 +1357,32 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 bool val = false;
                 if ( op1->ttype == op2->ttype )
                 {
-                    val = true;
                     switch(op1->ttype)
                     {
                         case E_INT:
-                            if (op1->data._int != op2->data._int)
-                                val = false;
+                                val = op1->data._int == op2->data._int;
                             break;
                         case E_DOUBLE:
-                            if ( op1->data._double != op2->data._double)
-                                val = false;
+                                val = op1->data._double == op2->data._double;
                             break;
                         case E_LITER:
-                            if ( lexsstrcmp( op1->data._string, op2->data._string, op1->length, op2->length ) != 0 )
-                                val = false;
+                            if ( lexsstrcmp( op1->data._string, op2->data._string, op1->length, op2->length ) == 0 )
+                                val = true;
+                            break;
+                        case E_BOOL:
+                            val = op1->data._bool == op2->data._bool;
                             break;
                         default:
+                            val = true;
                             break;
                     }
-                    
+                    if ( operation == E_NOT_EQ )
+                    {
+                        val = !val;
+                    }
                 }
-                else
-                if (operation == E_NOT_EQ)
-                    val = !val;
-                if( val )
-                    op1->ttype = E_TRUE;
-                else
-                    op1->ttype = E_FALSE;
+                op1->ttype = E_BOOL;
+                op1->data._bool = val;
                 free(op2);
                 break;
             }            
