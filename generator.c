@@ -7,7 +7,7 @@
 #include "scanner.h"
 #include "built-in.h"
 
-const int FLEXIBLE_ARRAY_MEMBER = 1;
+const int FLEXIBLE_ARRAY_MEMBER = 32;
 FTable FT;
 STable *STableLocal;
 STable *STableGlobal;

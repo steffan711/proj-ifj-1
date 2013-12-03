@@ -12,7 +12,7 @@ Stack stack;
 T_DVAR retval;
 Context* top;
 
-const unsigned int MALLOC_SIZE = 32;
+const unsigned int MALLOC_SIZE = 64;
 
 static inline E_ERROR_TYPE StackCheck()
 {
@@ -903,6 +903,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             }
                         case VAR_NULL:
                             temp.data._bool = false;
+                            break;
                         default:
                             ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
@@ -973,6 +974,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             }
                         case VAR_NULL:
                             temp.data._bool = true;
+                            break;
                         default:
                             ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                             return E_UNDEF_VAR;
