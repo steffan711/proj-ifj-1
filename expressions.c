@@ -265,7 +265,7 @@ extern inline E_ERROR_TYPE estackPop ( void )
                 }
                 else 
                 {
-                    return E_SYNTAX;
+                    return E_SYNTAX;    
                 }
             }
             else if ( help == E_COMA )  //doplnenie analyzy funkcie f(E,...)
@@ -487,7 +487,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
             return E_INTERPRET_ERROR;
         }
     }
-    else if ( actual_ttype == E_MINUS )
+    else if ( actual_ttype == E_MINUS ) //unarne minus
     {
         if ( ! ( ( eStack.data[eStack.top] >= E_RPARENTHESES && eStack.data[eStack.top] <= E_UMINUS ) || eStack.data[eStack.top] == E_MINUS ) )
         {
@@ -598,7 +598,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                         return E_INTERPRET_ERROR;
                     }
                 }
-                else if ( actual_ttype == E_MINUS )
+                else if ( actual_ttype == E_MINUS ) //unarne minus
                 {
                     if ( ! ( ( eStack.data[eStack.top] >= E_RPARENTHESES && eStack.data[eStack.top] <= E_UMINUS ) || eStack.data[eStack.top] == E_MINUS ) )
                     {
@@ -675,7 +675,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                         return E_INTERPRET_ERROR;
                     }
                 }
-                else if ( actual_ttype == E_MINUS )
+                else if ( actual_ttype == E_MINUS ) //unarne minus
                 {
                     if ( ! ( ( eStack.data[eStack.top] >= E_RPARENTHESES && eStack.data[eStack.top] <= E_UMINUS ) || eStack.data[eStack.top] == E_MINUS ) )
                     {
