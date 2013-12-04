@@ -1,4 +1,12 @@
 <?php
+
+function foo ($a, $b)
+{
+    if (-(- -$a) > 0 ){ $p = foo( -$a, -$b ); }
+    return -$b * -$a;
+}
+//php -d open_basedir="" ifj13.php ./tests/testovanySkript.php
+
 $a = 5*4+22.38;
 $a = put_string("5*4+22.38 = ", $a, "\n\n");
 $a = 5.0*4+22.38 - 8;
@@ -33,4 +41,8 @@ $a = put_string("\"\".true = ", $a, "\n\n");
 $a = "".false;
 $a = put_string("\"\".false = ", $a, "\n\n");
 $a = ""."\x00"."xxx".55.22.33.true.false.null;
-$a = put_string("\"\".\"\x00\".\"xxx\".55.22.3.true.false.null = ", $a, "\n\n");
+$a = put_string("\"\".\"\x00\".\"xxx\".55.22.33.true.false.null = ", $a, "\n\n");
+$a = -5*-4+22.38*-foo(8,-5)+foo (-1, 4);
+$a = put_string("-5*-4+22.38*-foo(8,-5)+foo (-1, 4) = ", $a, "\n\n");
+$c = -(- -5*-1+- - -3- -(- -(-9- -(4*- - -(-2)*-(- -2)*-45)-(- -(-(- -3)+-1))-(-42))*-2));
+$x = put_string("-(- -5*-1+- - -3- -(- -(-9- -(4*- - -(-2)*-(- -2)*-45)-(- -(-(- -3)+-1))-(-42))*-2)) = ", $c, "\n\n");
