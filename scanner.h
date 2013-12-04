@@ -60,7 +60,6 @@ typedef enum
 /** Stavy konecnej masinky **/
 typedef enum
 {
-    INIT,
     T_ID,           // identifikator
     T_VAR,          // premenna
     T_INT,          // integer

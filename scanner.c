@@ -303,15 +303,18 @@ void scanner_get_token( T_token* token )
                         scanner_line++;
                     else if( znak == EOF )
                     {
-                        ungetc(current_pos);
-                        next_state = INIT;
-                        break;
+                        if ( current_pos == end_ptr ) // end of file check
+                        {
+                            ungetc( current_pos );
+                            set_token( token, E_INVLD, 0, NULL); // neukonceny komentar
+                            return;
+                        }
                     } 
                     znak = getc( current_pos );
                 }while(1);
            
-                next_state = INIT;
-                break;
+                scanner_get_token( token );
+                return;
             }
             case T_GREATER: 
             {
@@ -349,8 +352,8 @@ void scanner_get_token( T_token* token )
                         }
                     }
                     scanner_line++;
-                    next_state = INIT;
-                    break;
+                    scanner_get_token( token ); // to understand recursion you must first understand recursion
+                    return;
                 }
                 else if( znak == '*' ) // zaciatok blokoveho komentara
                 {
@@ -508,82 +511,6 @@ void scanner_get_token( T_token* token )
                 set_token( token, E_LITER, zapisovacia_hlava - pociatocna_pozicia , pociatocna_pozicia);
                 return;
             } // T_LIT
-            case INIT:
-            {
-                while( isspace( znak ) )    // white space skip
-                {
-                    if( znak == '\n' )
-                        scanner_line++;
-                    znak = getc( current_pos );
-                }
-                
-                if( znak == '$' )
-                    next_state = T_VAR;
-                else if( isalpha( znak ) || znak == '_' ) // A-Za-z_
-                    next_state = T_ID;
-                else if( isdigit( znak ) ) // 0-9
-                    next_state = T_INT;
-                else
-                switch( znak )
-                {        
-                    case '/':       next_state = T_FRACTION;
-                                    break;
-                    case ';':
-                                    set_token( token, E_SEMICL, 0, NULL);
-                                    return;	                                          
-                    case '=':
-                                    next_state = T_ASS;
-                                    break;
-                    case '+':
-                                    set_token( token, E_PLUS, 0, NULL);
-                                    return;
-                    case '-':
-                                    set_token( token, E_MINUS, 0, NULL);
-                                    return;
-                    case '*':
-                                    set_token( token, E_MULT, 0, NULL);
-                                    return;
-                    case '<':
-                                    next_state = T_LESS;
-                                    break;
-                    case '>':
-                                    next_state = T_GREATER;
-                                    break;
-                    case '"':
-                                    next_state = T_LIT;
-                                    break;
-                    case '.':
-                                    set_token( token, E_CONCAT, 0, NULL);
-                                    return;
-                    case '(':
-                                    set_token( token, E_LPARENTHESES, 0, NULL);
-                                    return;
-                    case ')':
-                                    set_token( token, E_RPARENTHESES, 0, NULL);
-                                    return;
-                    case '{':
-                                    set_token( token, E_LABRACK, 0, NULL);
-                                    return;
-                    case '}':
-                                    set_token( token, E_RABRACK, 0, NULL);
-                                    return;
-                    case '!':
-                                    next_state = T_EXCLAM;
-                                    break;
-                    case ',':
-                                    set_token( token, E_COMA, 0, NULL);
-                                    return;	                                      
-                    case EOF:       
-                                    if ( current_pos == end_ptr ) // end of file check
-                                        set_token( token, E_EOF, 0, NULL); 
-                                    else
-                                        set_token( token, E_INVLD, 0, NULL);
-                                    return;
-                                    
-                    default:        set_token( token, E_INVLD, 0, NULL);
-                                    return;
-                }                      
-            }
             default: break;
         } // switch next state
     }while( 1 );
