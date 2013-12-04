@@ -280,8 +280,8 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
                     return E_INTERPRET_ERROR;
                 result->type = VAR_STRING;   
                 sprintf( result->data._string, "%d", input[0].data._int );
-            break;
             }
+            break;
         case VAR_DOUBLE:
             {
                 char temp[MAX_DBL_DIGITS] = { 0, };
