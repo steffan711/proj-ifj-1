@@ -860,25 +860,17 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
                 break;
             }
     } 
-    
     switch( op->ttype )
     {
         case E_VAR:
         {
             E_ERROR_TYPE retval;
             STableData *op_ptr;
-            if( (retval = BTfind( SwitchSTable, op->data._string, op->length, &op_ptr ) ) != E_OK )
+            bool dummy;
+            if( (retval = BTlookup( SwitchSTable, op->data._string, op->length, &op_ptr, &dummy ) ) != E_OK )
             {
                 free(op);
                 return retval;
-            }
-            if (op_ptr->assigned == false)
-            {
-                ERROR( "Error on line %u: Variable '$", op->line );
-                print_char( stderr, op->data._string, op->length );
-                ERROR("' is not defined.\n");
-                free(op);
-                return E_UNDEF_VAR;
             }
             ptr->type = VAR_LOCAL;
             ptr->data.offset = op_ptr->offset;
@@ -1021,26 +1013,12 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
         if ( array[i]->ttype == E_VAR )
         {
             STableData *var;
-            if( ( retval = BTfind(SwitchSTable, array[i]->data._string, array[i]->length, &var) ) != E_OK )
+            bool dummy;
+            if( ( retval = BTlookup(SwitchSTable, array[i]->data._string, array[i]->length, &var, &dummy ) ) != E_OK )
             {
-                if ( retval == E_UNDEF_VAR )
-                {
-                     ERROR( "Error on line %u: Variable '$", array[i]->line );
-                    print_char( stderr, array[i]->data._string, array[i]->length );
-                    ERROR("' is not defined.\n");
-                }
                 for( unsigned int i = 1; i <= size; i++ )
                     free(array[i]);
                 return retval;
-            }
-            if (var->assigned == false)
-            {
-                ERROR( "Error on line %u: Variable '$", array[i]->line );
-                print_char( stderr, array[i]->data._string, array[i]->length );
-                ERROR("' is not defined.\n");
-                for( unsigned int i = 1; i <= size; i++ )
-                    free(array[i]);
-                return E_UNDEF_VAR;
             }
             SwitchTape->attr.tac.op1.type = VAR_LOCAL;
             SwitchTape->attr.tac.op1.data.offset = var->offset;
@@ -1057,20 +1035,12 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
         if ( array[i]->ttype == E_VAR )
         {
             STableData *var;
-            if( ( retval = BTfind(SwitchSTable, array[i]->data._string, array[i]->length, &var) ) != E_OK )
+            bool dummy;
+            if( ( retval = BTlookup(SwitchSTable, array[i]->data._string, array[i]->length, &var, &dummy) ) != E_OK )
             {
                 for( unsigned int i = 1; i <= size; i++ )
                     free(array[i]);
                 return retval;
-            }
-            if (var->assigned == false)
-            {
-                ERROR( "Error on line %u: Variable '$", array[i]->line );
-                print_char( stderr, array[i]->data._string, array[i]->length );
-                ERROR("' is not defined.\n");
-                for( unsigned int i = 1; i <= size; i++ )
-                    free(array[i]);
-                return E_UNDEF_VAR;
             }
         }
     }
@@ -1134,29 +1104,23 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         /* overit platnost premennych */
         STableData *op_ptr1 = NULL;
         STableData *op_ptr2 = NULL;
+        bool dummy;
         if( op1->ttype == E_VAR )
         {
-            int retval = BTfind(SwitchSTable, op1->data._string, op1->length, &op_ptr1);
-            if( retval != E_OK || op_ptr1->assigned == false )
+            int retval = BTlookup(SwitchSTable, op1->data._string, op1->length, &op_ptr1, &dummy);
+            if( retval != E_OK )
             {
-                ERROR( "Error on line %u: Undefined variable $", op1->line );
-                print_char( stderr, op1->data._string, op1->length );
-                ERROR( " used in expression.\n" );
                 free(op2);
-                return E_UNDEF_VAR;
-            }
-            
+                return retval;
+            } 
         }
         if( op2->ttype == E_VAR )
         {
-            int retval = BTfind(SwitchSTable, op2->data._string, op2->length, &op_ptr2);
-            if( retval != E_OK || op_ptr2->assigned == false )
+            int retval = BTlookup(SwitchSTable, op2->data._string, op2->length, &op_ptr2, &dummy);
+            if( retval != E_OK )
             {
-                ERROR( "Error on line %u: Undeclared variable '$", op2->line );
-                print_char( stderr, op2->data._string, op2->length );
-                ERROR( "' used in expression.\n" );
                 free(op2);
-                return E_UNDEF_VAR;
+                return retval;
             }
         }
         
@@ -1522,7 +1486,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         case E_TRIPLEEQ:
         case E_NOT_EQ:
             {
-                bool val = false;
+                bool val;
                 if ( op1->ttype == op2->ttype )
                 {
                     switch(op1->ttype)
@@ -1544,10 +1508,14 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                             val = true;
                             break;
                     }
-                    if ( operation == E_NOT_EQ )
-                    {
-                        val = !val;
-                    }
+                }
+                else
+                {
+                    bool val = false;
+                }
+                if ( operation == E_NOT_EQ )
+                {
+                    val = !val;
                 }
                 op1->ttype = E_BOOL;
                 op1->data._bool = val;

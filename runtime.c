@@ -121,7 +121,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
 {
     if ( StackInit() != E_OK )
     {
-        return E_OK;
+        return E_INTERPRET_ERROR;
     }
     retval.type = VAR_UNDEF; // navratovy register
     
@@ -990,7 +990,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                         ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
                         return E_UNDEF_VAR;
                     }
-                    temp.data._bool = false;
+                    temp.data._bool = true;
                 }
                 if ( top->local[dest].type == VAR_STRING )
                 {
