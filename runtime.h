@@ -11,6 +11,7 @@
 typedef struct context_struct
 {
     unsigned int size;
+    unsigned int dest;
     Instruction* EIP;
     T_DVAR local[];
 } Context;

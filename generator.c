@@ -7,7 +7,7 @@
 #include "scanner.h"
 #include "built-in.h"
 
-const int FLEXIBLE_ARRAY_MEMBER = 1;
+const int FLEXIBLE_ARRAY_MEMBER = 32;
 FTable FT;
 STable *STableLocal;
 STable *STableGlobal;
@@ -90,6 +90,7 @@ void PrintTape( Instruction *ptr )
                 break;
             case CALL:
                 printf("Call ptr: %p\n", (void*)ptr->attr.jump.jmp);
+                printf("Dest: [%u]\n", ptr->attr.jump.dest);
                  break;
             case CALL_BUILTIN:
             {
@@ -97,8 +98,9 @@ void PrintTape( Instruction *ptr )
                     E_ERROR_TYPE (*fptr)( T_DVAR[], int, T_DVAR *);
                     void * ptr;
                 } tmp;
-                tmp.fptr = ptr->attr.builtin;
+                tmp.fptr = ptr->attr.builtin.func;
                 printf("Call C ptr: %p\n", tmp.ptr);
+                printf("Dest: [%u]\n", ptr->attr.builtin.dest);
                  break;
             }
             case JMP:
@@ -109,9 +111,9 @@ void PrintTape( Instruction *ptr )
                 printf("OP1: ");
                 print_DVAR( &( ptr->attr.tac.op1 ) );
                 break;
-            case MOVRET:
+            /*case MOVRET:
                 printf("Dest: [%u]\n", ptr->attr.tac.dest);
-                break;
+                break;*/
             case COND:
                 printf("Jump to: [%p]\n", (void*)ptr->attr.jump.jmp );
                 printf("OP1: ");
@@ -383,13 +385,17 @@ void translate_token( T_token *token, T_DVAR *out )
             out->data._string = token->data._string;
             out->size = token->length;
             break;
-        case E_FALSE:
+        /*case E_FALSE:
             out->type = VAR_BOOL;
             out->data._bool = false;
             break;
         case E_TRUE:
             out->type = VAR_BOOL;
             out->data._bool = true;
+            break;*/
+        case E_BOOL:
+            out->type = VAR_BOOL;
+            out->data._bool = token->data._bool;
             break;
         case E_NULL:
             out->type = VAR_NULL;
@@ -519,7 +525,7 @@ E_ERROR_TYPE setstate(enum gen_state state)
             if ( AddInstruction() != E_OK )
                 return E_INTERPRET_ERROR;
             SwitchTape->opcode = RET;
-            SwitchTape->attr.tac.op1.type = VAR_NULL;
+            SwitchTape->attr.jump.op1.type = VAR_NULL;
             State = state; // pridat return
             actualfunction->frame_count = SwitchSTable->counter;
             SwitchContextToGobal();
@@ -528,7 +534,7 @@ E_ERROR_TYPE setstate(enum gen_state state)
             if ( AddInstruction() != E_OK )
                 return E_INTERPRET_ERROR;
             SwitchTape->opcode = RET;
-            SwitchTape->attr.tac.op1.type = VAR_NULL;
+            SwitchTape->attr.jump.op1.type = VAR_NULL;
             /* nastavim velkost ramca prvej instrukcie */
             FT.tape->attr.size = SwitchSTable->counter;
             State = state;
@@ -614,11 +620,25 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
 {
     PRINTD("%s()\n", __func__ );
     
-    if ( State == S_DEFAULT && assignvar ) // zistim ci sa da optimalizovat
+    if ( State == S_DEFAULT && assignvar && op->ttype == E_LOCAL ) // zistim ci sa da optimalizovat
     {
-        if ( op->ttype == E_LOCAL && 
-            SwitchTape->opcode >= MOVRET && SwitchTape->opcode <= GREATEREQ && 
-            SwitchTape->attr.tac.dest == op->length)
+        if ( SwitchTape->opcode == CALL && SwitchTape->attr.jump.dest == op->length )
+        {
+            PRINTD( "predosla instrukcia bola CALL\n" );
+            SwitchTape->attr.jump.dest = assignvar->offset;
+            assignvar->assigned = true;
+            free(op);
+            return E_OK;
+        }
+        else if ( SwitchTape->opcode == CALL_BUILTIN && SwitchTape->attr.builtin.dest == op->length )
+        {
+            PRINTD( "predosla instrukcia bola CALL_BUILTIN\n" );
+            SwitchTape->attr.builtin.dest = assignvar->offset;
+            assignvar->assigned = true;
+            free(op);
+            return E_OK;
+        }
+        else if ( SwitchTape->opcode >= CONCAT && SwitchTape->attr.tac.dest == op->length )
         {
             PRINTD("predosla instrukcia bola 3adresna, typ %s\n", OPCODE_NAME[SwitchTape->opcode]);
             SwitchTape->attr.tac.dest = assignvar->offset;
@@ -627,6 +647,7 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
             return E_OK;
         }
     }
+    
     PRINTD("Generujem instrukciu termu\n");
     if ( AddInstruction( ) != E_OK )
     {
@@ -644,15 +665,17 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
                 SwitchTape->opcode = MOV;
                 SwitchTape->attr.tac.dest = assignvar->offset;
                 //assignvar->assigned = true;
+                SwitchTape->attr.tac.op2.type = VAR_NO_VAR;
+                ptr = &( SwitchTape->attr.tac.op1 );
             }
             else
             {
                 /* RETURN */
                 SwitchTape->opcode = RET;
-                SwitchTape->attr.tac.dest = 0;
+                SwitchTape->attr.jump.dest = 0;
+                PRINTD("RETURN INSTRUCTION \n");
+                 ptr = &( SwitchTape->attr.jump.op1 );
             }
-            SwitchTape->attr.tac.op2.type = VAR_NO_VAR;
-            ptr = &( SwitchTape->attr.tac.op1 );
             break;
         default:
             {
@@ -891,16 +914,19 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
             free(array[i]);
         return E_INTERPRET_ERROR;
     }
-    
+    unsigned int *dest;
     if( func->state == E_BUILTIN )
     {
         SwitchTape->opcode = CALL_BUILTIN;
-        SwitchTape->attr.builtin = func->builtin_id;
+        SwitchTape->attr.builtin.func = func->builtin_id;
+        dest = &( SwitchTape->attr.builtin.dest );
+        
     }
     else
     {
         SwitchTape->opcode = CALL;
         SwitchTape->attr.jump.jmp = func->tape;
+        dest = &( SwitchTape->attr.jump.dest );
     }
     
     /* uvolnim polozky*/
@@ -908,18 +934,18 @@ E_ERROR_TYPE evalf(T_token *array[], unsigned int size)
             free(array[i]);
             
     /* retval instrukcia*/
+    /*
     if ( AddInstruction( ) != E_OK )
     {
         return E_INTERPRET_ERROR;
-    }
-    SwitchTape->opcode = MOVRET;
+    }*/
     
-    if( ( retval = get_local_var( &( SwitchTape->attr.tac.dest ) ) ) != E_OK)
+    if( ( retval = get_local_var( dest ) ) != E_OK)
     {
         return retval;
     }
     array[0]->ttype = E_LOCAL;
-    array[0]->length = SwitchTape->attr.tac.dest;
+    array[0]->length = *dest;
     
     return E_OK;
 }
@@ -1169,7 +1195,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
             {
                 if ( op1->ttype == op2->ttype )
                 {
-                    bool val = false;
+                    bool val;
                     
                     switch( op1->ttype )
                     {
@@ -1185,13 +1211,15 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                             val = ( retval < 0 ) ? true : false;
                             break;
                         }
+                        case E_BOOL:
+                            val = (op1->data._bool) < ( op2->data._bool );
+                            break;
                         default:
+                             val = false;
                             break;
                     }
-                    if( val )
-                        op1->ttype = E_TRUE;
-                    else
-                        op1->ttype = E_FALSE;
+                    op1->ttype = E_BOOL;
+                    op1->data._bool = val;
                 }
                 else
                 {
@@ -1207,7 +1235,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
             {
                 if ( op1->ttype == op2->ttype )
                 {
-                    bool val = false;
+                    bool val;
                     
                     switch( op1->ttype )
                     {
@@ -1223,14 +1251,15 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                             val = ( retval > 0 ) ? true : false;
                             break;
                         }
+                        case E_BOOL:
+                            val = (op1->data._bool) > ( op2->data._bool );
                             break;
                         default:
+                            val = false;
                             break;
                     }
-                    if( val )
-                        op1->ttype = E_TRUE;
-                    else
-                        op1->ttype = E_FALSE;
+                    op1->ttype = E_BOOL;
+                    op1->data._bool = val;
                 }
                 else
                 {
@@ -1245,9 +1274,8 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         case E_LESSEQ:
             {
                 if ( op1->ttype == op2->ttype )
-
                 {
-                    bool val = true;
+                    bool val;
                     
                     switch( op1->ttype )
                     {
@@ -1263,14 +1291,15 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                             val = ( retval <= 0 ) ? true : false;
                             break;
                         }
+                        case E_BOOL:
+                            val = (op1->data._bool) <= ( op2->data._bool );
+                            break;
                         default:
+                             val = true;
                             break;
                     }
-                    if( val )
-                        op1->ttype = E_TRUE;
-                    else
-                        op1->ttype = E_FALSE;
-
+                    op1->ttype = E_BOOL;
+                    op1->data._bool = val;
 
                 }
                 else
@@ -1287,7 +1316,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
             {
                 if ( op1->ttype == op2->ttype )
                 {
-                    bool val = true;
+                    bool val;
                     
                     switch( op1->ttype )
                     {
@@ -1303,13 +1332,15 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                             val = ( retval >= 0 ) ? true : false;
                             break;
                         }
+                        case E_BOOL:
+                            val = (op1->data._bool) >= ( op2->data._bool );
+                            break;
                         default:
+                             val = true;
                             break;
                     }
-                    if( val )
-                        op1->ttype = E_TRUE;
-                    else
-                        op1->ttype = E_FALSE;
+                    op1->ttype = E_BOOL;
+                    op1->data._bool = val;
                 }
                 else
                 {
@@ -1319,7 +1350,6 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 }
                 free(op2);
                 break;
-                
             }
         case E_TRIPLEEQ:
         case E_NOT_EQ:
@@ -1327,33 +1357,32 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 bool val = false;
                 if ( op1->ttype == op2->ttype )
                 {
-                    val = true;
                     switch(op1->ttype)
                     {
                         case E_INT:
-                            if (op1->data._int != op2->data._int)
-                                val = false;
+                                val = op1->data._int == op2->data._int;
                             break;
                         case E_DOUBLE:
-                            if ( op1->data._double != op2->data._double)
-                                val = false;
+                                val = op1->data._double == op2->data._double;
                             break;
                         case E_LITER:
-                            if ( lexsstrcmp( op1->data._string, op2->data._string, op1->length, op2->length ) != 0 )
-                                val = false;
+                            if ( lexsstrcmp( op1->data._string, op2->data._string, op1->length, op2->length ) == 0 )
+                                val = true;
+                            break;
+                        case E_BOOL:
+                            val = op1->data._bool == op2->data._bool;
                             break;
                         default:
+                            val = true;
                             break;
                     }
-                    
+                    if ( operation == E_NOT_EQ )
+                    {
+                        val = !val;
+                    }
                 }
-                else
-                if (operation == E_NOT_EQ)
-                    val = !val;
-                if( val )
-                    op1->ttype = E_TRUE;
-                else
-                    op1->ttype = E_FALSE;
+                op1->ttype = E_BOOL;
+                op1->data._bool = val;
                 free(op2);
                 break;
             }            

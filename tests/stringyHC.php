@@ -12,6 +12,13 @@ function stringy( $str )
     }
 }
 
-$str = "a";
+function a($a)
+{
+    return $a;
+}
+
+$str = "a"."b";
+$str = a($str);
+$x = put_string($str);
 $ret = stringy( $str );
 
