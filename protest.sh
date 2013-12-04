@@ -41,13 +41,13 @@ until $DONE; do
 		echo "===================================================="
 		if [ -f "$input$name$ext" ]
 		then
-			$bin $input$name$ext >$output$name 2>>$output$name"-fails"
-			[ -f "$expected_output$name" ] || php -d open_basedir="" $ifjfile $input$name$ext >$expected_output$name 2>$expected_output$name"-fails"
+			$bin $input$name$ext </dev/stdin >$output$name 2>>$output$name"-fails"
+			[ -f "$expected_output$name" ] || php -d open_basedir="" $ifjfile $input$name$ext </dev/stdin >$expected_output$name 2>$expected_output$name"-fails"
 			if [ -z "`diff $expected_output$name $output$name`" ]; then
 				echo -e ${Gre}"TEST SUCCESSFULL"${RCol}
 			else
 				echo -e ${Red}"TEST FAILED"${RCol}
-				result = result + 1;
+				result=$((result+1))
 				temp=`echo "$line" | tr '\t' ' ' | sed -e 's_.*// *__'`
 				echo "!!!!!!!!!!!!!!!!!!!!!!!! BEGIN ==> filename: $name // $temp" >>$failfile
 				diff $output$name $expected_output$name >>$failfile
