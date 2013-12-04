@@ -42,6 +42,16 @@ static inline int hex2int( char a, char b )
 }
 
 /**
+ * @brief Pomocna funkcia pre operator unarny minus
+ * @param void
+ * @return true ak bol pred navratenym tokenom '-' biely znak
+ */
+bool unary_minus( void )
+{
+    return ( bool ) isspace( * ( current_pos - 2 ) );
+}
+
+/**
  * @brief inicializuje scanner pred jeho prvym pouzitim
  * @param [in] ukazatel na subor
  * @param [in] velkost suboru
