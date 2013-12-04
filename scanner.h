@@ -26,11 +26,11 @@ typedef enum
     E_LESSEQ,       // <=
     E_GREATEREQ,    // >=
     E_LPARENTHESES, // (
+    E_COMA,         // ,
     E_RPARENTHESES, // )
     E_IDENT,        // identifikator
-    E_COMA,         // ,
     E_TERM,          // term, pomocny enum pre precedencnu syntakticku analyzu
-    E_LABRACK,      // {
+    E_UMINUS,       // unarne minus
     E_SEMICL,       // ;
     E_VAR,          // premenna
     E_INT,          // integer
@@ -44,6 +44,7 @@ typedef enum
     E_ELSE,
     E_RETURN,   // ----
     E_EQ,           // =
+    E_LABRACK,      // {
     E_RABRACK,      // }
     E_INVLD,        // je to invalid
     E_EOF, // padla

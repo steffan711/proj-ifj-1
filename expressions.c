@@ -24,7 +24,7 @@ static struct {
     int size;
     TOKEN_TYPE *data;
 	TOKEN_TYPE last_terminal;
-} eStack = { .top = 0, .size = SIZEOF_ESTACK, .data = NULL, .last_terminal = E_LABRACK};
+} eStack = { .top = 0, .size = SIZEOF_ESTACK, .data = NULL, .last_terminal = E_SEMICL};
 
 /** struktura na uchovavanie ukazatelov pre semanticku analyzu (postfix - princip postfixu) */
 static struct {  
@@ -55,24 +55,71 @@ extern inline E_ERROR_TYPE function_analyze ( void );
 */
 
 const TOKEN_TYPE prec_table [][18] = {
-/* XXXX      .    !==   ===    +     *     -     /     <     >     <=    >=    (     )     f     ,    TERM   {     ;  */
-/*  .  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/* !== */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/* === */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  +  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  *  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  -  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  /  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  <  */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  >  */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  <= */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  >= */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E},
-/*  (  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_P,  R_C,  R_P,  R_C,  R_N,  R_N},
-/*  )  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_N,  R_E,  R_N,  R_E,  R_N,  R_E,  R_E},
+/* XXXX      .    !==   ===    +     *     -     /     <     >     <=    >=    (     ,     )     f    TERM  un(-)  ;  */
+/*  .  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
+/* !== */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
+/* === */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
+/*  +  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
+/*  *  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
+/*  -  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_N,  R_E},
+/*  /  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
+/*  <  */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
+/*  >  */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
+/*  <= */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
+/*  >= */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
+/*  (  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_P,  R_P,  R_C,  R_C,  R_C,  R_N},
+/*  ,  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_P,  R_P,  R_C,  R_C,  R_C,  R_N},
+/*  )  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_N,  R_E,  R_E,  R_N,  R_N,  R_N,  R_E},
 /*  f  */  {R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_P,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N},
-/*  ,  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_P,  R_C,  R_P,  R_C,  R_N,  R_N},
-/* TERM*/  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_N,  R_E,  R_N,  R_E,  R_N,  R_E,  R_E},
-/*  {  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_N,  R_C,  R_N,  R_C,  R_N,  R_N},
+/* TERM*/  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_N,  R_E,  R_E,  R_N,  R_N,  R_N,  R_E},
+/*un(-)*/  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_N,  R_E},
+/*  ;  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_N,  R_N,  R_C,  R_C,  R_C,  R_N},
+};
+
+//#define TESTY2
+//#include <string.h>
+const char *enums[] = { //iba na testovacie ucely
+"." ,      
+ "!==" ,      
+ "===" ,    
+ "+" ,        
+ "*" ,        
+ "-" ,       
+ "/" ,         
+ "<" ,        
+ ">" ,     
+ "<=" ,      
+ ">=" ,   
+ "(" ,
+ "," ,        
+ ")" ,
+ "E_IDENT",       
+ "E_TERM" ,
+ "un(-)", 
+ "E_SEMICL" ,      
+ "E_VAR" ,         
+ "E_INT" ,         
+ "E_DOUBLE" ,      
+ "E_LITER" ,       
+ "E_BOOL" ,
+ "E_NULL" ,
+ "E_WHILE" ,
+ "E_FUNCTION" ,
+ "E_IF" ,
+ "E_ELSE" ,
+ "E_RETURN" ,
+ "E_EQ" ,          
+ "E_LABRACK" ,     
+ "E_RABRACK" ,     
+ "E_INVLD" ,       
+ "E_EOF" , // padla
+ "E_LOCAL" ,
+ "R_E" ,           
+ "R_C" ,           
+ "R_N" ,           
+ "R_P" ,           
+ "E_E" ,  
+ "E_ELSEIF" 
 };
 
 /**
@@ -163,7 +210,7 @@ extern inline E_ERROR_TYPE estackInit ( void )
 	if ( ( eStack.data = malloc( sizeof( TOKEN_TYPE ) * SIZEOF_ESTACK ) ) == NULL )
 	    return E_INTERPRET_ERROR;
 
-	eStack.data[0] = E_LABRACK;
+	eStack.data[0] = E_SEMICL;
     
 	return E_OK;
 }
@@ -256,6 +303,12 @@ extern inline E_ERROR_TYPE estackPop ( void )
                     return eval( PFXStackTop( ), PFXStackTopPop( ), help );
                 }
             }
+        }
+        else if ( help == E_UMINUS )
+        {
+            findterm( );
+            eStack.data[eStack.top] = E_E;
+            return eval( PFXStackTop( ), PFXStackTopPop( ), E_MINUS );
         }
     }
 
@@ -434,8 +487,37 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
             return E_INTERPRET_ERROR;
         }
     }
+    else if ( actual_ttype == E_MINUS )
+    {
+        if ( ! ( ( eStack.data[eStack.top] >= E_RPARENTHESES && eStack.data[eStack.top] <= E_UMINUS ) || eStack.data[eStack.top] == E_MINUS ) )
+        {
+            actual_ttype = E_UMINUS;
+            //simulujem konstantu hodnoty 0
+            token->ttype = E_INT;
+            token->data._int = 0;
+            if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
+            {
+                PFXdispose( ); free( token );
+                return E_INTERPRET_ERROR;
+            }
+            if ( ( token = malloc( sizeof( T_token ) ) ) == NULL )
+            {
+                PFXdispose( );
+                return E_INTERPRET_ERROR;
+            }
+        }
+    }
     
     do {
+        #ifdef TESTY2
+            printf("na vstupe je: \x1B[32m%s\x1B[0m\n", enums[actual_ttype]);
+            for (int i = 0; i <= eStack.top; i++) { printf("\x1B[34m-----\x1B[0m"); for(unsigned j = 0; j < strlen(enums[eStack.data[i]]); j++) printf("\x1B[34m-\x1B[0m");}
+            printf("\n");
+            for (int i = 0; i < eStack.top; i++) { printf(" %s  \x1B[34m|\x1B[0m ", enums[eStack.data[i]]);}
+            printf(" %s  \x1B[34m|\x1B[0m\n", enums[eStack.data[eStack.top]]);
+            for (int i = 0; i <= eStack.top; i++) { printf("\x1B[34m-----\x1B[0m"); for(unsigned j = 0; j < strlen(enums[eStack.data[i]]); j++) printf("\x1B[34m-\x1B[0m");}
+            printf("\n");
+        #endif
         switch ( prec_table[eStack.last_terminal][actual_ttype] )    //invariant - nikdy nepristupim na index mimo pola tabulky
         {
             case R_E:
@@ -516,6 +598,26 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                         return E_INTERPRET_ERROR;
                     }
                 }
+                else if ( actual_ttype == E_MINUS )
+                {
+                    if ( ! ( ( eStack.data[eStack.top] >= E_RPARENTHESES && eStack.data[eStack.top] <= E_UMINUS ) || eStack.data[eStack.top] == E_MINUS ) )
+                    {
+                        actual_ttype = E_UMINUS;
+                        //simulujem konstantu hodnoty 0
+                        token->ttype = E_INT;
+                        token->data._int = 0;
+                        if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
+                        {
+                            PFXdispose( ); free( token );
+                            return E_INTERPRET_ERROR;
+                        }
+                        if ( ( token = malloc( sizeof( T_token ) ) ) == NULL )
+                        {
+                            PFXdispose( );
+                            return E_INTERPRET_ERROR;
+                        }
+                    }
+                }
                 break;
 
             case R_P:
@@ -573,6 +675,26 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                         return E_INTERPRET_ERROR;
                     }
                 }
+                else if ( actual_ttype == E_MINUS )
+                {
+                    if ( ! ( ( eStack.data[eStack.top] >= E_RPARENTHESES && eStack.data[eStack.top] <= E_UMINUS ) || eStack.data[eStack.top] == E_MINUS ) )
+                    {
+                        actual_ttype = E_UMINUS;
+                        //simulujem konstantu hodnoty 0
+                        token->ttype = E_INT;
+                        token->data._int = 0;
+                        if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
+                        {
+                            PFXdispose( ); free( token );
+                            return E_INTERPRET_ERROR;
+                        }
+                        if ( ( token = malloc( sizeof( T_token ) ) ) == NULL )
+                        {
+                            PFXdispose( );
+                            return E_INTERPRET_ERROR;
+                        }
+                    }
+                }
                 break;
                 
             default:
@@ -587,8 +709,17 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 PFXdispose( ); free(token); 
                 return E_SYNTAX;  //chyba neexistuje pravidlo v tabulke
         }    
-    } while ( ( eStack.last_terminal != E_LABRACK ) || ( actual_ttype != termination_ttype ) );
+    } while ( ( eStack.last_terminal != E_SEMICL ) || ( actual_ttype != termination_ttype ) );
    
+    #ifdef TESTY2
+        printf("Ukoncil sa cyklus a na vstupe je: \x1B[31m%s\x1B[0m\n", enums[actual_ttype]);
+        for (int i = 0; i <= eStack.top; i++) { printf("\x1B[32m------\x1B[0m"); }
+        printf("\n");
+        for (int i = 0; i < eStack.top; i++) { printf(" %s  \x1B[32m|\x1B[0m ", enums[eStack.data[i]]);}
+        printf(" %s  \x1B[32m|\x1B[0m\n", enums[eStack.data[eStack.top]]);
+        for (int i = 0; i <= eStack.top; i++) { printf("\x1B[32m------\x1B[0m"); }
+        printf("\n");
+    #endif
     //posledne volanie funkcie eval s s jedinou polozkou na vrchole zasobnika PFXStack, ktorou je vysledok vyhodnotenia vyrazu
     if ( ( error_code = eval( PFXStackTopPop( ), NULL, E_TERM ) ) != E_OK )
     {
