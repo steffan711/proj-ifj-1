@@ -489,31 +489,11 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
     }
     else if ( actual_ttype == E_MINUS ) //unarne minus
     {
-        if ( eStack.data[eStack.top] == E_MINUS || eStack.data[eStack.top] == E_UMINUS ) 
-        {
-            if ( unary_minus() )
-            {
-                actual_ttype = E_UMINUS;
-                token->ttype = E_INT;
-                token->data._int = 0;   //simulujem konstantu hodnoty 0
-                if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
-                {
-                    PFXdispose( ); free( token );
-                    return E_INTERPRET_ERROR;
-                }
-                if ( ( token = malloc( sizeof( T_token ) ) ) == NULL )
-                {
-                    PFXdispose( );
-                    return E_INTERPRET_ERROR;
-                }
-            }
-        }
-        else if ( ! ( eStack.data[eStack.top] >= E_RPARENTHESES && eStack.data[eStack.top] <= E_TERM ) )
+        if ( ! ( eStack.data[eStack.top] >= E_RPARENTHESES && eStack.data[eStack.top] <= E_TERM ) )
         {
             actual_ttype = E_UMINUS;
-            //simulujem konstantu hodnoty 0
             token->ttype = E_INT;
-            token->data._int = 0;
+            token->data._int = 0;   //simulujem konstantu hodnoty 0
             if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
             {
                 PFXdispose( ); free( token );
@@ -619,31 +599,11 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 }
                 else if ( actual_ttype == E_MINUS ) //unarne minus
                 {
-                    if ( eStack.data[eStack.top] == E_MINUS || eStack.data[eStack.top] == E_UMINUS ) 
-                    {
-                        if ( unary_minus() )
-                        {
-                            actual_ttype = E_UMINUS;
-                            token->ttype = E_INT;
-                            token->data._int = 0;   //simulujem konstantu hodnoty 0
-                            if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
-                            {
-                                PFXdispose( ); free( token );
-                                return E_INTERPRET_ERROR;
-                            }
-                            if ( ( token = malloc( sizeof( T_token ) ) ) == NULL )
-                            {
-                                PFXdispose( );
-                                return E_INTERPRET_ERROR;
-                            }
-                        }
-                    }
-                    else if ( ! ( eStack.data[eStack.top] >= E_RPARENTHESES && eStack.data[eStack.top] <= E_TERM ) )
+                    if ( ! ( eStack.data[eStack.top] >= E_RPARENTHESES && eStack.data[eStack.top] <= E_TERM ) )
                     {
                         actual_ttype = E_UMINUS;
-                        //simulujem konstantu hodnoty 0
                         token->ttype = E_INT;
-                        token->data._int = 0;
+                        token->data._int = 0;   //simulujem konstantu hodnoty 0
                         if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
                         {
                             PFXdispose( ); free( token );
@@ -715,31 +675,11 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 }
                 else if ( actual_ttype == E_MINUS ) //unarne minus
                 {
-                    if ( eStack.data[eStack.top] == E_MINUS || eStack.data[eStack.top] == E_UMINUS ) 
-                    {
-                        if ( unary_minus() )
-                        {
-                            actual_ttype = E_UMINUS;
-                            token->ttype = E_INT;
-                            token->data._int = 0;   //simulujem konstantu hodnoty 0
-                            if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
-                            {
-                                PFXdispose( ); free( token );
-                                return E_INTERPRET_ERROR;
-                            }
-                            if ( ( token = malloc( sizeof( T_token ) ) ) == NULL )
-                            {
-                                PFXdispose( );
-                                return E_INTERPRET_ERROR;
-                            }
-                        }
-                    }
-                    else if ( ! ( eStack.data[eStack.top] >= E_RPARENTHESES && eStack.data[eStack.top] <= E_TERM ) )
+                    if ( ! ( eStack.data[eStack.top] >= E_RPARENTHESES && eStack.data[eStack.top] <= E_TERM ) )
                     {
                         actual_ttype = E_UMINUS;
-                        //simulujem konstantu hodnoty 0
                         token->ttype = E_INT;
-                        token->data._int = 0;
+                        token->data._int = 0;   //simulujem konstantu hodnoty 0
                         if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
                         {
                             PFXdispose( ); free( token );
