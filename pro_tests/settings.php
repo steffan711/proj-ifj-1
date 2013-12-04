@@ -1,11 +1,11 @@
-abc_recursive
+abc-recursive
 ackerman
-ackermanexp
+// ackermanexp
 built-in
 expressions
 ifelseif
 in3
-in4
+// in4
 inkrementacia
 iteration
 // porovnanie
