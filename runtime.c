@@ -71,6 +71,7 @@ static inline E_ERROR_TYPE AddFrame( unsigned int size )
     stack.top++;
     stack.array[stack.top] = tmp;
     tmp->size = size;
+    tmp->string_count = 0;
     for( unsigned int i = 0; i< size; i++ )
     {
         tmp->local[i].type = VAR_UNDEF;
@@ -169,6 +170,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 
                 if( top->local[dest].type == VAR_STRING )
                 {
+                    top->string_count--;
                     free( top->local[dest].data._string );
                     top->local[dest].type = VAR_UNDEF;
                 }
@@ -184,11 +186,60 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     memcpy( top->local[dest].data._string, ptr1->data._string, ptr1->size );
                     top->local[dest].type = VAR_STRING;
                     top->local[dest].size = ptr1->size;
+                    top->string_count++;
                 }
                 else
                 {
                     top->local[dest] = *ptr1;
                 }                
+                break;
+            }
+            case INC:
+            {
+                dest = EIP->attr.tac.dest;
+                
+                if( top->local[dest].type == VAR_INT )
+                {
+                    top->local[dest].data._int += 1;
+                }
+                else if( top->local[dest].type == VAR_DOUBLE )
+                {
+                    top->local[dest].data._double += 1;
+                }
+                else if( top->local[dest].type == VAR_UNDEF )
+                {
+                    ERROR("runtime.c:%lu: Runtime error: Cannot increment undefined variable.\n", __LINE__ );
+                    return E_UNDEF_VAR;
+                }
+                else
+                {
+                    ERROR("runtime.c:%lu: Runtime error: Incompatible type to incremet.\n", __LINE__ );
+                    return E_INCOMPATIBLE;
+                }
+                break;
+            }
+            case DEC:
+            {
+                dest = EIP->attr.tac.dest;
+                
+                if( top->local[dest].type == VAR_INT )
+                {
+                    top->local[dest].data._int -= 1;
+                }
+                else if( top->local[dest].type == VAR_DOUBLE )
+                {
+                    top->local[dest].data._double -= 1;
+                }
+                else if( top->local[dest].type == VAR_UNDEF )
+                {
+                    ERROR("runtime.c:%lu: Runtime error: Cannot decrement undefined variable.\n", __LINE__ );
+                    return E_UNDEF_VAR;
+                }
+                else
+                {
+                    ERROR("runtime.c:%lu: Runtime error: Incompatible type to decremet.\n", __LINE__ );
+                    return E_INCOMPATIBLE;
+                }
                 break;
             }
             case PLUS:
@@ -275,6 +326,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             if ( top->local[dest].type == VAR_STRING )
             {
                 free( top->local[dest].data._string );
+                top->string_count--;
             }
             top->local[dest] = temp;
             break;  
@@ -362,6 +414,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             if ( top->local[dest].type == VAR_STRING )
             {
                 free( top->local[dest].data._string );
+                top->string_count--;
             }
             top->local[dest] = temp;
             break;  
@@ -451,6 +504,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             if ( top->local[dest].type == VAR_STRING )
             {
                 free( top->local[dest].data._string );
+                top->string_count--;
             }
             top->local[dest] = temp;
             break;  
@@ -556,6 +610,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             if ( top->local[dest].type == VAR_STRING )
             {
                 free( top->local[dest].data._string );
+                top->string_count--;
             }
             top->local[dest] = temp;
             break;  
@@ -587,9 +642,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ptr2 = &EIP->attr.tac.op2;
                 }
                 
-                if ( ( ptr1->type == ptr2->type ) || 
-                     ( ( ptr1->type == VAR_CONSTSTRING || ptr1->type == VAR_STRING ) &&
-                       ( ptr2->type == VAR_CONSTSTRING || ptr2->type == VAR_STRING ) ) ) 
+                if ( ( ptr1->type == ptr2->type ) ) 
                 {
                     switch( ptr1->type )
                     {
@@ -617,6 +670,11 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             return E_UNDEF_VAR;
                     }
                 }
+                else if ( ptr1->type >= VAR_STRING && ptr2->type >= VAR_STRING )
+                {
+                    int retval = lexsstrcmp( ptr1->data._string,ptr2->data._string, ptr1->size, ptr2->size );
+                            temp.data._bool = ( retval < 0 )? true : false;
+                }
                 else
                 {
                     if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
@@ -630,6 +688,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 if ( top->local[dest].type == VAR_STRING )
                 {
                     free( top->local[dest].data._string );
+                    top->string_count--;
                 }
                 top->local[dest] = temp;
                 break;
@@ -660,9 +719,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ptr2 = &EIP->attr.tac.op2;
                 }
                 
-                if ( ( ptr1->type == ptr2->type ) || 
-                     ( ( ptr1->type == VAR_CONSTSTRING || ptr1->type == VAR_STRING ) &&
-                       ( ptr2->type == VAR_CONSTSTRING || ptr2->type == VAR_STRING ) ) ) 
+                if ( ( ptr1->type == ptr2->type ) ) 
                 {
                     switch( ptr1->type )
                     {
@@ -690,6 +747,11 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             return E_UNDEF_VAR;
                     }
                 }
+                else if ( ptr1->type >= VAR_STRING && ptr2->type >= VAR_STRING )
+                {
+                    int retval = lexsstrcmp( ptr1->data._string,ptr2->data._string, ptr1->size, ptr2->size );
+                            temp.data._bool = ( retval > 0 )? true : false;
+                }
                 else
                 {
                     if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
@@ -703,6 +765,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 if ( top->local[dest].type == VAR_STRING )
                 {
                     free( top->local[dest].data._string );
+                    top->string_count--;
                 }
                 top->local[dest] = temp;
                 break;
@@ -733,9 +796,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ptr2 = &EIP->attr.tac.op2;
                 }
                 
-                if ( ( ptr1->type == ptr2->type ) || 
-                     ( ( ptr1->type == VAR_CONSTSTRING || ptr1->type == VAR_STRING ) &&
-                       ( ptr2->type == VAR_CONSTSTRING || ptr2->type == VAR_STRING ) ) ) 
+                if ( ( ptr1->type == ptr2->type ) ) 
                 {
                     switch( ptr1->type )
                     {
@@ -763,6 +824,11 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             return E_UNDEF_VAR;
                     }
                 }
+                else if ( ptr1->type >= VAR_STRING && ptr2->type >= VAR_STRING )
+                {
+                    int retval = lexsstrcmp( ptr1->data._string,ptr2->data._string, ptr1->size, ptr2->size );
+                            temp.data._bool = ( retval <= 0 )? true : false;
+                }
                 else
                 {
                     if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
@@ -776,6 +842,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 if ( top->local[dest].type == VAR_STRING )
                 {
                     free( top->local[dest].data._string );
+                    top->string_count--;
                 }
                 top->local[dest] = temp;
                 break;
@@ -806,9 +873,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ptr2 = &EIP->attr.tac.op2;
                 }
                 
-                if ( ( ptr1->type == ptr2->type ) || 
-                     ( ( ptr1->type == VAR_CONSTSTRING || ptr1->type == VAR_STRING ) &&
-                       ( ptr2->type == VAR_CONSTSTRING || ptr2->type == VAR_STRING ) ) ) 
+                if ( ( ptr1->type == ptr2->type ) ) 
                 {
                     switch( ptr1->type )
                     {
@@ -836,6 +901,11 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             return E_UNDEF_VAR;
                     }
                 }
+                else if ( ptr1->type >= VAR_STRING && ptr2->type >= VAR_STRING )
+                {
+                    int retval = lexsstrcmp( ptr1->data._string,ptr2->data._string, ptr1->size, ptr2->size );
+                            temp.data._bool = ( retval >= 0 )? true : false;
+                }
                 else
                 {
                     if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
@@ -849,6 +919,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 if ( top->local[dest].type == VAR_STRING )
                 {
                     free( top->local[dest].data._string );
+                    top->string_count--;
                 }
                 top->local[dest] = temp;
                 break;
@@ -879,9 +950,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ptr2 = &EIP->attr.tac.op2;
                 }
                 
-                if ( ( ptr1->type == ptr2->type ) || 
-                     ( ( ptr1->type == VAR_CONSTSTRING || ptr1->type == VAR_STRING ) &&
-                       ( ptr2->type == VAR_CONSTSTRING || ptr2->type == VAR_STRING ) ) ) 
+                if ( ( ptr1->type == ptr2->type ) ) 
                 {
                     switch( ptr1->type )
                     {
@@ -909,6 +978,11 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             return E_UNDEF_VAR;
                     }
                 }
+                else if ( ptr1->type >= VAR_STRING && ptr2->type >= VAR_STRING )
+                {
+                    int retval = lexsstrcmp( ptr1->data._string,ptr2->data._string, ptr1->size, ptr2->size );
+                            temp.data._bool = ( retval != 0 )? true : false;
+                }
                 else
                 {
                     if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
@@ -921,6 +995,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 if ( top->local[dest].type == VAR_STRING )
                 {
                     free( top->local[dest].data._string );
+                    top->string_count--;
                 }
                 top->local[dest] = temp;
                 break;
@@ -950,9 +1025,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ptr2 = &EIP->attr.tac.op2;
                 }
                 
-                if ( ( ptr1->type == ptr2->type ) || 
-                     ( ( ptr1->type == VAR_CONSTSTRING || ptr1->type == VAR_STRING ) &&
-                       ( ptr2->type == VAR_CONSTSTRING || ptr2->type == VAR_STRING ) ) ) 
+                if ( ( ptr1->type == ptr2->type ) ) 
                 {
                     switch( ptr1->type )
                     {
@@ -980,6 +1053,11 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             return E_UNDEF_VAR;
                     }
                 }
+                else if ( ptr1->type >= VAR_STRING && ptr2->type >= VAR_STRING )
+                {
+                    int retval = lexsstrcmp( ptr1->data._string,ptr2->data._string, ptr1->size, ptr2->size );
+                            temp.data._bool = ( retval == 0 )? true : false;
+                }
                 else
                 {
                     if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
@@ -993,6 +1071,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 if ( top->local[dest].type == VAR_STRING )
                 {
                     free( top->local[dest].data._string );
+                    top->string_count--;
                 }
                 top->local[dest] = temp;
                 break;
@@ -1024,9 +1103,9 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ptr2 = &EIP->attr.tac.op2;
                 }
                 
-                if ( ptr1->type == VAR_CONSTSTRING || ptr1->type == VAR_STRING ) 
+                if ( ptr1->type >= VAR_STRING ) 
                 {
-                    if ( ptr2->type == VAR_CONSTSTRING || ptr2->type == VAR_STRING )
+                    if ( ptr2->type >= VAR_STRING )
                     {
                         if ( ptr1->size + ptr2->size > 0 )
                         {
@@ -1039,6 +1118,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.size = ptr1->size + ptr2->size;
                             memcpy( temp.data._string, ptr1->data._string, ptr1->size );
                             memcpy( temp.data._string + ptr1->size, ptr2->data._string, ptr2->size );
+                            top->string_count++;
                         }
                         else
                         {
@@ -1072,6 +1152,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.size = ptr1->size + str.size;
                             memcpy( temp.data._string, ptr1->data._string, ptr1->size );
                             memcpy( temp.data._string + ptr1->size, str.data._string, str.size );
+                            top->string_count++;
                             if ( str.type != VAR_CONSTSTRING )
                             {
                                 free(str.data._string);
@@ -1096,6 +1177,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 if ( top->local[dest].type == VAR_STRING )
                 {
+                    top->string_count--;
                     free( top->local[dest].data._string );
                 }
                 top->local[dest] = temp;
@@ -1214,20 +1296,29 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                         return E_UNDEF_VAR;
                     }
                     retval = *ptr1;
-                    if ( retval.type == VAR_STRING || retval.type == VAR_CONSTSTRING )
+                    if ( retval.type > VAR_STRING )
                     {
-                        if ( retval.size > 0 )
+                        
+                        if ( retval.type == VAR_CONSTSTRING )
                         {
-                            char *tmp = malloc( retval.size );
-                            if ( tmp == NULL )
+                            if( retval.size > 0 )
                             {
-                                retval.type = VAR_UNDEF; // zneplatnim aby sa uvolnil len raz cez kontrolu ramcov
-                                ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
-                                return E_INTERPRET_ERROR;
+                                char *tmp = malloc( retval.size );
+                                if ( tmp == NULL )
+                                {
+                                    retval.type = VAR_UNDEF; // zneplatnim aby sa uvolnil len raz cez kontrolu ramcov
+                                    ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
+                                    return E_INTERPRET_ERROR;
+                                }
+                                retval.type = VAR_STRING;
+                                memcpy( tmp, retval.data._string, retval.size );
+                                retval.data._string = tmp;
                             }
-                            retval.type = VAR_STRING;
-                            memcpy( tmp, retval.data._string, retval.size );
-                            retval.data._string = tmp;
+                        }
+                        else
+                        {
+                            top->string_count--;
+                            ptr1->type = VAR_UNDEF;
                         }
                     }
                 }
@@ -1237,12 +1328,15 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     retval = *ptr1;
                 }
                
-                
-                for( unsigned int i = 0; i < top->size; i++ )
+                if ( top->string_count > 0 )
                 {
-                    if( top->local[i].type == VAR_STRING )
+                    //printf("SPUSTAM ODMAZAVANIE\n");
+                    for( unsigned int i = 0; i < top->size; i++ )
                     {
-                        free( top->local[i].data._string );
+                        if( top->local[i].type == VAR_STRING )
+                        {
+                            free( top->local[i].data._string );
+                        }
                     }
                 }
                 dest = top->dest;
@@ -1262,12 +1356,16 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 
                 if ( top->local[dest].type == VAR_STRING )
                 {
+                    top->string_count--;
                     free( top->local[dest].data._string );
+                }
+                if ( retval.type == VAR_STRING )
+                {
+                    top->string_count++;
                 }
                 top->local[dest] = retval;
                 retval.type = VAR_UNDEF;
                 continue;
-                break;
             
             case CALL_BUILTIN:
             {
@@ -1280,13 +1378,13 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     return ret;
                 }
                 
-                for( unsigned int i = 0; i < top->size; i++ )
+                /*for( unsigned int i = 0; i < top->size; i++ )
                 {
                     if( top->local[i].type == VAR_STRING )
                     {
                         free( top->local[i].data._string );
                     }
-                }
+                }*/
                 free(top);
                 --stack.top;
                 top = stack.array[stack.top];
@@ -1294,12 +1392,18 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 if ( top->local[dest].type == VAR_STRING )
                 {
                     free( top->local[dest].data._string );
+                    top->string_count--;
+                }
+                if ( retval.type == VAR_STRING )
+                {
+                    top->string_count++;
                 }
                 top->local[dest] = retval;
                 retval.type = VAR_UNDEF;
-                
                 break;
             }
+            case DUMMY:
+                break;
             default:
                 ERROR("Runtime error: Unexpected instrunction with id %d.\n", EIP->opcode);
                 return E_INTERPRET_ERROR;
