@@ -29,14 +29,14 @@ E_ERROR_TYPE _strtod( char *input, double *result )
 
     char *endptr;
     *result = strtod( input, &endptr );
-	
+    
     if( isprint( endptr[0] ) && endptr[0] != ' ' )
         return E_NUM_CAST;
 
-	if( endptr > input )
-		if( (--endptr)[0] == '.' )
-			return E_NUM_CAST;
-		
+    if( endptr > input )
+        if( (--endptr)[0] == '.' )
+            return E_NUM_CAST;
+        
     return E_OK;
 }
 
@@ -144,12 +144,12 @@ E_ERROR_TYPE doubleval( T_DVAR input[], int size, T_DVAR *result )
             
         case VAR_CONSTSTRING:
             {
-				result->type = VAR_DOUBLE;
-				if( input[0].size == 0 )
-				{
-					result->data._double = 0.0;
-					return E_OK;
-				}
+                result->type = VAR_DOUBLE;
+                if( input[0].size == 0 )
+                {
+                    result->data._double = 0.0;
+                    return E_OK;
+                }
                 char temp[input[0].size + 1];
                 temp[input[0].size] = 0;
                 memcpy( temp, input[0].data._string, input[0].size );
@@ -259,7 +259,16 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
             break;
             
         case VAR_INT:
-                {
+            if( input[0].data._int == 0 )
+            {
+                result->type = VAR_STRING;
+                result->size = 1;
+                result->data._string = malloc( 1 );
+                result->data._string[0] = '0';
+            }
+            else
+            {
+                
                 int n = intNumSpaces( input[0].data._int );
                 result->data._string = malloc( n + 2 );
                 if ( input[0].data._int <= 0 )
@@ -269,7 +278,7 @@ E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
                 
                 if( result->data._string == NULL )
                     return E_INTERPRET_ERROR;
-                result->type = VAR_STRING;    
+                result->type = VAR_STRING;   
                 sprintf( result->data._string, "%d", input[0].data._int );
             break;
             }
