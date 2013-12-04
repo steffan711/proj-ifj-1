@@ -1486,7 +1486,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
         case E_TRIPLEEQ:
         case E_NOT_EQ:
             {
-                bool val;
+                bool val = false;
                 if ( op1->ttype == op2->ttype )
                 {
                     switch(op1->ttype)
@@ -1511,7 +1511,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 }
                 else
                 {
-                    bool val = false;
+                    val = false;
                 }
                 if ( operation == E_NOT_EQ )
                 {
