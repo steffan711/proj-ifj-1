@@ -12,6 +12,7 @@ typedef struct context_struct
 {
     unsigned int size;
     unsigned int dest;
+    unsigned int string_count;
     Instruction* EIP;
     T_DVAR local[];
 } Context;
@@ -20,7 +21,6 @@ typedef struct stack_struct
 {
     int top;
     int size;
-    bool call_in_progress;
     Context* *array;
 } Stack;
 

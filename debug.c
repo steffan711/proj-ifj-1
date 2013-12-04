@@ -53,7 +53,11 @@ const char const *TOKEN_NAME[] =
 
 const char const *OPCODE_NAME[] = 
 {
-"DUMMY", "START", "CREATE", "MOV", "RET", "PUSH", "COND", "JMP", "CALL", "CALL_BUILTIN", "CONCAT", "EQUAL", "NONEQUAL", "PLUS","MINUS", "DIV", "MUL", "LESS", "GREATER", "LESSEQ", "GREATEREQ" 
+"DUMMY", "START", "CREATE", "MOV", "RET", "PUSH", "COND", "JMP",
+ "CALL", "CALL_BUILTIN",
+ "INC", "DEC",
+ "PLUS","MINUS",
+ "CONCAT", "EQUAL", "NONEQUAL", "DIV", "MUL", "LESS", "GREATER", "LESSEQ", "GREATEREQ" 
 };
 
 #ifdef TIME_CHECKER

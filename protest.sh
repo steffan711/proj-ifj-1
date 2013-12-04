@@ -70,4 +70,9 @@ else
 	echo -e ${Red}"TOTALLY $result TESTS FAILED! CHECK \"$failfile\" for more info"${RCol}
 fi
 echo "";
+echo -e ${Yel}"-------------------------------------------------------"${RCol}
+echo -e ${Red}"Po pridani test suboru s priponou $ext do \"$input\" je potrebne dopisat na novy riadok nazov suboru bez pripony do suboru \"$settings\""${RCol}
+echo "Pre cerstve output subory treba ist do \"$expected_output\" a jednoducho zmazat vsetky ktore je potrebne obnovit pri zmene suborov v \"$input\"";
+echo -e ${Yel}"-------------------------------------------------------"${RCol}
+echo "";
 # rm "$dir.temp"

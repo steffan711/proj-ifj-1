@@ -130,6 +130,12 @@ void PrintTape( Instruction *ptr )
                 printf("OP1: ");
                 print_DVAR( &( ptr->attr.tac.op1 ) );
                 break;
+            case INC:
+                printf("Dest: [%u] +1 \n", ptr->attr.tac.dest);
+                break;
+            case DEC:
+                printf("Dest: [%u] -1 \n", ptr->attr.tac.dest);
+                break;
             default:
                 printf("Dest: [%u]\n", ptr->attr.tac.dest);
                 printf("OP1: ");
@@ -445,6 +451,37 @@ void SwitchContextToGobal( void )
     assignvar = NULL;
 }
 
+int isAlwaysTrue( T_DVAR *var )
+{
+    switch ( var->type )
+    {
+        case VAR_BOOL:
+            if( var->data._bool == true )
+                return 1;
+            return 0;
+            break;
+        case VAR_INT:
+            if ( var->data._int == 0 )
+                return 0;
+            return 1;
+            break;
+        case VAR_CONSTSTRING:
+            if ( var->size == 0 )
+                return 0;
+            return 1;
+            break;
+        case VAR_DOUBLE:
+            if ( var->data._double == 0.0 )
+                return 0;
+            return 1;
+            break;
+        case VAR_NULL:
+            return 0;
+        default:
+            return -1;
+    }
+}
+
 E_ERROR_TYPE setstate(enum gen_state state)
 {
     PRINTD("%s()\n", __func__ );
@@ -485,8 +522,18 @@ E_ERROR_TYPE setstate(enum gen_state state)
                 return E_INTERPRET_ERROR;
             SwitchTape->opcode = DUMMY;
             SwitchTape->next = NULL;
-            /* napojim skok na dummy instrukciu*/
+            /* napojim skok z true na dummy instrukciu*/
             ptrstack->stack[ ptrstack->top -1 ]->attr.jump.jmp = SwitchTape;
+            int result = isAlwaysTrue( &( ptrstack->stack[ ptrstack->top -2 ]->attr.jump.op1 ) );
+            if ( result > 0) // true
+            {
+                ptrstack->stack[ ptrstack->top -2 ]->opcode = DUMMY;
+            }
+            else if ( result == 0 ) // false
+            {
+                ptrstack->stack[ ptrstack->top -2 ]->opcode = JMP;
+                ptrstack->stack[ ptrstack->top -2 ]->attr.jump.jmp = ptrstack->stack[ ptrstack->top -1 ]->next; 
+            }
             ptrstack->top -= 2; //nepotrebujem posledne 2 pointre
             State = S_DEFAULT;
             return E_OK;
@@ -506,21 +553,38 @@ E_ERROR_TYPE setstate(enum gen_state state)
             State = S_WHILE_BEGIN;
             return E_OK;
         case S_WHILE_END: // prelinkujem while, pridam jmp
+        {
             if ( AddInstruction() != E_OK )
                 return E_INTERPRET_ERROR;
             /* pridam jmp na konci while a napojim na zaciatok vyrazu */
             SwitchTape->opcode = JMP;
             SwitchTape->attr.jump.jmp = ptrstack->stack[ ptrstack->top -2 ];
             SwitchTape->next = NULL;
+            /* skusim optimalizovat */
+            int result = isAlwaysTrue( &( ptrstack->stack[ ptrstack->top -1 ]->attr.jump.op1 ) );
+            if ( result > 0) // true
+            {
+                ptrstack->stack[ ptrstack->top -1 ]->opcode = DUMMY;
+                SwitchTape->attr.jump.jmp = ptrstack->stack[ ptrstack->top -1 ]->next;
+            }
             /* pridam dummy a nastavim na nu cond jump */
             if ( AddInstruction() != E_OK )
                 return E_INTERPRET_ERROR;
             SwitchTape->opcode = DUMMY;
             SwitchTape->next = NULL;
-            ptrstack->stack[ ptrstack->top -1 ]->attr.jump.jmp = SwitchTape;
+            if ( result == 0 ) // false
+            {
+                ptrstack->stack[ ptrstack->top -1 ]->opcode = JMP;
+                ptrstack->stack[ ptrstack->top -1 ]->attr.jump.jmp = SwitchTape;
+            }
+            else if ( result < 0) // N/A
+            {
+                ptrstack->stack[ ptrstack->top -1 ]->attr.jump.jmp = SwitchTape;
+            }
             ptrstack->top -=2;
             State = S_DEFAULT;
             return E_OK;
+        }
         case S_FUNCTION_END:
             if ( AddInstruction() != E_OK )
                 return E_INTERPRET_ERROR;
@@ -646,6 +710,110 @@ E_ERROR_TYPE perform_eval_term(T_token *op)
             free(op);
             return E_OK;
         }
+        else if ( SwitchTape->opcode == PLUS && SwitchTape->attr.tac.dest == op->length ) // predosla dest je novy source
+        {
+            if ( SwitchTape->attr.tac.op1.type == VAR_LOCAL && assignvar->offset == SwitchTape->attr.tac.op1.data.offset )
+            // prva je lokalna
+            {
+                if ( SwitchTape->attr.tac.op2.type == VAR_INT ) // a druha je 1
+                {   
+                    if ( SwitchTape->attr.tac.op2.data._int == 1 )
+                    {
+                        PRINTD( "GENERUJEM INC\n" );
+                        SwitchTape->opcode = INC;
+                        SwitchTape->attr.tac.dest = assignvar->offset;
+                        assignvar->assigned = true;
+                        free(op);
+                        return E_OK;
+                    }
+                    else if ( SwitchTape->attr.tac.op2.data._int == -1 )
+                    {
+                        PRINTD( "GENERUJEM INC\n" );
+                        SwitchTape->opcode = DEC;
+                        SwitchTape->attr.tac.dest = assignvar->offset;
+                        assignvar->assigned = true;
+                        free(op);
+                        return E_OK;
+                    }
+                }
+            }
+            else if ( SwitchTape->attr.tac.op2.type == VAR_LOCAL && assignvar->offset == SwitchTape->attr.tac.op2.data.offset )
+            {
+                if ( SwitchTape->attr.tac.op1.type == VAR_INT ) // a druha je 1
+                {   
+                    if ( SwitchTape->attr.tac.op1.data._int == 1 )
+                    {
+                        PRINTD( "GENERUJEM INC\n" );
+                        SwitchTape->opcode = INC;
+                        SwitchTape->attr.tac.dest = assignvar->offset;
+                        assignvar->assigned = true;
+                        free(op);
+                        return E_OK;
+                    }
+                    else if ( SwitchTape->attr.tac.op1.data._int == -1 )
+                    {
+                        PRINTD( "GENERUJEM INC\n" );
+                        SwitchTape->opcode = DEC;
+                        SwitchTape->attr.tac.dest = assignvar->offset;
+                        assignvar->assigned = true;
+                        free(op);
+                        return E_OK;
+                    }
+                }
+            }
+        }
+        else if ( SwitchTape->opcode == MINUS && SwitchTape->attr.tac.dest == op->length ) // predosla dest je novy source
+        {
+            if ( SwitchTape->attr.tac.op1.type == VAR_LOCAL && assignvar->offset == SwitchTape->attr.tac.op1.data.offset )
+            // prva je lokalna
+            {
+                if ( SwitchTape->attr.tac.op2.type == VAR_INT ) // a druha je 1
+                {   
+                    if ( SwitchTape->attr.tac.op2.data._int == 1 )
+                    {
+                        PRINTD( "GENERUJEM INC\n" );
+                        SwitchTape->opcode = DEC;
+                        SwitchTape->attr.tac.dest = assignvar->offset;
+                        assignvar->assigned = true;
+                        free(op);
+                        return E_OK;
+                    }
+                    else if ( SwitchTape->attr.tac.op2.data._int == -1 )
+                    {
+                        PRINTD( "GENERUJEM INC\n" );
+                        SwitchTape->opcode = INC;
+                        SwitchTape->attr.tac.dest = assignvar->offset;
+                        assignvar->assigned = true;
+                        free(op);
+                        return E_OK;
+                    }
+                }
+            }
+            else if ( SwitchTape->attr.tac.op2.type == VAR_LOCAL && assignvar->offset == SwitchTape->attr.tac.op2.data.offset )
+            {
+                if ( SwitchTape->attr.tac.op1.type == VAR_INT ) // a druha je 1
+                {   
+                    if ( SwitchTape->attr.tac.op1.data._int == 1 )
+                    {
+                        PRINTD( "GENERUJEM INC\n" );
+                        SwitchTape->opcode = DEC;
+                        SwitchTape->attr.tac.dest = assignvar->offset;
+                        assignvar->assigned = true;
+                        free(op);
+                        return E_OK;
+                    }
+                    else if ( SwitchTape->attr.tac.op1.data._int == -1 )
+                    {
+                        PRINTD( "GENERUJEM INC\n" );
+                        SwitchTape->opcode = INC;
+                        SwitchTape->attr.tac.dest = assignvar->offset;
+                        assignvar->assigned = true;
+                        free(op);
+                        return E_OK;
+                    }
+                }
+            }
+        }       
     }
     
     PRINTD("Generujem instrukciu termu\n");

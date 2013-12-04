@@ -62,7 +62,7 @@ typedef struct metadata_var STableData;
 /* ************ Instrukcia ********** */
 /* ********************************** */
 
-enum vartype { VAR_UNDEF = 0, VAR_INT, VAR_BOOL, VAR_DOUBLE, VAR_STRING, VAR_NULL, VAR_CONSTSTRING, VAR_LOCAL, VAR_NO_VAR };
+enum vartype { VAR_UNDEF = 0, VAR_INT, VAR_BOOL, VAR_DOUBLE, VAR_NULL,  VAR_LOCAL, VAR_NO_VAR, VAR_STRING, VAR_CONSTSTRING };
 
 typedef struct variable
 {
@@ -80,7 +80,9 @@ typedef struct variable
 
 enum opcodes { DUMMY = 0, START, CREATE, MOV, RET, PUSH, COND, JMP,
               CALL, CALL_BUILTIN,
-              CONCAT, EQUAL, NONEQUAL, PLUS, MINUS, DIV, MUL, LESS, GREATER, LESSEQ, GREATEREQ 
+              INC, DEC,
+              PLUS, MINUS,
+              CONCAT, EQUAL, NONEQUAL, DIV, MUL, LESS, GREATER, LESSEQ, GREATEREQ,
               };
 
 struct instruction {
