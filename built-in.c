@@ -29,9 +29,14 @@ E_ERROR_TYPE _strtod( char *input, double *result )
 
     char *endptr;
     *result = strtod( input, &endptr );
-    
+	
     if( isprint( endptr[0] ) && endptr[0] != ' ' )
         return E_NUM_CAST;
+
+	if( endptr > input )
+		if( (--endptr)[0] == '.' )
+			return E_NUM_CAST;
+		
     return E_OK;
 }
 
@@ -139,7 +144,12 @@ E_ERROR_TYPE doubleval( T_DVAR input[], int size, T_DVAR *result )
             
         case VAR_CONSTSTRING:
             {
-                result->type = VAR_DOUBLE;
+				result->type = VAR_DOUBLE;
+				if( input[0].size == 0 )
+				{
+					result->data._double = 0.0;
+					return E_OK;
+				}
                 char temp[input[0].size + 1];
                 temp[input[0].size] = 0;
                 memcpy( temp, input[0].data._string, input[0].size );
