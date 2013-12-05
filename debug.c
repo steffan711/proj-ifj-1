@@ -77,6 +77,8 @@ void print_token( T_token* token )
     printf( "\nToken -> length: %u", token->length);
     switch( token->ttype ) 
     {
+        case E_AND1:        printf( "\nToken -> ttype: E_AND1\n" );         break;
+        case E_AND2:        printf( "\nToken -> ttype: E_AND2\n" );         break;
         case E_BOOL:        printf( "\nToken -> ttype: E_BOOL\n" );         break;
         case E_COMA:        printf( "\nToken -> ttype: E_COMA\n" );         break;
         case E_CONCAT:      printf( "\nToken -> ttype: E_CONCAT\n" );       break;
@@ -99,8 +101,11 @@ void print_token( T_token* token )
         case E_LPARENTHESES:printf( "\nToken -> ttype: E_LPARENTHESES\n" ); break;
         case E_MINUS:       printf( "\nToken -> ttype: E_MINUS\n" );        break;
         case E_MULT:        printf( "\nToken -> ttype: E_MULT\n" );         break;
+        case E_NEG:         printf( "\nToken -> ttype: E_NEG\n" );          break;
         case E_NOT_EQ:      printf( "\nToken -> ttype: E_NOT_EQ\n" );       break;
         case E_NULL:        printf( "\nToken -> ttype: E_NULL\n" );         break;
+        case E_OR1:         printf( "\nToken -> ttype: E_OR1\n" );          break;
+        case E_OR2:         printf( "\nToken -> ttype: E_OR2\n" );          break;
         case E_PLUS:        printf( "\nToken -> ttype: E_PLUS\n" );         break;
         case E_RABRACK:     printf( "\nToken -> ttype: E_RABRACK\n" );      break;
         case E_RETURN:      printf( "\nToken -> ttype: E_RETURN\n" );       break; 

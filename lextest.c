@@ -56,7 +56,7 @@ int main( int argc, char *argv[] )
     {
         scanner_get_token(&token);
         print_token(&token);
-        //getchar();
+        getchar();
     }
     printf("---------------------------\n");
     
