@@ -74,6 +74,8 @@ typedef struct variable
         bool _bool;
         double _double;
         unsigned int offset;
+        struct variable *prev_local;
+        struct instruction* EIP;
     } data;
     unsigned int size;
 } T_DVAR;
