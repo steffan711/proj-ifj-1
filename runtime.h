@@ -10,18 +10,15 @@
 
 typedef struct context_struct
 {
-    unsigned int size;
-    unsigned int dest;
-    unsigned int string_count;
-    Instruction* EIP;
+    unsigned int used;
     T_DVAR local[];
-} Context;
+} Vector;
 
 typedef struct stack_struct
 {
-    int top;
+    int actual;
     int size;
-    Context* *array;
+    Vector* (bucket[]);
 } Stack;
 
 extern T_DVAR retval;

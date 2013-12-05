@@ -8,91 +8,144 @@
 
 #define DEBUG
 
-Stack stack;
+Stack* stack;
 T_DVAR retval;
-Context* top;
+T_DVAR* local;
+T_DVAR* prev_local;
+Vector* actual_bucket;
+Instruction *EIP;
 
-const unsigned int MALLOC_SIZE = 64;
+const unsigned int BUCKET_INIT = 5;
+const unsigned int ARRAY_SIZE = 1500;
 
 static inline E_ERROR_TYPE StackCheck()
 {
-    if ( (stack.top+1) < stack.size ) // prazdny zasobnik ma hodnotu top -1
-    {   
-        return E_OK;
-    }
-    else
+    if( ( stack->actual + 1 ) >= ( stack->size ) )
     {
-        // realloc
-        Context **tmp = stack.array;
-        stack.array = realloc( stack.array, sizeof( Context * ) * stack.size *2 );
-        if (stack.array == NULL)
-        {   
-            stack.array = tmp;
+        //printf("realokuje, %d", actual_bucket->used);
+        /* treba realokovat */
+        Stack* tmp = stack;
+        stack = realloc( stack, sizeof( Stack ) + sizeof( Vector * ) * 2 * stack->size );
+        if ( stack == NULL )
+        {
+            stack = tmp;
             return E_INTERPRET_ERROR;
         }
-        stack.size  *= 2;
+        //actual_bucket = stack->bucket[stack->actual];
+        memset( &(stack->bucket[stack->size]), 0,  sizeof( Vector * ) * stack->size );
+        stack->size = stack->size *2;
     }
     return E_OK;
 }
 
 static inline E_ERROR_TYPE StackInit()
 {
-    stack.top = -1;
-    stack.array = malloc( MALLOC_SIZE * sizeof(Instruction*) );
-    if ( stack.array == NULL )
+    stack = malloc( sizeof( Stack ) + sizeof( Vector * ) * BUCKET_INIT );
+    if( stack == NULL )
     {
-        ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
+        ERROR(" Interpret error: malloc() failed on line %ld.\n", __LINE__ );
         return E_INTERPRET_ERROR;
     }
-    stack.size = MALLOC_SIZE;
+    memset( stack, 0, sizeof( Stack ) + sizeof( Vector * ) * BUCKET_INIT );
+    for( unsigned int i = 0; i < BUCKET_INIT; i++  )
+    {
+        stack->bucket[i] = malloc( ARRAY_SIZE * sizeof( T_DVAR ) + sizeof( Vector ) );
+        if( stack->bucket[i] == NULL )
+        {
+            ERROR(" Interpret error: malloc() failed on line %ld.\n", __LINE__ );
+            return E_INTERPRET_ERROR;
+        }
+        memset( stack->bucket[i], 0, ARRAY_SIZE * sizeof( T_DVAR ) + sizeof( Vector ) );
+    }
+    stack->size  = BUCKET_INIT;
+    // stack->actual = 0;    // uz je spravene memsetom
+    actual_bucket = stack->bucket[0];
+    //memset( actual_bucket, 0, ARRAY_SIZE * sizeof( T_DVAR ) + sizeof( Vector ) );
+    local = (void*)actual_bucket;
+    
     return E_OK;
 }
 
 static inline bool EndofProgram()
 {
-    return ( stack.top == -1 ) ? true : false;
+    return ( (void *)local == (void* )actual_bucket ) ? true : false;  
 }
 
 static inline E_ERROR_TYPE AddFrame( unsigned int size )
 {
+   // printf("pridavam frame so size %d\n", size);
+    T_DVAR *tmp;
+    /* DEBUG */
+    /*if ( ( size + 3 ) > ARRAY_SIZE )
+        printf("zasobnik nie je dostatocne dlhy, nastavit premennu\n");*/
     
-    if ( StackCheck() != E_OK )
+    if( ARRAY_SIZE >= ( size + actual_bucket->used + 3 ) )
     {
-        return E_INTERPRET_ERROR;
+        /* mam mesto*/
+        //printf("mam miesto v buckete %d/%d -> miesto %d/%d\n", stack->actual, stack->size-1, actual_bucket->used, ARRAY_SIZE);
+        tmp = &(actual_bucket->local[actual_bucket->used]);
     }
-    Context * tmp = malloc ( sizeof( Context ) +  sizeof(T_DVAR) * size );
-    if ( tmp == NULL )
+    else
     {
-        ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
-        return E_INTERPRET_ERROR;
+        //printf("nemam miesto -> vyrobim [%d/%d -> miesto %d/%d\n", stack->actual, stack->size-1, actual_bucket->used, ARRAY_SIZE);
+        /* nemam miesto */
+        if( StackCheck() != E_OK )
+        {
+            return E_INTERPRET_ERROR;
+        }
+        /* uz mam miesto */
+        stack->actual++;
+        actual_bucket = stack->bucket[stack->actual];
+        
+        if ( actual_bucket == NULL )
+        {
+            //printf("vymallocujem novy bucket\n");
+            actual_bucket = malloc( ARRAY_SIZE * sizeof( T_DVAR ) + sizeof( Vector ) );
+            if ( actual_bucket == NULL )
+            {
+                return E_INTERPRET_ERROR;
+            }
+            actual_bucket->used = 0;
+            stack->bucket[stack->actual] = actual_bucket;
+        }
+        //printf("tu mam miesto %d/%d -> miesto %d/%d\n", stack->actual, stack->size-1, actual_bucket->used, ARRAY_SIZE);
+        tmp = &(actual_bucket->local[actual_bucket->used]);
     }
-    
-    top = tmp;
-    stack.top++;
-    stack.array[stack.top] = tmp;
+    /* EIP este neviem*/
+    tmp->type = VAR_NO_VAR;
+                                                                //tmp->data.EIP = EIP;
+    tmp++;
+    /* DEST neviem este + prev_local viem */
+    tmp->type = VAR_NO_VAR;
+    tmp->data.prev_local = local;
+    tmp++;
+    /* string counter a size ramca */
+    tmp->type = VAR_NO_VAR;
     tmp->size = size;
-    tmp->string_count = 0;
-    for( unsigned int i = 0; i< size; i++ )
-    {
-        tmp->local[i].type = VAR_UNDEF;
-        //tmp->local[i].size = 0;
-    }
+    tmp->data.offset = 0; // nula
+    tmp++;
+    /* zmenim prev local a local */
+    prev_local = local;
+    local = tmp;
+    actual_bucket->used = actual_bucket->used + ( size + 3 );
+    memset( local, 0, size * sizeof( T_DVAR ) );
+    //printf("opustam addframe %d/%d -> miesto %d/%d\n", stack->actual, stack->size-1, actual_bucket->used, ARRAY_SIZE);
     return E_OK;
 }
 
 void print_local_var()
 {
-    for(unsigned int i = 0; i < top->size; i++)
+    for(unsigned int i = 0; i < local[-1].size; i++)
     {
         printf( "[%u > ", i );
-        print_DVAR( &top->local[i] );
+        print_DVAR( &local[i] );
         printf( "------------------\n" );
     }
 }
 
 void RuntimeErrorCleanup(void)
 {
-    if ( retval.type == VAR_STRING )
+    /*if ( retval.type == VAR_STRING )
     {
         free( retval.data._string );
         retval.type = VAR_UNDEF;
@@ -114,7 +167,7 @@ void RuntimeErrorCleanup(void)
         }
         free( stack.array );
         stack.array = NULL;
-    }
+    }*/
 }
 
 E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
@@ -125,10 +178,9 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
     }
     retval.type = VAR_UNDEF; // navratovy register
     
-    Instruction *EIP =  EntryPoint;
+    EIP =  EntryPoint;
     
     /* prva instrukcia je vzdy START */
-    
     if( AddFrame( EntryPoint->attr.size ) != E_OK )
     {
         return E_INTERPRET_ERROR;
@@ -142,9 +194,8 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
     T_DVAR* ptr1;
     T_DVAR* ptr2;
     
-    while(1)
-    {
-        /*printf("EIP = %p\n", (void*) EIP);*/
+    while( 1 )
+    {   
         switch( EIP->opcode )
         {
             case MOV:
@@ -154,7 +205,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
                     op1 = EIP->attr.tac.op1.data.offset;
-                    ptr1 = &top->local[op1];
+                    ptr1 = &local[op1];
                     if (ptr1->type == VAR_UNDEF )
                     {
                         ERROR("Runtime error: Using undefined variable.\n");
@@ -168,45 +219,278 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ptr1 = &EIP->attr.tac.op1;
                 }
                 
-                if( top->local[dest].type == VAR_STRING )
+                if( local[dest].type == VAR_STRING )
                 {
-                    top->string_count--;
-                    free( top->local[dest].data._string );
-                    top->local[dest].type = VAR_UNDEF;
+                    local[-1].data.offset--;
+                    free( local[dest].data._string );
+                    local[dest].type = VAR_UNDEF;
                 }
                 
                 if( ptr1->type == VAR_STRING )
                 {
-                    top->local[dest].data._string = malloc( ptr1->size );
-                    if( top->local[dest].data._string == NULL )
+                    local[dest].data._string = malloc( ptr1->size );
+                    if( local[dest].data._string == NULL )
                     {
-                        ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
+                        ERROR(" Interpret error: malloc() failed on line %lu.\n", __LINE__ );
                         return E_INTERPRET_ERROR;
                     }
-                    memcpy( top->local[dest].data._string, ptr1->data._string, ptr1->size );
-                    top->local[dest].type = VAR_STRING;
-                    top->local[dest].size = ptr1->size;
-                    top->string_count++;
+                    memcpy( local[dest].data._string, ptr1->data._string, ptr1->size );
+                    local[dest].type = VAR_STRING;
+                    local[dest].size = ptr1->size;
+                    local[-1].data.offset++;
                 }
                 else
                 {
-                    top->local[dest] = *ptr1;
+                    local[dest] = *ptr1;
                 }                
                 break;
+            }
+            case RET:
+            {
+                if( EIP->attr.jump.op1.type == VAR_LOCAL )
+                {
+                    ptr1 = &local[EIP->attr.jump.op1.data.offset];
+                    if( ptr1->type == VAR_UNDEF )
+                    {
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
+                        return E_UNDEF_VAR;
+                    }
+                    retval = *ptr1;
+                    if ( retval.type > VAR_STRING )
+                    {
+                        if ( retval.type == VAR_CONSTSTRING )
+                        {
+                            if( retval.size > 0 )
+                            {
+                                char *tmp = malloc( retval.size );
+                                if ( tmp == NULL )
+                                {
+                                    retval.type = VAR_UNDEF; // zneplatnim aby sa uvolnil len raz cez kontrolu ramcov
+                                    ERROR(" Interpret error: malloc() failed on line %lu.\n", __LINE__ );
+                                    return E_INTERPRET_ERROR;
+                                }
+                                retval.type = VAR_STRING;
+                                memcpy( tmp, retval.data._string, retval.size );
+                                retval.data._string = tmp;
+                            }
+                        }
+                        else
+                        {
+                            local[-1].data.offset--;
+                            ptr1->type = VAR_UNDEF;
+                        }
+                    }
+                }
+                else
+                {
+                    ptr1 = &EIP->attr.jump.op1;
+                    retval = *ptr1;
+                }
+               
+                if ( local[-1].data.offset > 0 )
+                {
+                    //printf("SPUSTAM ODMAZAVANIE\n");
+                    for( unsigned int i = 0; i < local[-1].size; i++ )
+                    {
+                        if( local[i].type == VAR_STRING )
+                        {
+                            free( local[i].data._string );
+                        }
+                    }
+                }
+                dest = local[-2].size;
+                EIP = local[-3].data.EIP;
+                actual_bucket->used = actual_bucket->used - local[-1].size -3;
+
+                local = local[-2].data.prev_local; // predosly lokal
+                
+                if( EndofProgram() )
+                {
+                    if( retval.type == VAR_STRING )
+                    {
+                        free( retval.data._string );
+                    }
+                    /* uvolnim zasobniky */
+                    for(int i = 0; i < stack->size; i++ )
+                    {
+                        if( stack->bucket[i] != NULL )
+                        {
+                            free( stack->bucket[i] );
+                        }
+                    }
+                    free( stack );
+                    stack = NULL;
+                    return E_OK;
+                }
+                //printf("NOT EOP!!\n");
+                /*  */
+                if ( actual_bucket->used == 0 )
+                {
+                    stack->actual--;
+                    actual_bucket = stack->bucket[stack->actual];
+                }
+                
+                if ( local[dest].type == VAR_STRING )
+                {
+                    local[-1].data.offset--;
+                    free( local[dest].data._string );
+                }
+                if ( retval.type == VAR_STRING )
+                {
+                    local[-1].data.offset++;
+                }
+                local[dest] = retval;
+                retval.type = VAR_UNDEF;
+                continue;
+            }
+            case LESS:
+            {
+                dest = EIP->attr.tac.dest;
+                op1 = EIP->attr.tac.op1.data.offset;
+                op2 = EIP->attr.tac.op2.data.offset;
+                
+                T_DVAR temp;
+                temp.type = VAR_BOOL;
+                
+                if ( EIP->attr.tac.op1.type == VAR_LOCAL )
+                {
+                    ptr1 = &local[op1];
+                }
+                else
+                {
+                    ptr1 = &EIP->attr.tac.op1;
+                }
+                if ( EIP->attr.tac.op2.type == VAR_LOCAL )
+                {
+                    ptr2 = &local[op2];
+                }
+                else
+                {
+                    ptr2 = &EIP->attr.tac.op2;
+                }
+                
+                if ( ( ptr1->type == ptr2->type ) ) 
+                {
+                    switch( ptr1->type )
+                    {
+                        case VAR_INT:
+                            temp.data._bool = ( ptr1->data._int ) < ( ptr2->data._int );
+                            break;
+                        case VAR_DOUBLE:
+                            temp.data._bool = ( ptr1->data._double ) < ( ptr2->data._double );
+                            break;
+                        case VAR_BOOL:
+                            temp.data._bool = ( ptr1->data._bool ) < ( ptr2->data._bool );
+                            break;
+                        case VAR_CONSTSTRING:
+                        case VAR_STRING:
+                            {
+                                int retval = lexsstrcmp( ptr1->data._string,ptr2->data._string, ptr1->size, ptr2->size );
+                            temp.data._bool = ( retval < 0 )? true : false;
+                            break;
+                            }
+                        case VAR_NULL:
+                            temp.data._bool = false;
+                            break;
+                        default:
+                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
+                            return E_UNDEF_VAR;
+                    }
+                }
+                else if ( ptr1->type >= VAR_STRING && ptr2->type >= VAR_STRING )
+                {
+                    int retval = lexsstrcmp( ptr1->data._string,ptr2->data._string, ptr1->size, ptr2->size );
+                            temp.data._bool = ( retval < 0 )? true : false;
+                }
+                else
+                {
+                    if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
+                    {
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
+                        return E_UNDEF_VAR;
+                    }
+                    ERROR("Runtime Error: Incompatible types for operation <.\n");
+                    return E_INCOMPATIBLE;
+                }
+                if ( local[dest].type == VAR_STRING )
+                {
+                    free( local[dest].data._string );
+                    local[-1].data.offset--;
+                }
+                local[dest] = temp;
+                break;
+            }
+            case COND:
+            {
+                if( EIP->attr.jump.op1.type == VAR_LOCAL )
+                {
+                    ptr1 = &local[EIP->attr.jump.op1.data.offset];
+                    if( ptr1->type == VAR_UNDEF )
+                    {
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
+                        return E_UNDEF_VAR;
+                    }
+                }
+                else
+                {
+                    ptr1 = &EIP->attr.jump.op1;
+                }
+                
+                switch ( ptr1->type )
+                {
+                    case VAR_BOOL:
+                        if ( ptr1->data._bool == false )
+                        {
+                            EIP = EIP->attr.jump.jmp;
+                            continue;
+                        }
+                        break;
+                    case VAR_INT:
+                        if ( ptr1->data._int == 0 )
+                        {
+                            EIP = EIP->attr.jump.jmp;
+                            continue;
+                        }
+                        break;
+                    case VAR_STRING:
+                    case VAR_CONSTSTRING:
+                        if ( ptr1->size == 0 )
+                        {
+                            EIP = EIP->attr.jump.jmp;
+                            continue;
+                        }
+                        break;
+                    case VAR_DOUBLE:
+                        if ( ptr1->data._double == 0.0 )
+                        {
+                            EIP = EIP->attr.jump.jmp;
+                            continue;
+                        }
+                        break;
+                    case VAR_NULL:
+                        {
+                            EIP = EIP->attr.jump.jmp;
+                            continue;
+                            break;
+                        }
+                    default:
+                        break;
+                }
+                break;   
             }
             case INC:
             {
                 dest = EIP->attr.tac.dest;
                 
-                if( top->local[dest].type == VAR_INT )
+                if( local[dest].type == VAR_INT )
                 {
-                    top->local[dest].data._int += 1;
+                    local[dest].data._int += 1;
                 }
-                else if( top->local[dest].type == VAR_DOUBLE )
+                else if( local[dest].type == VAR_DOUBLE )
                 {
-                    top->local[dest].data._double += 1;
+                    local[dest].data._double += 1;
                 }
-                else if( top->local[dest].type == VAR_UNDEF )
+                else if(local[dest].type == VAR_UNDEF )
                 {
                     ERROR("runtime.c:%lu: Runtime error: Cannot increment undefined variable.\n", __LINE__ );
                     return E_UNDEF_VAR;
@@ -222,15 +506,15 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             {
                 dest = EIP->attr.tac.dest;
                 
-                if( top->local[dest].type == VAR_INT )
+                if( local[dest].type == VAR_INT )
                 {
-                    top->local[dest].data._int -= 1;
+                    local[dest].data._int -= 1;
                 }
-                else if( top->local[dest].type == VAR_DOUBLE )
+                else if( local[dest].type == VAR_DOUBLE )
                 {
-                    top->local[dest].data._double -= 1;
+                    local[dest].data._double -= 1;
                 }
-                else if( top->local[dest].type == VAR_UNDEF )
+                else if( local[dest].type == VAR_UNDEF )
                 {
                     ERROR("runtime.c:%lu: Runtime error: Cannot decrement undefined variable.\n", __LINE__ );
                     return E_UNDEF_VAR;
@@ -247,8 +531,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
-                    op1 = EIP->attr.tac.op1.data.offset;
-                    ptr1 = &top->local[op1];
+                    ptr1 = &local[EIP->attr.tac.op1.data.offset];
                 }
                 else
                 {
@@ -256,8 +539,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 if ( EIP->attr.tac.op2.type == VAR_LOCAL )
                 {
-                    op2 = EIP->attr.tac.op2.data.offset;
-                    ptr2 = &top->local[op2];
+                    ptr2 = &local[EIP->attr.tac.op2.data.offset];
                 }
                 else
                 {
@@ -322,22 +604,21 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     return E_INCOMPATIBLE;
                 } 
                 
-            dest = EIP->attr.tac.dest;    
-            if ( top->local[dest].type == VAR_STRING )
-            {
-                free( top->local[dest].data._string );
-                top->string_count--;
+                dest = EIP->attr.tac.dest;    
+                if ( local[dest].type == VAR_STRING )
+                {
+                    free( local[dest].data._string );
+                    local[-1].data.offset--;
+                }
+                local[dest] = temp;
+                break;  
             }
-            top->local[dest] = temp;
-            break;  
-            }
-            
             case MINUS:
             {                
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
                     op1 = EIP->attr.tac.op1.data.offset;
-                    ptr1 = &top->local[op1];
+                    ptr1 = &local[op1];
                 }
                 else
                 {
@@ -346,7 +627,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 if ( EIP->attr.tac.op2.type == VAR_LOCAL )
                 {
                     op2 = EIP->attr.tac.op2.data.offset;
-                    ptr2 = &top->local[op2];
+                    ptr2 = &local[op2];
                 }
                 else
                 {
@@ -410,16 +691,15 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ERROR("Runtime error: Unsupported operation [-] with given operands.\n");
                     return E_INCOMPATIBLE;
                 } 
-            dest = EIP->attr.tac.dest;    
-            if ( top->local[dest].type == VAR_STRING )
-            {
-                free( top->local[dest].data._string );
-                top->string_count--;
+                dest = EIP->attr.tac.dest;    
+                if ( local[dest].type == VAR_STRING )
+                {
+                    free( local[dest].data._string );
+                    local[-1].data.offset--;
+                }
+                local[dest] = temp;
+                break;  
             }
-            top->local[dest] = temp;
-            break;  
-            }
-            
             case MUL:
             {                
                 dest = EIP->attr.tac.dest;
@@ -428,7 +708,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
-                    ptr1 = &top->local[op1];
+                    ptr1 = &local[op1];
                 }
                 else
                 {
@@ -436,7 +716,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 if ( EIP->attr.tac.op2.type == VAR_LOCAL )
                 {
-                    ptr2 = &top->local[op2];
+                    ptr2 = &local[op2];
                 }
                 else
                 {
@@ -501,15 +781,14 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     return E_INCOMPATIBLE;
                 } 
                 
-            if ( top->local[dest].type == VAR_STRING )
+            if ( local[dest].type == VAR_STRING )
             {
-                free( top->local[dest].data._string );
-                top->string_count--;
+                free( local[dest].data._string );
+                local[-1].data.offset--;
             }
-            top->local[dest] = temp;
+            local[dest] = temp;
             break;  
             }
-            
             case DIV:
             {                
                 dest = EIP->attr.tac.dest;
@@ -518,7 +797,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
-                    ptr1 = &top->local[op1];
+                    ptr1 = &local[op1];
                 }
                 else
                 {
@@ -526,7 +805,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 if ( EIP->attr.tac.op2.type == VAR_LOCAL )
                 {
-                    ptr2 = &top->local[op2];
+                    ptr2 = &local[op2];
                 }
                 else
                 {
@@ -607,90 +886,87 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     return E_INCOMPATIBLE;
                 } 
                 
-            if ( top->local[dest].type == VAR_STRING )
+            if ( local[dest].type == VAR_STRING )
             {
-                free( top->local[dest].data._string );
-                top->string_count--;
+                free( local[dest].data._string );
+                local[-1].data.offset--;
             }
-            top->local[dest] = temp;
+            local[dest] = temp;
             break;  
             }
-            
-            case LESS:
+            case JMP:
+                EIP = EIP->attr.jump.jmp;
+                continue;
+                break;
+            case CREATE:
             {
-                dest = EIP->attr.tac.dest;
-                op1 = EIP->attr.tac.op1.data.offset;
-                op2 = EIP->attr.tac.op2.data.offset;
-                
-                T_DVAR temp;
-                temp.type = VAR_BOOL;
-                
-                if ( EIP->attr.tac.op1.type == VAR_LOCAL )
+                if( AddFrame( EIP->attr.size ) != E_OK )
                 {
-                    ptr1 = &top->local[op1];
+                    return E_INTERPRET_ERROR;
+                }
+                break;
+            }
+            case PUSH:
+            {
+                if( EIP->attr.tac.op1.type == VAR_LOCAL )
+                {
+                    ptr1 = &prev_local[EIP->attr.tac.op1.data.offset];
+                    if( ptr1->type == VAR_UNDEF )
+                    {
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
+                        return E_UNDEF_VAR;
+                    }
                 }
                 else
                 {
                     ptr1 = &EIP->attr.tac.op1;
                 }
-                if ( EIP->attr.tac.op2.type == VAR_LOCAL )
+                local[EIP->attr.tac.dest] = *ptr1;
+                if ( ptr1->type == VAR_STRING )
                 {
-                    ptr2 = &top->local[op2];
+                    local[EIP->attr.tac.dest].type = VAR_CONSTSTRING;
                 }
-                else
+                break;
+            }
+            case CALL:
+                local[-3].data.EIP = EIP->next;
+                local[-2].size = EIP->attr.jump.dest;
+                EIP = EIP->attr.jump.jmp;
+                continue;
+                break;
+            case CALL_BUILTIN:
+            {
+                E_ERROR_TYPE ret;
+                
+                if ( ( ret = EIP->attr.builtin.func( local, local[-1].size, &retval ) ) != E_OK )
                 {
-                    ptr2 = &EIP->attr.tac.op2;
+                    retval.type = VAR_UNDEF;
+                    ERROR("Runtime error: Built-in function failed.\n");
+                    return ret;
                 }
                 
-                if ( ( ptr1->type == ptr2->type ) ) 
+                /*for( unsigned int i = 0; i < top->size; i++ )
                 {
-                    switch( ptr1->type )
+                    if( top->local[i].type == VAR_STRING )
                     {
-                        case VAR_INT:
-                            temp.data._bool = ( ptr1->data._int ) < ( ptr2->data._int );
-                            break;
-                        case VAR_DOUBLE:
-                            temp.data._bool = ( ptr1->data._double ) < ( ptr2->data._double );
-                            break;
-                        case VAR_BOOL:
-                            temp.data._bool = ( ptr1->data._bool ) < ( ptr2->data._bool );
-                            break;
-                        case VAR_CONSTSTRING:
-                        case VAR_STRING:
-                            {
-                                int retval = lexsstrcmp( ptr1->data._string,ptr2->data._string, ptr1->size, ptr2->size );
-                            temp.data._bool = ( retval < 0 )? true : false;
-                            break;
-                            }
-                        case VAR_NULL:
-                            temp.data._bool = false;
-                            break;
-                        default:
-                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
-                            return E_UNDEF_VAR;
+                        free( top->local[i].data._string );
                     }
-                }
-                else if ( ptr1->type >= VAR_STRING && ptr2->type >= VAR_STRING )
+                }*/
+                
+                actual_bucket->used = actual_bucket->used - local[-1].size -3;
+                local = local[-2].data.prev_local;
+                dest = EIP->attr.builtin.dest;
+                if ( local[dest].type == VAR_STRING )
                 {
-                    int retval = lexsstrcmp( ptr1->data._string,ptr2->data._string, ptr1->size, ptr2->size );
-                            temp.data._bool = ( retval < 0 )? true : false;
+                    free( local[dest].data._string );
+                    local[-1].data.offset--;
                 }
-                else
+                if ( retval.type == VAR_STRING )
                 {
-                    if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
-                    {
-                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
-                        return E_UNDEF_VAR;
-                    }
-                    ERROR("Runtime Error: Incompatible types for operation <.\n");
-                    return E_INCOMPATIBLE;
+                    local[-1].data.offset++;
                 }
-                if ( top->local[dest].type == VAR_STRING )
-                {
-                    free( top->local[dest].data._string );
-                    top->string_count--;
-                }
-                top->local[dest] = temp;
+                local[dest] = retval;
+                retval.type = VAR_UNDEF;
                 break;
             }
             case GREATER:
@@ -704,7 +980,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
-                    ptr1 = &top->local[op1];
+                    ptr1 = &local[op1];
                 }
                 else
                 {
@@ -712,7 +988,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 if ( EIP->attr.tac.op2.type == VAR_LOCAL )
                 {
-                    ptr2 = &top->local[op2];
+                    ptr2 = &local[op2];
                 }
                 else
                 {
@@ -762,12 +1038,12 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ERROR("Runtime Error: Incompatible types for operation >.\n");
                     return E_INCOMPATIBLE;
                 }
-                if ( top->local[dest].type == VAR_STRING )
+                if ( local[dest].type == VAR_STRING )
                 {
-                    free( top->local[dest].data._string );
-                    top->string_count--;
+                    free( local[dest].data._string );
+                    local[-1].data.offset--;
                 }
-                top->local[dest] = temp;
+                local[dest] = temp;
                 break;
             }
             case LESSEQ:
@@ -781,7 +1057,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
-                    ptr1 = &top->local[op1];
+                    ptr1 = &local[op1];
                 }
                 else
                 {
@@ -789,7 +1065,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 if ( EIP->attr.tac.op2.type == VAR_LOCAL )
                 {
-                    ptr2 = &top->local[op2];
+                    ptr2 = &local[op2];
                 }
                 else
                 {
@@ -839,12 +1115,12 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ERROR("Runtime Error: Incompatible types for operation <=.\n");
                     return E_INCOMPATIBLE;
                 }
-                if ( top->local[dest].type == VAR_STRING )
+                if ( local[dest].type == VAR_STRING )
                 {
-                    free( top->local[dest].data._string );
-                    top->string_count--;
+                    free( local[dest].data._string );
+                    local[-1].data.offset--;
                 }
-                top->local[dest] = temp;
+                local[dest] = temp;
                 break;
             }
             case GREATEREQ:
@@ -858,7 +1134,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
-                    ptr1 = &top->local[op1];
+                    ptr1 = &local[op1];
                 }
                 else
                 {
@@ -866,7 +1142,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 if ( EIP->attr.tac.op2.type == VAR_LOCAL )
                 {
-                    ptr2 = &top->local[op2];
+                    ptr2 = &local[op2];
                 }
                 else
                 {
@@ -916,12 +1192,12 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ERROR("Runtime Error: Incompatible types for operation >=.\n");
                     return E_INCOMPATIBLE;
                 }
-                if ( top->local[dest].type == VAR_STRING )
+                if ( local[dest].type == VAR_STRING )
                 {
-                    free( top->local[dest].data._string );
-                    top->string_count--;
+                    free( local[dest].data._string );
+                    local[-1].data.offset--;
                 }
-                top->local[dest] = temp;
+                local[dest] = temp;
                 break;
             }
             case NONEQUAL:
@@ -935,7 +1211,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
-                    ptr1 = &top->local[op1];
+                    ptr1 = &local[op1];
                 }
                 else
                 {
@@ -943,7 +1219,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 if ( EIP->attr.tac.op2.type == VAR_LOCAL )
                 {
-                    ptr2 = &top->local[op2];
+                    ptr2 = &local[op2];
                 }
                 else
                 {
@@ -992,12 +1268,12 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     }
                     temp.data._bool = true;
                 }
-                if ( top->local[dest].type == VAR_STRING )
+                if ( local[dest].type == VAR_STRING )
                 {
-                    free( top->local[dest].data._string );
-                    top->string_count--;
+                    free( local[dest].data._string );
+                    local[-1].data.offset--;
                 }
-                top->local[dest] = temp;
+                local[dest] = temp;
                 break;
             }
             
@@ -1009,7 +1285,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
                     op1 = EIP->attr.tac.op1.data.offset;
-                    ptr1 = &top->local[op1];
+                    ptr1 = &local[op1];
                 }
                 else
                 {
@@ -1018,7 +1294,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 if ( EIP->attr.tac.op2.type == VAR_LOCAL )
                 {
                     op2 = EIP->attr.tac.op2.data.offset;
-                    ptr2 = &top->local[op2];
+                    ptr2 = &local[op2];
                 }
                 else
                 {
@@ -1068,15 +1344,14 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     temp.data._bool = false;
                 }
                 dest = EIP->attr.tac.dest;
-                if ( top->local[dest].type == VAR_STRING )
+                if ( local[dest].type == VAR_STRING )
                 {
-                    free( top->local[dest].data._string );
-                    top->string_count--;
+                    free( local[dest].data._string );
+                    local[-1].data.offset--;
                 }
-                top->local[dest] = temp;
+                local[dest] = temp;
                 break;
             }
-            
             case CONCAT:
             {
                 dest = EIP->attr.tac.dest;
@@ -1088,7 +1363,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 
                 if ( EIP->attr.tac.op1.type == VAR_LOCAL )
                 {
-                    ptr1 = &top->local[op1];
+                    ptr1 = &local[op1];
                 }
                 else
                 {
@@ -1096,7 +1371,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 }
                 if ( EIP->attr.tac.op2.type == VAR_LOCAL )
                 {
-                    ptr2 = &top->local[op2];
+                    ptr2 = &local[op2];
                 }
                 else
                 {
@@ -1112,13 +1387,13 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.data._string = malloc( ptr1->size + ptr2->size );
                             if ( temp.data._string == NULL )
                             {
-                                ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
+                                ERROR(" Interpret error: malloc() failed on line %lu.\n", __LINE__ );
                                 return E_INTERPRET_ERROR;
                             }
                             temp.size = ptr1->size + ptr2->size;
                             memcpy( temp.data._string, ptr1->data._string, ptr1->size );
                             memcpy( temp.data._string + ptr1->size, ptr2->data._string, ptr2->size );
-                            top->string_count++;
+                            local[-1].data.offset++;
                         }
                         else
                         {
@@ -1144,7 +1419,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.data._string = malloc( ptr1->size + str.size );
                             if ( temp.data._string == NULL )
                             {
-                                ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
+                                ERROR(" Interpret error: malloc() failed on line %lu.\n", __LINE__ );
                                 free(str.data._string);
                                 return E_INTERPRET_ERROR;
                             }
@@ -1152,7 +1427,7 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                             temp.size = ptr1->size + str.size;
                             memcpy( temp.data._string, ptr1->data._string, ptr1->size );
                             memcpy( temp.data._string + ptr1->size, str.data._string, str.size );
-                            top->string_count++;
+                            local[-1].data.offset++;
                             if ( str.type != VAR_CONSTSTRING )
                             {
                                 free(str.data._string);
@@ -1175,231 +1450,12 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                     ERROR("Runtime Error: Incompatible types for operation Concatenate.\n");
                     return E_OTHER;
                 }
-                if ( top->local[dest].type == VAR_STRING )
+                if ( local[dest].type == VAR_STRING )
                 {
-                    top->string_count--;
-                    free( top->local[dest].data._string );
+                    local[-1].data.offset--;
+                    free( local[dest].data._string );
                 }
-                top->local[dest] = temp;
-                break;
-            }
-            
-            case JMP:
-                EIP = EIP->attr.jump.jmp;
-                continue;
-                break;
-            case COND:
-                {
-                    if( EIP->attr.jump.op1.type == VAR_LOCAL )
-                    {
-                        ptr1 = &top->local[EIP->attr.jump.op1.data.offset];
-                        if( ptr1->type == VAR_UNDEF )
-                        {
-                            ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
-                            return E_UNDEF_VAR;
-                        }
-                    }
-                    else
-                    {
-                        ptr1 = &EIP->attr.jump.op1;
-                    }
-                    
-                    switch ( ptr1->type )
-                    {
-                        case VAR_BOOL:
-                            if ( ptr1->data._bool == false )
-                            {
-                                EIP = EIP->attr.jump.jmp;
-                                continue;
-                            }
-                            break;
-                        case VAR_INT:
-                            if ( ptr1->data._int == 0 )
-                            {
-                                EIP = EIP->attr.jump.jmp;
-                                continue;
-                            }
-                            break;
-                        case VAR_STRING:
-                        case VAR_CONSTSTRING:
-                            if ( ptr1->size == 0 )
-                            {
-                                EIP = EIP->attr.jump.jmp;
-                                continue;
-                            }
-                            break;
-                        case VAR_DOUBLE:
-                            if ( ptr1->data._double == 0.0 )
-                            {
-                                EIP = EIP->attr.jump.jmp;
-                                continue;
-                            }
-                            break;
-                        case VAR_NULL:
-                            {
-                                EIP = EIP->attr.jump.jmp;
-                                continue;
-                                break;
-                            }
-                        default:
-                            break;
-                    }
-                    break;   
-                }
-            case CREATE:
-            {
-                if( AddFrame( EIP->attr.size ) != E_OK )
-                {
-                    return E_INTERPRET_ERROR;
-                }
-                break;
-            }
-            
-            case PUSH:
-            {
-                if( EIP->attr.tac.op1.type == VAR_LOCAL )
-                {
-                    ptr1 = &(stack.array[stack.top-1])->local[EIP->attr.tac.op1.data.offset];
-                    if( ptr1->type == VAR_UNDEF )
-                    {
-                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
-                        return E_UNDEF_VAR;
-                    }
-                }
-                else
-                {
-                    ptr1 = &EIP->attr.tac.op1;
-                }
-                top->local[EIP->attr.tac.dest] = *ptr1;
-                if ( ptr1->type == VAR_STRING )
-                {
-                    top->local[EIP->attr.tac.dest].type = VAR_CONSTSTRING;
-                }
-                break;
-            }
-            case CALL:
-                top->EIP = EIP->next;
-                top->dest = EIP->attr.jump.dest;
-                EIP = EIP->attr.jump.jmp;
-                continue;
-                break;
-
-                
-            case RET:
-                
-                if( EIP->attr.jump.op1.type == VAR_LOCAL )
-                {
-                    ptr1 = &top->local[EIP->attr.jump.op1.data.offset];
-                    if( ptr1->type == VAR_UNDEF )
-                    {
-                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
-                        return E_UNDEF_VAR;
-                    }
-                    retval = *ptr1;
-                    if ( retval.type > VAR_STRING )
-                    {
-                        
-                        if ( retval.type == VAR_CONSTSTRING )
-                        {
-                            if( retval.size > 0 )
-                            {
-                                char *tmp = malloc( retval.size );
-                                if ( tmp == NULL )
-                                {
-                                    retval.type = VAR_UNDEF; // zneplatnim aby sa uvolnil len raz cez kontrolu ramcov
-                                    ERROR(" Interpret error: malloc() failed on line %lu, stack top %d.\n", __LINE__, stack.top );
-                                    return E_INTERPRET_ERROR;
-                                }
-                                retval.type = VAR_STRING;
-                                memcpy( tmp, retval.data._string, retval.size );
-                                retval.data._string = tmp;
-                            }
-                        }
-                        else
-                        {
-                            top->string_count--;
-                            ptr1->type = VAR_UNDEF;
-                        }
-                    }
-                }
-                else
-                {
-                    ptr1 = &EIP->attr.jump.op1;
-                    retval = *ptr1;
-                }
-               
-                if ( top->string_count > 0 )
-                {
-                    //printf("SPUSTAM ODMAZAVANIE\n");
-                    for( unsigned int i = 0; i < top->size; i++ )
-                    {
-                        if( top->local[i].type == VAR_STRING )
-                        {
-                            free( top->local[i].data._string );
-                        }
-                    }
-                }
-                dest = top->dest;
-                EIP = top->EIP;
-                free(top);
-                --stack.top;
-                if( EndofProgram() )
-                {
-                    if( retval.type == VAR_STRING )
-                    {
-                        free( retval.data._string );
-                    }
-                    free(stack.array);
-                    return E_OK;
-                }
-                top = stack.array[stack.top];
-                
-                if ( top->local[dest].type == VAR_STRING )
-                {
-                    top->string_count--;
-                    free( top->local[dest].data._string );
-                }
-                if ( retval.type == VAR_STRING )
-                {
-                    top->string_count++;
-                }
-                top->local[dest] = retval;
-                retval.type = VAR_UNDEF;
-                continue;
-            
-            case CALL_BUILTIN:
-            {
-                E_ERROR_TYPE ret;
-                
-                if ( ( ret = EIP->attr.builtin.func( top->local, top->size, &retval ) ) != E_OK )
-                {
-                    retval.type = VAR_UNDEF;
-                    ERROR("Runtime error: Built-in function failed.\n");
-                    return ret;
-                }
-                
-                /*for( unsigned int i = 0; i < top->size; i++ )
-                {
-                    if( top->local[i].type == VAR_STRING )
-                    {
-                        free( top->local[i].data._string );
-                    }
-                }*/
-                free(top);
-                --stack.top;
-                top = stack.array[stack.top];
-                dest = EIP->attr.builtin.dest;
-                if ( top->local[dest].type == VAR_STRING )
-                {
-                    free( top->local[dest].data._string );
-                    top->string_count--;
-                }
-                if ( retval.type == VAR_STRING )
-                {
-                    top->string_count++;
-                }
-                top->local[dest] = retval;
-                retval.type = VAR_UNDEF;
+                local[dest] = temp;
                 break;
             }
             case DUMMY:
@@ -1407,13 +1463,13 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
             default:
                 ERROR("Runtime error: Unexpected instrunction with id %d.\n", EIP->opcode);
                 return E_INTERPRET_ERROR;
-            break;   
+            break;
         }
-        
         /*printf("------------------------------------------\n");
         print_local_var();
-        printf("------------------------------------------\n");*/
-
+        printf("------------------------------------------\n");
+        printf("actual bucket = %p %d\n", actual_bucket, actual_bucket->used);*/
+        
         EIP = EIP->next;
     }
     return E_OK;
