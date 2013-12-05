@@ -25,12 +25,17 @@ typedef enum
     E_GREATER,      // >
     E_LESSEQ,       // <=
     E_GREATEREQ,    // >=
+    E_OR1,          // or
+    E_AND1,         // and
+    E_OR2,          // ||
+    E_AND2,         // &&
     E_LPARENTHESES, // (
     E_COMA,         // ,
     E_RPARENTHESES, // )
     E_IDENT,        // identifikator
     E_TERM,          // term, pomocny enum pre precedencnu syntakticku analyzu
     E_UMINUS,       // unarne minus
+    E_NEG,          // !
     E_SEMICL,       // ;
     E_VAR,          // premenna
     E_INT,          // integer
@@ -55,11 +60,6 @@ typedef enum
     R_P,            // prvok precedencnej tabulky =
     E_E,            // nonterminal, pouzivany v gramatike
     E_ELSEIF,
-    E_AND1,         // and
-    E_AND2,         // &&
-    E_OR1,          // or
-    E_OR2,          // ||
-    E_NEG,          // !
 } TOKEN_TYPE;
 
 /** Stavy konecnej masinky **/

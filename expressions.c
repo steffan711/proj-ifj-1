@@ -54,26 +54,31 @@ extern inline E_ERROR_TYPE function_analyze ( void );
 |   <   |   >   |   =   |   x   |
 */
 
-const TOKEN_TYPE prec_table [][18] = {
-/* XXXX      .    !==   ===    +     *     -     /     <     >     <=    >=    (     ,     )     f    TERM  un(-)  ;  */
-/*  .  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
-/* !== */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
-/* === */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
-/*  +  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
-/*  *  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
-/*  -  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
-/*  /  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
-/*  <  */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
-/*  >  */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
-/*  <= */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
-/*  >= */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
-/*  (  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_P,  R_P,  R_C,  R_C,  R_C,  R_N},
-/*  ,  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_P,  R_P,  R_C,  R_C,  R_C,  R_N},
-/*  )  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_N,  R_E,  R_E,  R_N,  R_N,  R_N,  R_E},
-/*  f  */  {R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_P,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N},
-/* TERM*/  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_N,  R_E,  R_E,  R_N,  R_N,  R_N,  R_E},
-/*un(-)*/  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E},
-/*  ;  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_N,  R_N,  R_C,  R_C,  R_C,  R_N},
+const TOKEN_TYPE prec_table [][23] = {
+/* XXXX      .    !==   ===    +     *     -     /     <     >     <=    >=    or   and    ||    &&    (     ,     )     f    TERM  un(-)  !     ;  */
+/*  .  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/* !== */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/* === */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  +  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  *  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  -  */  {R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_C,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  /  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  <  */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  >  */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  <= */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  >= */  {R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  or */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/* and */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  || */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_C,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  && */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  (  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_P,  R_P,  R_C,  R_C,  R_C,  R_C,  R_N},
+/*  ,  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_P,  R_P,  R_C,  R_C,  R_C,  R_C,  R_N},
+/*  )  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_N,  R_E,  R_E,  R_N,  R_N,  R_N,  R_N,  R_E},
+/*  f  */  {R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_P,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N,  R_N},
+/* TERM*/  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_N,  R_E,  R_E,  R_N,  R_N,  R_N,  R_N,  R_E},
+/*un(-)*/  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  !  */  {R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_E,  R_C,  R_E,  R_E,  R_C,  R_C,  R_C,  R_C,  R_E},
+/*  ;  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_N,  R_N,  R_C,  R_C,  R_C,  R_C,  R_N},
 };
 
 //#define TESTY2
@@ -96,6 +101,7 @@ const char *enums[] = { //iba na testovacie ucely
  "E_IDENT",       
  "E_TERM" ,
  "un(-)", 
+ "!",
  "E_SEMICL" ,      
  "E_VAR" ,         
  "E_INT" ,         
@@ -310,6 +316,12 @@ extern inline E_ERROR_TYPE estackPop ( void )
             eStack.data[eStack.top] = E_E;
             return eval( PFXStackTop( ), PFXStackTopPop( ), E_MINUS );
         }
+        else if ( help == E_NEG )
+        {
+            findterm( );
+            eStack.data[eStack.top] = E_E;
+            return eval( PFXStackTop( ), PFXStackTopPop( ), E_GREATEREQ );
+        }
     }
 
     return E_SYNTAX;
@@ -506,6 +518,21 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
             }
         }
     }
+    else if ( actual_ttype == E_NEG )
+    {
+        token->ttype = E_BOOL;
+        token->data._bool = false;   //simulujem konstantu hodnoty 0
+        if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
+        {
+            PFXdispose( ); free( token );
+            return E_INTERPRET_ERROR;
+        }
+        if ( ( token = malloc( sizeof( T_token ) ) ) == NULL )
+        {
+            PFXdispose( );
+            return E_INTERPRET_ERROR;
+        }
+    }
     
     do {
         #ifdef TESTY2
@@ -616,6 +643,21 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                         }
                     }
                 }
+                else if ( actual_ttype == E_NEG )
+                {
+                    token->ttype = E_BOOL;
+                    token->data._bool = false;   //simulujem konstantu hodnoty 0
+                    if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
+                    {
+                        PFXdispose( ); free( token );
+                        return E_INTERPRET_ERROR;
+                    }
+                    if ( ( token = malloc( sizeof( T_token ) ) ) == NULL )
+                    {
+                        PFXdispose( );
+                        return E_INTERPRET_ERROR;
+                    }
+                }
                 break;
 
             case R_P:
@@ -690,6 +732,21 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                             PFXdispose( );
                             return E_INTERPRET_ERROR;
                         }
+                    }
+                }
+                else if ( actual_ttype == E_NEG )
+                {
+                    token->ttype = E_BOOL;
+                    token->data._bool = false;   //simulujem konstantu hodnoty 0
+                    if ( PFXStackPush( token ) != E_OK ) //prida do postfixu term
+                    {
+                        PFXdispose( ); free( token );
+                        return E_INTERPRET_ERROR;
+                    }
+                    if ( ( token = malloc( sizeof( T_token ) ) ) == NULL )
+                    {
+                        PFXdispose( );
+                        return E_INTERPRET_ERROR;
                     }
                 }
                 break;
