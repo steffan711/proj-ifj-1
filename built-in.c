@@ -22,21 +22,53 @@
  * @param double *( return )
  * @return Uspesnost
  */
-E_ERROR_TYPE _strtod( char *input, double *result )
+E_ERROR_TYPE _strtod( char *input, int len, double *result )
 {
     if( input == NULL )
         return E_INTERPRET_ERROR;
 
+	char *temp = input;
     char *endptr;
+	
+	int i = 0;
+	while( !isprint( *temp ) || *temp == ' ' )
+	{
+		if( i++ == len )
+			return E_OTHER;
+		temp = input + i;
+	}
+
+	if( !isdigit( *temp ) )
+	{
+		*result = 0.0;
+		return E_OK;
+	}
+
+	int e = 0, dot = 0;
+	while( i < len )
+	{
+		if( !isdigit( input[i] ) )
+		{
+			if( input[i] == 'e' && e == 0 )
+			{
+				if( isdigit( input[i+1] ) )
+					break;
+				else
+					return E_NUM_CAST;
+			}
+			else if( input[i] == '.' && dot == 0 && isdigit( input[i+1] ) )
+			{
+				dot++;
+				i++;
+				continue;
+			}
+			break;
+		}
+		i++;
+	}
+	
     *result = strtod( input, &endptr );
     
-    if( isprint( endptr[0] ) && endptr[0] != ' ' )
-        return E_NUM_CAST;
-
-    if( endptr > input )
-        if( (--endptr)[0] == '.' )
-            return E_NUM_CAST;
-        
     return E_OK;
 }
 
@@ -153,7 +185,7 @@ E_ERROR_TYPE doubleval( T_DVAR input[], int size, T_DVAR *result )
                 char temp[input[0].size + 1];
                 temp[input[0].size] = 0;
                 memcpy( temp, input[0].data._string, input[0].size );
-                return _strtod( temp, &(result->data._double) );
+                return _strtod( temp, input[0].size, &(result->data._double) );
             }
             break;
             
