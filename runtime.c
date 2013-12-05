@@ -1458,6 +1458,104 @@ E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
                 local[dest] = temp;
                 break;
             }
+            case AND:
+            {
+                T_DVAR temp;
+                temp.type = VAR_BOOL;
+                
+                if ( EIP->attr.tac.op1.type == VAR_LOCAL )
+                {
+                    op1 = EIP->attr.tac.op1.data.offset;
+                    ptr1 = &local[op1];
+                }
+                else
+                {
+                    ptr1 = &EIP->attr.tac.op1;
+                }
+                if ( EIP->attr.tac.op2.type == VAR_LOCAL )
+                {
+                    op2 = EIP->attr.tac.op2.data.offset;
+                    ptr2 = &local[op2];
+                }
+                else
+                {
+                    ptr2 = &EIP->attr.tac.op2;
+                }
+                
+                if ( ( ptr1->type == VAR_BOOL ) && ( ptr2->type == VAR_BOOL ) ) 
+                {
+                    temp.data._bool = ptr1->data._bool && ptr2->data._bool;
+                }
+                else
+                {
+                    if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
+                    {
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
+                        return E_UNDEF_VAR;
+                    }
+                    else
+                    {
+                        ERROR("Runtime Error: Incompatible types for operation AND.\n");
+                    }
+                }
+                dest = EIP->attr.tac.dest;
+                if ( local[dest].type == VAR_STRING )
+                {
+                    free( local[dest].data._string );
+                    local[-1].data.offset--;
+                }
+                local[dest] = temp;
+                break;
+            }
+            case OR:
+            {
+                T_DVAR temp;
+                temp.type = VAR_BOOL;
+                
+                if ( EIP->attr.tac.op1.type == VAR_LOCAL )
+                {
+                    op1 = EIP->attr.tac.op1.data.offset;
+                    ptr1 = &local[op1];
+                }
+                else
+                {
+                    ptr1 = &EIP->attr.tac.op1;
+                }
+                if ( EIP->attr.tac.op2.type == VAR_LOCAL )
+                {
+                    op2 = EIP->attr.tac.op2.data.offset;
+                    ptr2 = &local[op2];
+                }
+                else
+                {
+                    ptr2 = &EIP->attr.tac.op2;
+                }
+                
+                if ( ( ptr1->type == VAR_BOOL ) && ( ptr2->type == VAR_BOOL ) ) 
+                {
+                    temp.data._bool = ptr1->data._bool || ptr2->data._bool;
+                }
+                else
+                {
+                    if( ptr1->type == VAR_UNDEF || ptr2->type == VAR_UNDEF )
+                    {
+                        ERROR("runtime.c:%lu: Runtime error: Variable used, but undefined.\n", __LINE__ );
+                        return E_UNDEF_VAR;
+                    }
+                    else
+                    {
+                        ERROR("Runtime Error: Incompatible types for operation AND.\n");
+                    }
+                }
+                dest = EIP->attr.tac.dest;
+                if ( local[dest].type == VAR_STRING )
+                {
+                    free( local[dest].data._string );
+                    local[-1].data.offset--;
+                }
+                local[dest] = temp;
+                break;
+            }
             case DUMMY:
                 break;
             default:

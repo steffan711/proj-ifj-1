@@ -1221,6 +1221,14 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
             case E_GREATEREQ:
                 SwitchTape->opcode = GREATEREQ;
                 break;
+            case E_OR1:
+            case E_OR2:
+                SwitchTape->opcode = OR;
+                break;
+            case E_AND1:
+            case E_AND2:
+                SwitchTape->opcode = AND;
+                break;
             default:
                 free(op2);
                 return E_SEM;
@@ -1521,8 +1529,39 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 op1->data._bool = val;
                 free(op2);
                 break;
-            }            
-
+            } 
+        case E_OR1:
+        case E_OR2:
+            {
+                if ( op1->ttype == E_BOOL && op2->ttype == E_BOOL )
+                {
+                    op1->data._bool = op1->data._bool || op2->data._bool ;
+                    free(op2);
+                }
+                else
+                {
+                    ERROR("Error on line %u: Unable to do operation [%s] with given operands.\n", op1->line, TOKEN_NAME[operation]);
+                    free(op2);
+                    return E_INCOMPATIBLE;
+                }
+                break;
+            }
+        case E_AND1:
+        case E_AND2:
+            {
+                if ( op1->ttype == E_BOOL && op2->ttype == E_BOOL )
+                {
+                    op1->data._bool = op1->data._bool && op2->data._bool ;
+                    free(op2);
+                }
+                else
+                {
+                    ERROR("Error on line %u: Unable to do operation [%s] with given operands.\n", op1->line, TOKEN_NAME[operation]);
+                    free(op2);
+                    return E_INCOMPATIBLE;
+                }
+                break;
+            }
         default:
             fprintf(stderr, "Invalid operation in EVAL(), operation = %d \n", operation);
     }

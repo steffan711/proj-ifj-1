@@ -84,7 +84,7 @@ enum opcodes { DUMMY = 0, START, CREATE, MOV, RET, PUSH, COND, JMP,
               CALL, CALL_BUILTIN,
               INC, DEC,
               PLUS, MINUS,
-              CONCAT, EQUAL, NONEQUAL, DIV, MUL, LESS, GREATER, LESSEQ, GREATEREQ,
+              CONCAT, AND, OR, EQUAL, NONEQUAL, DIV, MUL, LESS, GREATER, LESSEQ, GREATEREQ,
               };
 
 struct instruction {
