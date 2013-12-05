@@ -55,7 +55,11 @@ typedef enum
     R_P,            // prvok precedencnej tabulky =
     E_E,            // nonterminal, pouzivany v gramatike
     E_ELSEIF,
-    
+    E_AND1,         // and
+    E_AND2,         // &&
+    E_OR1,          // or
+    E_OR2,          // ||
+    E_NEG,          // !
 } TOKEN_TYPE;
 
 /** Stavy konecnej masinky **/

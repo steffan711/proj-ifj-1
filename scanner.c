@@ -12,7 +12,6 @@
 
 #define ishexa( x ) ( ( x >= '0' && x <= '9') || (x >= 'a' && x <= 'f') || (x >= 'A' && x <= 'F' ) )
 
-
  /** Globalne premenne **/
  char*          current_pos;    // aktualna pozicia scannera v subore
  unsigned       scanner_line;   // aktualne spracovavany riadok
@@ -91,13 +90,10 @@ static inline void set_token( T_token* token, TOKEN_TYPE type, unsigned dlzka, v
  */
 void scanner_get_token( T_token* token )
 { 
-
+    // INIT:
     FSM_STATE next_state;
     int znak;
     unsigned lex_length = 0;
-    
-    // inicializacny stav: 
-    
     znak = getc( current_pos );
     
     while( isspace( znak ) )    // white space skip
@@ -116,65 +112,75 @@ void scanner_get_token( T_token* token )
     else
        switch( znak )
        {        
-           case '/':       next_state = T_FRACTION;
-                           break;
-           case ';':
-                           set_token( token, E_SEMICL, 0, NULL);
-                           return;	                                          
-           case '=':
-                           next_state = T_ASS;
-                           break;
-           case '+':
-                           set_token( token, E_PLUS, 0, NULL);
-                           return;
-           case '-':
-                           set_token( token, E_MINUS, 0, NULL);
-                           return;
-           case '*':
-                           set_token( token, E_MULT, 0, NULL);
-                           return;
-           case '<':
-                           next_state = T_LESS;
-                           break;
-           case '>':
-                           next_state = T_GREATER;
-                           break;
-           case '"':
-                           next_state = T_LIT;
-                           break;
-           case '.':
-                           set_token( token, E_CONCAT, 0, NULL);
-                           return;
-           case '(':
-                           set_token( token, E_LPARENTHESES, 0, NULL);
-                           return;
-           case ')':
-                           set_token( token, E_RPARENTHESES, 0, NULL);
-                           return;
-           case '{':
-                           set_token( token, E_LABRACK, 0, NULL);
-                           return;
-           case '}':
-                           set_token( token, E_RABRACK, 0, NULL);
-                           return;
-           case '!':
-                           next_state = T_EXCLAM;
-                           break;
-           case ',':
-                           set_token( token, E_COMA, 0, NULL);
-                           return;	                                      
-           case EOF:       
-                           if ( current_pos == end_ptr ) // end of file check
-                              set_token( token, E_EOF, 0, NULL); 
-                           else
-                               set_token( token, E_INVLD, 0, NULL);
-                           return;
-                           
-           default:        set_token( token, E_INVLD, 0, NULL);
-                           return;
+           case '/':    next_state = T_FRACTION;
+                        break;
+           case ';':    
+                        set_token( token, E_SEMICL, 0, NULL);
+                        return;	                                          
+           case '=':    
+                        next_state = T_ASS;
+                        break;
+           case '+':    
+                        set_token( token, E_PLUS, 0, NULL);
+                        return;
+           case '-':    
+                        set_token( token, E_MINUS, 0, NULL);
+                        return;
+           case '*':    
+                        set_token( token, E_MULT, 0, NULL);
+                        return;
+           case '<':    
+                        next_state = T_LESS;
+                        break;
+           case '>':    
+                        next_state = T_GREATER;
+                        break;
+           case '"':    
+                        next_state = T_LIT;
+                        break;
+           case '.':    
+                        set_token( token, E_CONCAT, 0, NULL);
+                        return;
+           case '(':    
+                        set_token( token, E_LPARENTHESES, 0, NULL);
+                        return;
+           case ')':    
+                        set_token( token, E_RPARENTHESES, 0, NULL);
+                        return;
+           case '{':    
+                        set_token( token, E_LABRACK, 0, NULL);
+                        return;
+           case '}':    
+                        set_token( token, E_RABRACK, 0, NULL);
+                        return;
+           case '!':    
+                        next_state = T_EXCLAM;
+                        break;
+           case ',':    
+                        set_token( token, E_COMA, 0, NULL);
+                        return;	 
+           case '&':    
+                        if( getc( current_pos ) == '&' )           
+                            set_token( token, E_AND2, 0, NULL);
+                        else
+                            set_token( token, E_INVLD, 0, NULL);
+                        return;	 
+           case '|':    
+                        if( getc( current_pos ) == '|' )
+                            set_token( token, E_OR2, 0, NULL);
+                        else
+                            set_token( token, E_INVLD, 0, NULL);
+                        return;
+                        
+           case EOF:    if ( current_pos == end_ptr ) // end of file check
+                            set_token( token, E_EOF, 0, NULL); 
+                        else
+                            set_token( token, E_INVLD, 0, NULL);
+                        return;
+                        
+           default:     set_token( token, E_INVLD, 0, NULL);
+                        return;
        }  
-   
-   
    
     do {    
         znak = getc( current_pos );
@@ -217,6 +223,12 @@ void scanner_get_token( T_token* token )
                     case 'w':   if ( sstrcmp( current_pos - lex_length, "while", lex_length, 5 ) == 0 )
                                     set_token( token, E_WHILE, 0, NULL);
                                 return;
+                    case 'a':   if ( sstrcmp( current_pos - lex_length, "and", lex_length, 3 ) == 0 )
+                                    set_token( token, E_AND1, 0, NULL);
+                                return;  
+                    case 'o':   if ( sstrcmp( current_pos - lex_length, "or", lex_length, 2 ) == 0 )
+                                    set_token( token, E_OR1, 0, NULL);
+                                return;                                    
                     case 'f':   if ( sstrcmp( current_pos - lex_length, "false", lex_length, 5 ) == 0 )
                                 {
                                     set_token( token, E_BOOL, 0, NULL);
@@ -369,23 +381,30 @@ void scanner_get_token( T_token* token )
             }
             case T_EXCLAM:
             {
-                if( znak == '=' && getc( current_pos ) == '=')
-                    set_token( token, E_NOT_EQ, lex_length, NULL); // !==
+                if( znak == '=' )
+                {
+                    if ( getc( current_pos ) == '=' ) 
+                        set_token( token, E_NOT_EQ, lex_length, NULL); // !==
+                    else
+                        set_token( token, E_INVLD, 0, NULL); // !=?
+                }
                 else
-                    set_token( token, E_INVLD, 0, NULL);
+                {
+                    ungetc( current_pos );
+                    set_token( token, E_NEG, 0, NULL); // !
+                }
                 return;
             }
             case T_FLOAT:
             {    //123.znak
-                if( isdigit(znak) ) // ak si cislo tak je to fresh
+                if( isdigit(znak) ) // po bodke ide cislo
                 {
                     znak = getc( current_pos );
                     lex_length++;
                 }
                 else
                 {
-                    ungetc( current_pos ); // ungetc znak
-                    ungetc( current_pos ); // ungetc .
+                    current_pos -= 2; // navrat o dva znaky spat
                     lex_length--;
                     set_token( token, E_INT, lex_length, NULL );
                     sscanf( current_pos-lex_length, "%d", &token->data._int );
