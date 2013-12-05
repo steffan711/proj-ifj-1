@@ -33,7 +33,7 @@ typedef enum
     E_COMA,         // ,
     E_RPARENTHESES, // )
     E_IDENT,        // identifikator
-    E_TERM,          // term, pomocny enum pre precedencnu syntakticku analyzu
+    E_TERM,         // term, pomocny enum pre precedencnu syntakticku analyzu
     E_UMINUS,       // unarne minus
     E_NEG,          // !
     E_SEMICL,       // ;
@@ -41,25 +41,25 @@ typedef enum
     E_INT,          // integer
     E_DOUBLE,       // double
     E_LITER,        // literal   
-    E_BOOL,
-    E_NULL,     // ----
+    E_BOOL,         // bool
+    E_NULL,         // ---- klucove slova
     E_WHILE,
+    E_ELSEIF,
     E_FUNCTION,
     E_IF,
     E_ELSE,
-    E_RETURN,   // ----
+    E_RETURN,       // ---- 
     E_EQ,           // =
     E_LABRACK,      // {
     E_RABRACK,      // }
     E_INVLD,        // je to invalid
-    E_EOF, // padla
-    E_LOCAL,
+    E_EOF,          // padla
+    E_LOCAL,        // logicka premenna pre semanticky analyzator
     R_E,            // prvok precedencnej tabulky >
     R_C,            // prvok precedencnej tabulky <
     R_N,            // prvok precedencnej tabulky no_rule
     R_P,            // prvok precedencnej tabulky =
     E_E,            // nonterminal, pouzivany v gramatike
-    E_ELSEIF,
 } TOKEN_TYPE;
 
 /** Stavy konecnej masinky **/
