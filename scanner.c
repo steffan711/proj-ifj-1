@@ -92,7 +92,7 @@ void scanner_get_token( T_token* token )
 { 
     // INIT:
     FSM_STATE next_state;
-    int znak;
+    unsigned znak;
     unsigned lex_length = 0;
     znak = getc( current_pos );
     
@@ -280,8 +280,8 @@ void scanner_get_token( T_token* token )
                 else
                 {
                     ungetc( current_pos );
-                    set_token( token, E_INT, lex_length, NULL );
-                    sscanf( current_pos-lex_length, "%d", &token->data._int );
+                    set_token( token, E_INT, 0, NULL );
+                    token->data._int = atoi(current_pos - lex_length);
                     return;
                 }
             }
@@ -402,12 +402,9 @@ void scanner_get_token( T_token* token )
                     znak = getc( current_pos );
                     lex_length++;
                 }
-                else
+                else // 6."y"
                 {
-                    current_pos -= 2; // navrat o dva znaky spat
-                    lex_length--;
-                    set_token( token, E_INT, lex_length, NULL );
-                    sscanf( current_pos-lex_length, "%d", &token->data._int );
+                    set_token( token, E_INVLD, 0, NULL );
                     return;
                 }
                 
@@ -426,8 +423,8 @@ void scanner_get_token( T_token* token )
                 else
                 {
                     ungetc( current_pos );
-                    set_token( token, E_DOUBLE, lex_length, NULL ); 
-                    sscanf( current_pos - lex_length, "%lf", &token->data._double );
+                    set_token( token, E_DOUBLE, 0, NULL ); 
+                    token->data._double = strtod( current_pos - lex_length, &current_pos );
                     return;
                 }
             } // T_FLOAT
@@ -438,29 +435,18 @@ void scanner_get_token( T_token* token )
                     lex_length++;
                     znak = getc( current_pos );
                 }
-                
+
                 if( isdigit(znak) )
+                {
                     lex_length++;
-                else // exponent bez akehokolvek cisla
-                {        
-                    set_token( token, E_INVLD, 0, NULL ); 
-                    return;
+                    set_token( token, E_DOUBLE, 0, NULL ); 
+                    token->data._double = strtod( current_pos - lex_length, &current_pos );
                 }
-                
-                do { 
-                    if( isdigit( znak ) ) // cisla exponentu
-                    {
-                        lex_length++;
-                        znak = getc( current_pos );
-                    }
-                    else
-                        break;
-                } while(1);
-                
-                ungetc( current_pos );
-                set_token( token, E_DOUBLE, lex_length, NULL ); 
-                sscanf( current_pos - lex_length, "%lf", &token->data._double );
+                else // exponent bez akehokolvek cisla
+                    set_token( token, E_INVLD, 0, NULL ); 
+                    
                 return;
+                
             } // T_EXP
             case T_LIT: // nacitavanie retazca
             {
