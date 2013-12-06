@@ -1,54 +1,33 @@
-CFLAGS = -pedantic -Wall -Wextra -std=c99 -g3
-#CC=gcc-4.8
-.PHONY = clean run all cleanall
+CFLAGS = -pedantic -Wall -Wextra -std=c99 -O2
+CC=gcc-4.8
+.PHONY = clean cleanall
 EXE = main
-
+OBJ = main.o file_io.o scanner.o syntax.o expressions.o ial.o built-in.o generator.o debug.o runtime.o
 
 ###### HELP #####
 # $< - prvy argument v dependency
 # $@ - target
 # $^ - vsetky dependencies
 ###############
-
-all : main
-
-ial.o: ial.c ial.h
-	$(CC) $(CFLAGS) -o $@ -c $<
-	
-built-in.o: built-in.c built-in.h types.h ial.h generator.h scanner.h
-	$(CC) $(CFLAGS) -o $@ -c $<
-
-scanner.o: scanner.c scanner.h types.h
-	$(CC) $(CFLAGS) -o $@ -c $<
-
-file_io.o : file_io.c file_io.h
-	$(CC) $(CFLAGS) -o $@ -c $<
-    
-syntax.o: syntax.c types.h expressions.h syntax.h scanner.h generator.h debug.h
-	$(CC) $(CFLAGS) -o $@ -c $<
-	
-expr.o: expressions.c types.h expressions.h scanner.h generator.h debug.h
-	$(CC) $(CFLAGS) -o $@ -c $<
-    
-generator.o : generator.c generator.h types.h
-	$(CC) $(CFLAGS) -o $@ -c $<
-
-runtime.o : runtime.c runtime.h types.h generator.h
-	$(CC) $(CFLAGS) -o $@ -c $<
-	
-main.o : main.c types.h file_io.h
-	$(CC) $(CFLAGS) -o $@ -c $<
-    
-debug.o : debug.c scanner.h debug.h
-	$(CC) $(CFLAGS) -o $@ -c $<
-	
-main : main.o file_io.o scanner.o syntax.o expr.o ial.o built-in.o generator.o debug.o runtime.o
+main : $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
+    
+-include Makefile.deps
+
+Makefile.deps : *.c *.h
+	$(CC) $(CFLAGS) -MM *.c > Makefile.deps
+  
+%.o: %.c
+	gcc -c $(CFLAGS) $*.c -o $*.o
+    
+## clean pravidla
 clean:
 	$(RM) *.o
+	$(RM) Makefile.deps
 
 cleanall :
 	$(RM) *.o
+	$(RM) Makefile.deps
 	$(RM) $(EXE) gentest test-built-in main lextest
     
 clear_screen:

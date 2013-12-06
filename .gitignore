@@ -3,3 +3,4 @@
 test
 main
 gentest
+*.deps
