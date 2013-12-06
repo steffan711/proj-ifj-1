@@ -81,53 +81,6 @@ const TOKEN_TYPE prec_table [][23] = {
 /*  ;  */  {R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_C,  R_N,  R_N,  R_C,  R_C,  R_C,  R_C,  R_N},
 };
 
-//#define TESTY2
-//#include <string.h>
-const char *enums[] = { //iba na testovacie ucely
-"." ,      
- "!==" ,      
- "===" ,    
- "+" ,        
- "*" ,        
- "-" ,       
- "/" ,         
- "<" ,        
- ">" ,     
- "<=" ,      
- ">=" ,   
- "(" ,
- "," ,        
- ")" ,
- "E_IDENT",       
- "E_TERM" ,
- "un(-)", 
- "!",
- "E_SEMICL" ,      
- "E_VAR" ,         
- "E_INT" ,         
- "E_DOUBLE" ,      
- "E_LITER" ,       
- "E_BOOL" ,
- "E_NULL" ,
- "E_WHILE" ,
- "E_FUNCTION" ,
- "E_IF" ,
- "E_ELSE" ,
- "E_RETURN" ,
- "E_EQ" ,          
- "E_LABRACK" ,     
- "E_RABRACK" ,     
- "E_INVLD" ,       
- "E_EOF" , // padla
- "E_LOCAL" ,
- "R_E" ,           
- "R_C" ,           
- "R_N" ,           
- "R_P" ,           
- "E_E" ,  
- "E_ELSEIF" 
-};
-
 /**
  * Funkcia alokuje pamat zasobnika PFXStack
  *
@@ -535,15 +488,6 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
     }
     
     do {
-        #ifdef TESTY2
-            printf("na vstupe je: \x1B[32m%s\x1B[0m\n", enums[actual_ttype]);
-            for (int i = 0; i <= eStack.top; i++) { printf("\x1B[34m-----\x1B[0m"); for(unsigned j = 0; j < strlen(enums[eStack.data[i]]); j++) printf("\x1B[34m-\x1B[0m");}
-            printf("\n");
-            for (int i = 0; i < eStack.top; i++) { printf(" %s  \x1B[34m|\x1B[0m ", enums[eStack.data[i]]);}
-            printf(" %s  \x1B[34m|\x1B[0m\n", enums[eStack.data[eStack.top]]);
-            for (int i = 0; i <= eStack.top; i++) { printf("\x1B[34m-----\x1B[0m"); for(unsigned j = 0; j < strlen(enums[eStack.data[i]]); j++) printf("\x1B[34m-\x1B[0m");}
-            printf("\n");
-        #endif
         switch ( prec_table[eStack.last_terminal][actual_ttype] )    //invariant - nikdy nepristupim na index mimo pola tabulky
         {
             case R_E:
@@ -551,7 +495,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 {
                     if ( error_code == E_SYNTAX )
                     {
-                        if ( actual_ttype == E_TERM || actual_ttype == E_IDENT )
+                        if ( actual_ttype == E_TERM || actual_ttype == E_IDENT || actual_ttype == E_UMINUS || actual_ttype == E_NEG )
                         {
                             fprintf( stderr, "Error near line %u: bad syntax of expression\n", PFXStackTop()->line );
                         }
@@ -733,6 +677,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                             return E_INTERPRET_ERROR;
                         }
                     }
+                    
                 }
                 else if ( actual_ttype == E_NEG )
                 {
@@ -752,7 +697,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 break;
                 
             default:
-                if ( actual_ttype == E_TERM || actual_ttype == E_IDENT )
+                if ( actual_ttype == E_TERM || actual_ttype == E_IDENT || actual_ttype == E_UMINUS || actual_ttype == E_NEG )
                 {
                     fprintf( stderr, "Error near line %u: bad syntax of expression\n", PFXStackTop()->line );
                 }
@@ -765,15 +710,6 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
         }    
     } while ( ( eStack.last_terminal != E_SEMICL ) || ( actual_ttype != termination_ttype ) );
    
-    #ifdef TESTY2
-        printf("Ukoncil sa cyklus a na vstupe je: \x1B[31m%s\x1B[0m\n", enums[actual_ttype]);
-        for (int i = 0; i <= eStack.top; i++) { printf("\x1B[32m------\x1B[0m"); }
-        printf("\n");
-        for (int i = 0; i < eStack.top; i++) { printf(" %s  \x1B[32m|\x1B[0m ", enums[eStack.data[i]]);}
-        printf(" %s  \x1B[32m|\x1B[0m\n", enums[eStack.data[eStack.top]]);
-        for (int i = 0; i <= eStack.top; i++) { printf("\x1B[32m------\x1B[0m"); }
-        printf("\n");
-    #endif
     //posledne volanie funkcie eval s s jedinou polozkou na vrchole zasobnika PFXStack, ktorou je vysledok vyhodnotenia vyrazu
     if ( ( error_code = eval( PFXStackTopPop( ), NULL, E_TERM ) ) != E_OK )
     {
