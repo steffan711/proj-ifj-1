@@ -26,7 +26,7 @@ cov : cleanall $(OBJ)
 	gcc $(CFLAGS) -lgcov -o main-cov $(OBJ)
   
 %.o: %.c
-	gcc -c $(CFLAGS) $*.c -o $*.o
+	$(CC) -c $(CFLAGS) $*.c -o $*.o
     
 ## clean pravidla
 clean:
