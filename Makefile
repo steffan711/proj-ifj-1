@@ -1,6 +1,6 @@
 CFLAGS = -pedantic -Wall -Wextra -std=c99 -O2
 CC=gcc-4.8
-.PHONY = clean cleanall
+.PHONY = clean cleanall debug cov prof
 EXE = main
 OBJ = main.o file_io.o scanner.o syntax.o expressions.o ial.o built-in.o generator.o debug.o runtime.o
 
@@ -11,6 +11,19 @@ OBJ = main.o file_io.o scanner.o syntax.o expressions.o ial.o built-in.o generat
 ###############
 main : $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
+
+    
+debug : CFLAGS = -pedantic -Wall -Wextra -std=c99 -g3
+debug : cleanall $(OBJ)
+	$(CC) $(CFLAGS) -o main-debug $(OBJ)
+    
+prof : CFLAGS = -pedantic -Wall -Wextra -std=c99 -g3 -pg
+prof : cleanall $(OBJ)
+	$(CC) $(CFLAGS) -o main-prof $(OBJ)
+    
+cov : CFLAGS = -pedantic -Wall -Wextra -std=c99 -fprofile-arcs -ftest-coverage -g3
+cov : cleanall $(OBJ)
+	$(CC) $(CFLAGS) -o main-cov $(OBJ)
     
 -include Makefile.deps
 
@@ -28,7 +41,7 @@ clean:
 cleanall :
 	$(RM) *.o
 	$(RM) Makefile.deps
-	$(RM) $(EXE) gentest test-built-in main lextest
+	$(RM) $(EXE) gentest test-built-in main lextest main-debug main-prof main-cov
     
 clear_screen:
 	clear
