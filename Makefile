@@ -21,14 +21,9 @@ prof : CFLAGS = -pedantic -Wall -Wextra -std=c99 -g3 -pg
 prof : cleanall $(OBJ)
 	$(CC) $(CFLAGS) -o main-prof $(OBJ)
     
-cov : CFLAGS = -pedantic -Wall -Wextra -std=c99 -fprofile-arcs -ftest-coverage -g3
+cov : CFLAGS = --coverage -pedantic -Wall -Wextra -std=c99
 cov : cleanall $(OBJ)
-	$(CC) $(CFLAGS) -o main-cov $(OBJ)
-    
--include Makefile.deps
-
-Makefile.deps : *.c *.h
-	$(CC) $(CFLAGS) -MM *.c > Makefile.deps
+	gcc $(CFLAGS) -lgcov -o main-cov $(OBJ)
   
 %.o: %.c
 	gcc -c $(CFLAGS) $*.c -o $*.o
@@ -37,14 +32,21 @@ Makefile.deps : *.c *.h
 clean:
 	$(RM) *.o
 	$(RM) Makefile.deps
+	$(RM) *.gcno *.gcda *.gcov
 
 cleanall :
 	$(RM) *.o
 	$(RM) Makefile.deps
 	$(RM) $(EXE) gentest test-built-in main lextest main-debug main-prof main-cov
+	$(RM) *.gcno *.gcda *.gcov
     
 clear_screen:
 	clear
+
+-include Makefile.deps
+
+Makefile.deps : *.c *.h
+	$(CC) $(CFLAGS) -MM *.c > Makefile.deps
 	
 ## \/ \/ \/ TESTY \/ \/ \/
 
