@@ -145,29 +145,30 @@ void print_local_var()
 
 void RuntimeErrorCleanup(void)
 {
-    /*if ( retval.type == VAR_STRING )
+    if ( retval.type == VAR_STRING )
     {
         free( retval.data._string );
-        retval.type = VAR_UNDEF;
     }
-    Context *context;
-    if( stack.array )
+    Vector *ptr;
+    if( stack != NULL )
     {
-        for( int i = 0; i <= stack.top ; i++ )
+        for( int i = 0; i <= stack->size ; i++ )
         {
-            context = stack.array[i];
-            for( unsigned int i = 0; i < context->size; i++ )
+            ptr = stack->bucket[i];
+            if ( ptr != NULL )
             {
-                if( context->local[i].type == VAR_STRING )
+                for( unsigned int i = 0; i < ptr->used; i++ )
                 {
-                    free( context->local[i].data._string );
+                    if( ptr->local[i].type == VAR_STRING )
+                    {
+                        free( ptr->local[i].data._string );
+                    }
                 }
+                free( ptr );
             }
-            free( context );
         }
-        free( stack.array );
-        stack.array = NULL;
-    }*/
+        free( stack );
+    }
 }
 
 E_ERROR_TYPE InterpretCode( Instruction *EntryPoint )
