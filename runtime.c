@@ -15,7 +15,7 @@ T_DVAR* prev_local;
 Vector* actual_bucket;
 Instruction *EIP;
 
-const unsigned int BUCKET_INIT = 5;
+const unsigned int BUCKET_INIT = 1;
 const unsigned int ARRAY_SIZE = 1500;
 
 static inline E_ERROR_TYPE StackCheck()
@@ -28,6 +28,7 @@ static inline E_ERROR_TYPE StackCheck()
         stack = realloc( stack, sizeof( Stack ) + sizeof( Vector * ) * 2 * stack->size );
         if ( stack == NULL )
         {
+            ERROR(" Interpret error: realloc() failed on line %ld.\n", __LINE__ );
             stack = tmp;
             return E_INTERPRET_ERROR;
         }
@@ -103,6 +104,7 @@ static inline E_ERROR_TYPE AddFrame( unsigned int size )
             actual_bucket = malloc( ARRAY_SIZE * sizeof( T_DVAR ) + sizeof( Vector ) );
             if ( actual_bucket == NULL )
             {
+                ERROR(" Interpret error: malloc() failed on line %ld.\n", __LINE__ );
                 return E_INTERPRET_ERROR;
             }
             actual_bucket->used = 0;
