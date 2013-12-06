@@ -433,7 +433,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                 return E_LEX;
             }
             free( token );
-            fprintf( stderr, "Error near line %u: this expression must be terminate with '%c' got %s\n",\
+            fprintf( stderr, "Error near line %u: this expression must be terminated with '%c' got %s\n",\
             token->line, termination_ttype, TOKEN_NAME[token->ttype] );
             return E_SYNTAX; //chybny vstupny token
         }
@@ -548,7 +548,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                             PFXdispose( ); free( token );
                             return E_LEX;
                         }
-                        fprintf( stderr, "Error near line %u: this expression must be terminate with '%c' got %s\n",\
+                        fprintf( stderr, "Error near line %u: this expression must be terminated with '%c' got %s\n",\
                         token->line, termination_ttype == E_SEMICL ? ';' : ')', TOKEN_NAME[token->ttype] );
                         PFXdispose( ); free( token );
                         return E_SYNTAX; //chybny vstupny token
@@ -638,7 +638,7 @@ E_ERROR_TYPE evaluate_expr ( T_token * start_token, TOKEN_TYPE termination_ttype
                             PFXdispose( ); free( token );
                             return E_LEX;
                         }
-                        fprintf( stderr, "Error near line %u: this expression must be terminate with '%c' got %s\n",\
+                        fprintf( stderr, "Error near line %u: this expression must be terminated with '%c' got %s\n",\
                         token->line, termination_ttype == E_SEMICL ? ';' : ')', TOKEN_NAME[token->ttype] );
                         
                         PFXdispose( ); free( token );
