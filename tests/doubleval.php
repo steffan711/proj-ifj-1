@@ -1,0 +1,32 @@
+<?php
+$a = doubleval("  00.00.0");
+$foo = put_string( "doubleval(\"00.00.0\")", " = ", $a , "\n\n" );
+$a = doubleval("  3.1");
+$foo = put_string( "doubleval(\"  3.1\")", " = ", $a , "\n\n" );
+$a = doubleval("  -3.1");
+$foo = put_string( "doubleval(\"  -3.1\")", " = ", $a , "\n\n" );
+$a = doubleval("  0.2");
+$foo = put_string( "doubleval(\"  0.2\")", " = ", $a , "\n\n" );
+$a = doubleval("  0.2e25");
+$foo = put_string( "doubleval(\"  0.2e25\")", " = ", $a , "\n\n" );
+$a = doubleval("   0.2.e+45");
+$foo = put_string( "doubleval(\"   0.2.e+45\")", " = ", $a , "\n\n" );
+$a = doubleval("   0.2.e-45");
+$foo = put_string( "doubleval(\"   0.2.e-45\")", " = ", $a , "\n\n" );
+$a = doubleval("   0.2e-00045");
+$foo = put_string( "doubleval(\"   0.2e-00045\")", " = ", $a , "\n\n" );
+$a = doubleval("   0.0");
+$foo = put_string( "doubleval(\"   0.0\")", " = ", $a , "\n\n" );
+//*****************chybne stavy - vsetky otestovane******************************
+// $a = doubleval("  00.e");
+// $foo = put_string( "doubleval(\"00000\")", " = ", $a , "\n\n" );
+// $a = doubleval("  31");
+// $foo = put_string( "doubleval(\"  3.1\")", " = ", $a , "\n\n" );
+// $a = doubleval("  3.");
+// $foo = put_string( "doubleval(\"  0.2\")", " = ", $a , "\n\n" );
+// $a = doubleval("  8e.");
+// $foo = put_string( "doubleval(\"  0.2e25\")", " = ", $a , "\n\n" );
+// $a = doubleval("   8..");
+// $foo = put_string( "doubleval(\"   0.2.e+45\")", " = ", $a , "\n\n" );
+// $a = doubleval("   9e+.");
+// $foo = put_string( "doubleval(\"   0.2.e-45\")", " = ", $a , "\n\n" );

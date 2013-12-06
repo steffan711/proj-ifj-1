@@ -1,7 +1,14 @@
 <?php
 $i = 1;
-while ( $i < 2000000000 )
+while ( 1 )
 { 
-    $i = $i + 1;
+    if ( $i < 200000000 )
+    {
+        $i = $i + 1;
+    }
+    else
+    {
+        $p = put_string("hodnota i je :", $i);
+        return $i;
+    }
 }
-$p = put_string("hodnota i je :", $i);
