@@ -56,35 +56,40 @@ void quicksort( char *input, int beg, int end )
  */
 int kmpmatch( const char *text, int text_size, const char *pattern, int pattern_size )
 {
-    int Fail[pattern_size + 1];
-    int i, j, result = -1;
-
-    if( pattern_size == 0 )
+	if( pattern_size == 0 )
         return 0;
 
-    Fail[0] = -1;
-    for ( i = 0; i != ( pattern_size - 1 ); i++ )
-    {
-        Fail[i + 1] = Fail[i] + 1;
-        while( Fail[i + 1] > 0 && pattern[i] != pattern[Fail[i + 1] - 1] )
-            Fail[i + 1] = Fail[Fail[i + 1] - 1] + 1;
-    }
-    
-    i = j = 0;
-    while( i != text_size )
-    {
-        if( j < 0 || text[i] == pattern[j] )
-        {
-            ++i, ++j;
-            if( j == ( pattern_size - 1 ) )
-            {
-                result = i - j;
-                break;
-            }
-        }
-        else
-            j = Fail[j];
-    }
-
-    return result;
+	int m = 0, i = 0, Fail[pattern_size + 1], pos = 2, cnd = 0;	
+	Fail[0] = -1;
+	Fail[1] = 0;
+	
+	while( pos < pattern_size )
+	{
+		if( pattern[pos - 1] == pattern[cnd] )
+			Fail[pos++] = ++cnd;
+		else if( cnd > 0 )
+			cnd = Fail[cnd];
+		else
+			Fail[pos++] = 0;
+	}
+	
+	while( ( m + i ) < text_size )
+	{
+		if( pattern[i] == text[m + i] )
+		{
+			if( i == ( pattern_size - 1 ) )
+				return m;
+			i++;
+		}
+		else
+		{
+			m += i - Fail[i];
+			if( Fail[i] > -1 )
+				i = Fail[i];
+			else
+				i = 0;
+		}
+	}
+	
+	return -1;
 }

@@ -579,23 +579,14 @@ E_ERROR_TYPE get_substring( T_DVAR input[], int size, T_DVAR *result )
  */
 E_ERROR_TYPE find_string( T_DVAR input[], int size, T_DVAR *result )
 {
-    if( size != 2 )
+    if( size != 2 || input[0].type != VAR_CONSTSTRING || input[1].type != VAR_CONSTSTRING )
         return E_OTHER;
-    if( input[0].type != VAR_CONSTSTRING )
-    {
-        return E_OTHER;
-    }
-    if( input[1].type != VAR_CONSTSTRING )
-    {
-        return E_OTHER;
-    }
     
     result->type = VAR_INT;
     result->data._int = kmpmatch( input[0].data._string, input[0].size, input[1].data._string, input[1].size );
     
     return E_OK;
 }
-
 
 /**
  * Vstavana funkcia, zoraduje znaky stringu podla ich ordinalnej hodnotyh od najnizsej po najvyssiu
