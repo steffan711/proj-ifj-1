@@ -250,10 +250,12 @@ E_ERROR_TYPE intval( T_DVAR input[], int size, T_DVAR *result )
             result->type = VAR_INT;
             if ( input[0].size > 0 )
             {
-                char temp[input[0].size+1];
-                memcpy( temp, input[0].data._string, input[0].size );
-                temp[input[0].size] = 0;
-                result->data._int = atoi( temp );
+                unsigned i = 0;
+                char * help = input[0].data._string;
+                while ( i < input[0].size && isspace(*help) ) { help++; i++; }
+                result->data._int = 0;
+                while ( i++ < input[0].size && isdigit(*help) ) 
+                    result->data._int = result->data._int * 10 + *help++ - '0';     
             }
             else
                 result->data._int = 0;

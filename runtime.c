@@ -15,7 +15,7 @@ T_DVAR* prev_local;
 Vector* actual_bucket;
 Instruction *EIP;
 
-const unsigned int BUCKET_INIT = 5;
+const unsigned int BUCKET_INIT = 1;
 const unsigned int ARRAY_SIZE = 1500;
 
 static inline E_ERROR_TYPE StackCheck()
@@ -28,6 +28,7 @@ static inline E_ERROR_TYPE StackCheck()
         stack = realloc( stack, sizeof( Stack ) + sizeof( Vector * ) * 2 * stack->size );
         if ( stack == NULL )
         {
+            ERROR(" Interpret error: realloc() failed on line %ld.\n", __LINE__ );
             stack = tmp;
             return E_INTERPRET_ERROR;
         }
@@ -103,6 +104,7 @@ static inline E_ERROR_TYPE AddFrame( unsigned int size )
             actual_bucket = malloc( ARRAY_SIZE * sizeof( T_DVAR ) + sizeof( Vector ) );
             if ( actual_bucket == NULL )
             {
+                ERROR(" Interpret error: malloc() failed on line %ld.\n", __LINE__ );
                 return E_INTERPRET_ERROR;
             }
             actual_bucket->used = 0;
@@ -152,14 +154,14 @@ void RuntimeErrorCleanup(void)
     Vector *ptr;
     if( stack != NULL )
     {
-        for( int i = 0; i <= stack->size ; i++ )
+        for( int i = 0; i < stack->size ; i++ )
         {
             ptr = stack->bucket[i];
             if ( ptr != NULL )
             {
                 for( unsigned int i = 0; i < ptr->used; i++ )
                 {
-                    if( ptr->local[i].type == VAR_STRING )
+                    if( ptr->local[i].type == VAR_STRING && ptr->local[i].data._string != NULL )
                     {
                         free( ptr->local[i].data._string );
                     }

@@ -1188,7 +1188,7 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 {
                     ERROR("Error on line %u: Unable to do operation [%s] with given operands.\n", op1->line, TOKEN_NAME[operation]);
                     free(op2);
-                    return E_SEM;
+                    return E_INCOMPATIBLE;
                 }
                 break;
             case E_TRIPLEEQ:
@@ -1231,8 +1231,8 @@ E_ERROR_TYPE eval(T_token *op1, T_token *op2, TOKEN_TYPE operation)
                 break;
             default:
                 free(op2);
-                return E_SEM;
                 PRINTD("eval() --> invalid operation %s\n", TOKEN_NAME[operation]);
+                return E_OTHER;
                 break;
         }
         free(op2);
