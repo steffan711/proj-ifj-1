@@ -15,7 +15,7 @@
  /** Globalne premenne **/
  char*          current_pos;    // aktualna pozicia scannera v subore
  unsigned       scanner_line;   // aktualne spracovavany riadok
- const char*    end_ptr;        // zaciatok suboru v pamati
+ const char*    end_ptr;        // koniec suboru v pamati
 
 /**
  * Funkcia realizuje prevod hexadecimalneho cisla na integer
