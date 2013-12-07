@@ -154,14 +154,14 @@ void RuntimeErrorCleanup(void)
     Vector *ptr;
     if( stack != NULL )
     {
-        for( int i = 0; i <= stack->size ; i++ )
+        for( int i = 0; i < stack->size ; i++ )
         {
             ptr = stack->bucket[i];
             if ( ptr != NULL )
             {
                 for( unsigned int i = 0; i < ptr->used; i++ )
                 {
-                    if( ptr->local[i].type == VAR_STRING )
+                    if( ptr->local[i].type == VAR_STRING && ptr->local[i].data._string != NULL )
                     {
                         free( ptr->local[i].data._string );
                     }
