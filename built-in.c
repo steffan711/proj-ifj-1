@@ -113,10 +113,8 @@ unsigned intNumSpaces( int input )
  * @return Uspesnost
  */
 E_ERROR_TYPE boolval( T_DVAR input[], int size, T_DVAR *result )
-{
-    if( size != 1 )
-        return E_OTHER;
-        
+{     
+    ( void ) size;
     result->type = VAR_BOOL;
     
     switch( input[0].type )
@@ -168,9 +166,7 @@ E_ERROR_TYPE boolval( T_DVAR input[], int size, T_DVAR *result )
  */
 E_ERROR_TYPE doubleval( T_DVAR input[], int size, T_DVAR *result )
 {
-    if( size != 1 )
-        return E_OTHER;
-
+    ( void ) size;
     switch( input[0].type )
     {
         case VAR_BOOL:
@@ -226,9 +222,7 @@ E_ERROR_TYPE doubleval( T_DVAR input[], int size, T_DVAR *result )
  */
 E_ERROR_TYPE intval( T_DVAR input[], int size, T_DVAR *result )
 {
-    if( size != 1 )
-        return E_OTHER;
-    
+    ( void ) size;
     switch( input[0].type )
     {
         case VAR_BOOL:
@@ -284,8 +278,7 @@ E_ERROR_TYPE intval( T_DVAR input[], int size, T_DVAR *result )
  */
 E_ERROR_TYPE strval( T_DVAR input[], int size, T_DVAR *result )
 {
-    if( size != 1 )
-        return E_OTHER;
+    ( void ) size;
     switch( input[0].type )
     {
         case VAR_BOOL:
@@ -389,10 +382,10 @@ E_ERROR_TYPE get_string( T_DVAR input[], int size, T_DVAR *result )
     
     (void)input;
     (void)size;
+    result->type = VAR_CONSTSTRING;
     
     if( c == EOF || c == '\n' )
     {
-        result->type = VAR_CONSTSTRING;
         result->size = 0;
         return E_OK;
     }
@@ -527,8 +520,7 @@ E_ERROR_TYPE put_string( T_DVAR input[], int size, T_DVAR *result )
  */
 E_ERROR_TYPE get_substring( T_DVAR input[], int size, T_DVAR *result )
 {
-    if( size != 3 )
-        return E_OTHER;
+    ( void ) size;
     
     if( input[0].type != VAR_CONSTSTRING )
     {
@@ -581,8 +573,7 @@ E_ERROR_TYPE get_substring( T_DVAR input[], int size, T_DVAR *result )
  */
 E_ERROR_TYPE find_string( T_DVAR input[], int size, T_DVAR *result )
 {
-    if( size != 2 )
-        return E_OTHER;
+    ( void ) size;
     if( input[0].type != VAR_CONSTSTRING )
     {
         return E_OTHER;
@@ -609,7 +600,8 @@ E_ERROR_TYPE find_string( T_DVAR input[], int size, T_DVAR *result )
  */
 E_ERROR_TYPE sort_string( T_DVAR input[], int size, T_DVAR *result )
 {
-    if( size != 1 || input[0].type != VAR_CONSTSTRING )
+    ( void ) size;
+    if( input[0].type != VAR_CONSTSTRING )
         return E_OTHER;
     
     char *help;
