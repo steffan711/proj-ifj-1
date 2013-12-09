@@ -671,7 +671,7 @@ E_ERROR_TYPE addparam(T_token *token)
         }
         else
         {
-            ERROR( "Error on line %u: function '", token->line );
+            ERROR( "Error: function '" );
             print_char( stderr, actualfunction->name, actualfunction->name_size );
             ERROR("' defined with %d parameters but called with %d parameters.\n", param_counter, actualfunction->param_count);
             return E_PARAM;
