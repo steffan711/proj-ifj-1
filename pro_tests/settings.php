@@ -1,15 +1,31 @@
 abc-recursive
-ackerman
 // ackermanexp
+ackerman
 built-in
+built-in2
+delenie_nulou
+double_val_err
 expressions
+find
+get_substringE1
+get_substringE2
 ifelseif
+ifj13
 in3
 iteration
-// porovnanie
-stringyHC
-testypremennych
-vlado-func
+lexical_error1_invalid
 milky
-built-in2
-find
+najvacsia_blobst
+nedefinovana_var
+nepekne_volanieII
+nepekne_volanie
+// porovnanie
+redefined_functionII
+redefined_function
+stringyHC
+syntax_err_missing_php
+testypremennych
+undefined_function
+unknown_variable
+valid_input_file_1
+vlado-func
