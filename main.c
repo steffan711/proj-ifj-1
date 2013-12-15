@@ -12,6 +12,7 @@
 #include "scanner.h"
 #include "syntax.h"
 #include "generator.h"
+#include "ial.h"
 #include "runtime.h"
 
 int main( int argc, char *argv[] )
