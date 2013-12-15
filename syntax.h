@@ -1,8 +1,12 @@
-/**
- * @file syntax.h
- *
- * @brief Hlavickovy subor pre syntakticky analyzator
- * @author Everyone
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file syntax.h Header file syntaktickej analyzy
+ * @author Štefan Martiček
  */
  
 #ifndef SYNTAX_H

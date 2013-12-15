@@ -1,8 +1,12 @@
-/**
- * @file generator.h
- *
- * @brief Definicie datovych typov a rozhranie modulu genertor kodu
- * @author olii
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file generator.c Header file pre modul generatora kodu
+ * @author Oliver Nemček
  */
 
 #ifndef _GETERATOR_H

@@ -1,8 +1,12 @@
 /*
- * Projekt: IFJ13
- * Riesitelia: xcillo00, xnemcek03, xilavsk01, xmarti61
- * Subor scanner.c Modul lexikalneho analyzatoru
- * @author Vladimír Čillo, xcillo00
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file scanner.c Modul lexikalneho analyzatoru
+ * @author Vladimír Čillo
  */
 
 #include <ctype.h> // isdigit, isspace, isalnum

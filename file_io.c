@@ -1,8 +1,12 @@
-/**
- * @file file_io.c
- *
- * @brief Vsetky funckie pracujuce s real/abstraktnym suborom
- * @author Vsetci
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file file_io.c Modul pre operacie so suborom
+ * @author Štefan Martiček, Vladimír Čillo, Oliver Nemček
  */
 
 #include "types.h"

@@ -1,3 +1,15 @@
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file runtime.c Modul interpretu
+ * @author Oliver Nemček
+ */
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -1,8 +1,12 @@
-/**
- * @file main.c
- *
- * @brief Hlavna vetva
- * @author Vsetci
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file main.c Modul lexikalneho analyzatoru
+ * @author Vladimír Čillo, Oliver Nemček, Štefan Martiček, Filip Ilavský
  */
 
 #include <stdio.h>

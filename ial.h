@@ -1,8 +1,12 @@
-/**
- * @file ial.h
- *
- * @brief Hlavickovy subor pre funkcie zadane z predmetu IAL
- * @author Filip
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file ial.h - Hlavickovy subor modulu ial.c
+ * @author Filip Ilavský, Oliver Nemček
  */
 
 #ifndef _IAL_H

@@ -1,10 +1,16 @@
-/**
- * @file types.h
- *
- * @brief Hlavickovy subor s definiciami datovych typov
- * @author Everyone
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file types.h Hlavickovy subor s definiciami vseobecne pouzivanych datovych typov
+ * @author Vladimír Čillo, Oliver Nemček, Štefan Martiček, Filip Ilavský
  */
 
+
+ 
 #ifndef TYPES_H
 #define TYPES_H
 

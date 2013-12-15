@@ -1,8 +1,12 @@
-/**
- * @file expressions.h
- *
- * @brief Hlavickovy subor pre syntakticky analyzator - vyhodnocovanie vyrazov
- * @author Everyone
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file expressions.c Hlavickovy subor precedencnej analyzy
+ * @author Štefan Martiček
  */
  
 #ifndef EXPRESSIONS_H

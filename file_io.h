@@ -1,8 +1,12 @@
-/**
- * @file file_io.h
- *
- * @brief Hlavickovy subor pre vstup/vystup funkcie s makrami, nahradzujucimi zakladne stdio funkcie
- * @author Vsetci
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file file_io.h Header file pre operacie so suborom + makra getc, ungetc
+ * @author Oliver Nemček
  */
 
 #include "types.h"

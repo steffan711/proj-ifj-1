@@ -1,4 +1,13 @@
-
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file debug.c Ladiace funkcie
+ * @author Vladimír Čillo, Oliver Nemček, Štefan Martiček, Filip Ilavský
+ */
 
 
 #include <stdio.h> // printf

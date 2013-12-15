@@ -1,10 +1,16 @@
-/**
- * @file built_in.h
- *
- * @brief Hlavickovy subor pre vstavane funkcie interpretu
- * @author Filip
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file built_in.h - Hlavickovy subor pre vstavane funkcie interpretu
+ * @author Filip Ilavský
  */
-
+ 
+ 
+ 
 #include "types.h"
 #include "generator.h"
 #include "scanner.h"

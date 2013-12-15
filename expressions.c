@@ -1,8 +1,12 @@
-/**
- * @file expressions.c
- *
- * @brief implementacia precedencnej syntaktickej analyzy
- * @author Stevo
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file expressions.c Modul precedencnej analyzy
+ * @author Štefan Martiček
  */
 
 #include <stdio.h>

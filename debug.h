@@ -1,8 +1,12 @@
-/**
- * @file debug.h
- *
- * @brief Header file pre debugovacie funkcie
- * @author Vsetci
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file scanner.h Header file pre ladice funkcie
+ * @author Vladimír Čillo, Oliver Nemček, Štefan Martiček, Filip Ilavský
  */
  
 #ifndef DEBUG_H

@@ -1,8 +1,12 @@
-/**
- * @file syntax.c
- *
- * @brief implementacia syntaktickej analyzy
- * @author Stevo
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file syntax.c Modul syntaktickej analyzy
+ * @author Štefan Martiček
  */
 
 #include <stdio.h>

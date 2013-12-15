@@ -1,8 +1,12 @@
-/**
- * @file ial.c
- *
- * @brief Funkcie algoritmov pre predmet IAL
- * @author Filip
+/*
+ * Projekt: IFJ13 2013
+ * Riesitelia:  Vladimír Čillo (xcillo00)
+ *              Oliver Nemček (xnemcek03)
+ *              Štefan Martiček (xmarti62)
+ *              Filip Ilavský (xilavsk01)
+ * 
+ * @file ial.c - Implementacia tabulky symbolov, Quick sort, Knuth-Morris-Prattov algoritmus
+ * @author Filip Ilavský, Oliver Nemček
  */
 
 
