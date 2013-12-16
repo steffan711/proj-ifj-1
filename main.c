@@ -73,6 +73,12 @@ int main( int argc, char *argv[] )
     
     if ( ( ret_val = InterpretCode( ptr->array[0] ) ) != E_OK  )
         RuntimeErrorCleanup();
+        
+    /**
+     * Páni, vďaka za projekt !!
+     * Tu máte niečo na zabavenie 
+     * http://www.youtube.com/watch?v=6m2THtTuBIo
+    */
     
     GeneratorDeleteTapes(ptr);
     free( handle_subor );
