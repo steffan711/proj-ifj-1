@@ -18,12 +18,12 @@ Knuth–Morris–Prattov algoritmus na vyhľadávanie podreťazcov.
     Štefan Martiček - syntakická analýza
     Oliver Nemček   - generátor kódu, interpret
     
-    
+
 
 Akékoľvek šírenie a použitie kódu alebo spustiteľného súboru bez priznania autorstva osobám uvedeným v sekcii Autori je zakázané.
 Zdrojové kódy môžu byť uvoľnené ako inšpirácie pre ostatných študentov z dobrej vôle autorov. 
 
-
+Poďakovenie patrí Marekovi Milkovičovi a jeho tímu za rýchlostné testovanie, Marekovi Hurtovi za poskytnutie detailných testov a všetkým, ktorý nás podporovali v priebehu vývoja.
 
 
 
